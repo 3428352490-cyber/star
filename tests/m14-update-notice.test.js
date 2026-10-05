@@ -41,6 +41,7 @@ test('M14 版本更新提醒：update.js 更新弹窗底部按钮改造（暂不
   const js = readAppFile('js/update.js');
   assert.ok(!js.includes('知道了'), '不应再保留【知道了】按钮');
   assert.ok(!js.includes('请稍后重新打开应用获取最新内容'), '未删除过期提示文案');
+  assert.ok(js.includes('增加了更多数据'), '弹窗更新说明应固定为「增加了更多数据」');
   assert.ok(js.includes("label: '暂不更新'"), '缺少【暂不更新】按钮');
   assert.ok(js.includes("label: '立即更新'"), '缺少【立即更新】按钮');
   assert.ok(js.includes("cls: 'btn-text'"), '暂不更新缺少纯文字样式类');
@@ -49,6 +50,8 @@ test('M14 版本更新提醒：update.js 更新弹窗底部按钮改造（暂不
   assert.ok(js.includes('localStorage.setItem(STORAGE_KEY'), '立即更新缺少本地版本写入');
   assert.ok(js.includes('location.reload()'), '立即更新缺少页面刷新');
   assert.ok(js.includes('sessionSkipped()'), '缺少会话跳过判断（本次会话不再弹窗）');
+  assert.ok(js.includes('绝不加载云端任何新资源'), '暂不更新缺少「禁止加载云端新数据」语义');
+  assert.ok(js.includes('当前已是最新版本 v\''), '版本一致缺少「当前已是最新版本」提示');
   const css = readAppFile('css/components.css');
   assert.ok(css.includes('.modal-actions .btn-text'), '缺少 btn-text 纯文字灰色样式');
 });

@@ -8,7 +8,11 @@
  * - 版本对比使用 compareVersion：分段数字比较，禁止字符串直接比较
  * - 弹窗触发规则：仅当云端版本号 > localStorage 中记录的已确认版本号时弹窗
  * - 弹窗结构：左侧「暂不更新」纯文字（灰色、无按钮样式）/ 右侧「立即更新」红色像素方块按钮
- * - 交互：暂不更新 → 仅写 sessionStorage 会话标记并关闭；立即更新 → 云端版本写入 localStorage 并 location.reload()
+ * - 交互（严格执行）：
+ *   · 暂不更新：仅写 sessionStorage 会话标记并关闭弹窗；绝不修改 localStorage 版本号、
+ *     绝不加载云端新资源/新数据，继续使用当前本地旧数据；关闭网页重新打开后恢复检测
+ *   · 立即更新：云端版本写入 localStorage 并 location.reload()，此时才加载云端最新内容
+ * - 「检查更新」（manual=true）：真实云端检测，云端更高弹窗；版本一致提示「当前已是最新版本」
  * - 异常：json 读取失败 console.error 打印错误，页面不崩溃、不弹报错弹窗
  * ============================================================
  */
@@ -52,7 +56,7 @@ const Updater = (() => {
     }
   }
 
-  /** 写入 localStorage 已确认版本号 */
+  /** 写入 localStorage 已确认版本号（仅在用户点击「立即更新」时调用） */
   function setInstalledVersion(ver) {
     try {
       localStorage.setItem(STORAGE_KEY, ver);
@@ -69,8 +73,8 @@ const Updater = (() => {
   }
 
   /**
-   * 检测更新（页面加载第一时间调用；manual=true 时无论结果都给出 Toast）
-   * @param {boolean} manual 手动检查（「检查更新」按钮触发）
+   * 检测更新（页面加载第一时间调用；manual=true 为「检查更新」按钮触发）
+   * @param {boolean} manual 手动检查（true 时无论结果都给出 Toast 提示）
    */
   async function check(manual) {
     let updated = false;
@@ -101,7 +105,7 @@ const Updater = (() => {
         // 云端版本更高：弹窗由用户手动选择是否更新，绝不后台自动更新
         updated = true;
         notice = '发现新版本 v' + cloudVersion;
-        // 更新说明：优先取 notice.json 的 items（人工维护公告）；失败时回退 version.json 的 notes
+        // Toast 附加详情：优先取 notice.json 的 items（人工维护公告）；失败时回退 version.json 的 notes
         let notes = json.notes && json.notes.length ? json.notes.join('；') : '';
         if (noticeRes.ok) {
           try {
@@ -112,8 +116,9 @@ const Updater = (() => {
           } catch (e) { /* 公告解析失败：沿用 version.json 的 notes */ }
         }
         detail = notes;
-        if (!sessionSkipped()) showUpdateModal(cloudVersion, installed, detail);
+        if (!sessionSkipped()) showUpdateModal(cloudVersion, installed);
       } else if (compareVersion(cloudVersion, installed) === 0) {
+        // 版本一致：提示「当前已是最新版本」，不弹窗
         notice = '当前已是最新版本 v' + installed;
         detail = '';
       } else {
@@ -139,10 +144,10 @@ const Updater = (() => {
   }
 
   /** 新版本弹窗（像素风格保留；底部同一行：左「暂不更新」纯文字 / 右「立即更新」红色像素按钮） */
-  function showUpdateModal(cloudVersion, installed, notes) {
+  function showUpdateModal(cloudVersion, installed) {
     const body =
       '<p>检测到云端新版本 v' + esc(cloudVersion) + '（当前 v' + esc(installed) + '）。</p>' +
-      (notes ? '<p>更新说明：' + esc(notes) + '</p>' : '');
+      '<p>更新说明：增加了更多数据。</p>';
     Modal.show({
       title: '发现新版本',
       body,
@@ -151,7 +156,9 @@ const Updater = (() => {
           label: '暂不更新',
           cls: 'btn-text',
           onClick: () => {
-            // 仅当前网页会话不再弹窗：不改动 localStorage 版本；关闭网页重新打开后依旧会检测并弹出
+            // 绝对不修改 localStorage 版本号；仅 sessionStorage 标记本次会话跳过；
+            // 绝不加载云端任何新资源/新数据，继续使用当前本地旧数据；
+            // 关闭网页重新打开后恢复检测，有新版本依旧会弹出提示
             try { sessionStorage.setItem(SKIP_KEY, '1'); } catch (e) {}
           },
         },
@@ -159,7 +166,7 @@ const Updater = (() => {
           label: '立即更新',
           cls: 'btn-primary',
           onClick: () => {
-            // 云端版本写入 localStorage，再由用户动作触发刷新加载最新资源（非后台自动下载）
+            // 云端版本写入 localStorage，再由用户动作触发刷新加载云端最新内容（非后台自动下载）
             setInstalledVersion(cloudVersion);
             location.reload();
           },
