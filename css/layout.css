@@ -27,44 +27,16 @@
 }
 .btn-back:active { transform: translate(2px, 2px); box-shadow: inset 2px 2px 0 var(--wood-light), inset -2px -2px 0 var(--wood-dark), 1px 1px 0 var(--shadow); }
 
-/* ===== 底部固定导航：整块像素木板栏（.stardew-nav 九宫格背景），5 Tab 等宽像素按钮 ===== */
+/* ===== 底部固定导航：整块像素木板栏（.stardew-nav 九宫格木框），5 Tab 等宽像素按钮 ===== */
 .stardew-nav,
 .bottom-nav {
-  --frame: 16px;                                  /* 导航木板框厚 */
   position: fixed; left: 0; right: 0; bottom: 0;
   display: flex;
-  background-color: var(--nav-bg);
-  background-image:
-    url("../assets/stardew-wood-frame.png"),
-    url("../assets/stardew-wood-frame.png"),
-    url("../assets/stardew-wood-frame.png"),
-    url("../assets/stardew-wood-frame.png"),
-    url("../assets/stardew-wood-frame.png"),
-    url("../assets/stardew-wood-frame.png"),
-    url("../assets/stardew-wood-frame.png"),
-    url("../assets/stardew-wood-frame.png");
-  background-position:
-    0 0,
-    100% 0,
-    0 100%,
-    100% 100%,
-    50% 0,
-    50% 100%,
-    0 50%,
-    100% 50%;
-  background-size:
-    calc(3 * var(--frame)) calc(3 * var(--frame)),
-    calc(3 * var(--frame)) calc(3 * var(--frame)),
-    calc(3 * var(--frame)) calc(3 * var(--frame)),
-    calc(3 * var(--frame)) calc(3 * var(--frame)),
-    calc(300% - 6 * var(--frame)) var(--frame),
-    calc(300% - 6 * var(--frame)) var(--frame),
-    var(--frame) calc(300% - 6 * var(--frame)),
-    var(--frame) calc(300% - 6 * var(--frame));
-  background-repeat: no-repeat;
+  border: 16px solid transparent;                 /* 九宫格木框占位 */
+  border-image: url("../assets/stardew-wood-frame.png") 33.33% / 16px stretch;
+  background: var(--nav-bg);
   z-index: 50;
-  padding-top: var(--frame);                      /* 内容避开顶部木框 */
-  padding-bottom: calc(var(--frame) + env(safe-area-inset-bottom)); /* 底部木框 + 安全区 */
+  padding-bottom: env(safe-area-inset-bottom);    /* 底部安全区 */
 }
 .nav-item {
   flex: 1; min-width: 0;
