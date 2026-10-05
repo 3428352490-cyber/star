@@ -35,6 +35,39 @@ test('M6-2 extractVersion 容错', () => {
   assert.equal(Updater.extractVersion(null), '');
 });
 
+test('M6-2b 更新类型自动识别：主版本/次版本/修订号升级与无更新', () => {
+  // 主版本升级
+  assert.equal(Updater.getUpdateType('2.0.0', '1.10.5'), 3, '2.0.0 vs 1.10.5 应为主版本升级');
+  // 次版本升级（主版本相同，次版本变大）
+  assert.equal(Updater.getUpdateType('1.2.0', '1.1.9'), 2, '1.2.0 vs 1.1.9 应为次版本升级');
+  // 修订号升级（主/次相同，修订变大）
+  assert.equal(Updater.getUpdateType('1.1.10', '1.1.9'), 1, '1.1.10 vs 1.1.9 应为修订号升级');
+  // 无更新：相等 / 云端更低
+  assert.equal(Updater.getUpdateType('1.1.9', '1.1.9'), 0, '版本相等应为无更新');
+  assert.equal(Updater.getUpdateType('1.0.9', '1.1.0'), 0, '云端更低应为无更新');
+  // 版本号解析：支持 v 前缀与缺位补 0
+  const p = Updater.parseVersion('v1.2.3');
+  assert.deepEqual(p, { major: 1, minor: 2, patch: 3 }, 'parseVersion 解析错误');
+  assert.deepEqual(Updater.parseVersion('2'), { major: 2, minor: 0, patch: 0 }, '缺位应补 0');
+  assert.deepEqual(Updater.parseVersion(''), { major: 0, minor: 0, patch: 0 }, '空串应全 0');
+});
+
+test('M6-2c 弹窗标题按更新类型变化：次版本/修订号升级', async () => {
+  Updater.setMockEnabled(false);
+  // 次版本升级：1.1.0 vs 1.0.10 → 功能更新
+  mockFetch({ version: '1.1.0' });
+  await Updater.check(false);
+  assert.ok(els.get('modal-root').innerHTML.includes('功能更新'), '次版本升级标题应为「功能更新」');
+  assert.ok(els.get('modal-root').innerHTML.includes('新增功能与内容'), '缺少次版本升级小字提示');
+  // 修订号升级：1.0.11 vs 1.0.10 → 补丁更新
+  Modal.close();
+  mockFetch({ version: '1.0.11' });
+  await Updater.check(false);
+  assert.ok(els.get('modal-root').innerHTML.includes('补丁更新'), '修订号升级标题应为「补丁更新」');
+  assert.ok(els.get('modal-root').innerHTML.includes('问题修复与细节优化'), '缺少修订号升级小字提示');
+  Modal.close();
+});
+
 test('M6-3 发现新版本：自动/手动均弹窗（云端 > 本地固定版本），不额外弹 Toast', async () => {
   // 本地版本 = config.js 固定版本号（SDV_CONFIG.app.version），云端 9.9.9 更高 → 弹窗
   Updater.setMockEnabled(false); // 关闭 Mock，走 fetch 分支（等价上线状态）
@@ -42,7 +75,8 @@ test('M6-3 发现新版本：自动/手动均弹窗（云端 > 本地固定版�
   const r = await Updater.check(false);
   assert.equal(r.updated, true);
   assert.ok(r.notice.includes('发现新版本 v9.9.9'), 'notice 错误: ' + r.notice);
-  assert.ok(els.get('modal-root').innerHTML.includes('发现新版本'), '未弹更新弹窗');
+  assert.ok(els.get('modal-root').innerHTML.includes('重大版本更新'), '弹窗标题应为类型化标题（9.9.9 属主版本升级）');
+  assert.ok(els.get('modal-root').innerHTML.includes('本次为底层重大更新'), '弹窗缺少主版本升级小字提示');
   assert.ok(els.get('modal-root').innerHTML.includes('9.9.9'), '弹窗未含新版本号');
   const toastEl = els.get('created:div');
   assert.equal(toastEl ? toastEl.textContent : '', '', '更新弹窗本身即提示，不应额外弹 Toast');

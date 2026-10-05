@@ -189,15 +189,15 @@ test('验收15 云端版本更高 → 页面打开自动弹出更新提示，手
   Modal.close();
   Updater.setMockEnabled(false);
   globalThis.fetch = async () => ({ ok: true, json: async () => ({ version: '99.99.99', notes: ['一期验收'] }) });
-  // 页面打开自动检测：云端更高 → 弹窗
+  // 页面打开自动检测：云端更高 → 弹窗（99.99.99 属主版本升级 → 类型化标题）
   const rAuto = await Updater.check(false);
   assert.equal(rAuto.updated, true);
-  assert.ok(els.get('modal-root').innerHTML.includes('发现新版本'));
+  assert.ok(els.get('modal-root').innerHTML.includes('重大版本更新'));
   // 手动入口：弹同一弹窗
   Modal.close();
   const r = await Updater.check(true);
   assert.equal(r.updated, true);
-  assert.ok(els.get('modal-root').innerHTML.includes('发现新版本'));
+  assert.ok(els.get('modal-root').innerHTML.includes('重大版本更新'));
 });
 
 test('验收16 宽屏双栏 / 手机单列', () => {

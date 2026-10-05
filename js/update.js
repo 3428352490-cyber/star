@@ -13,6 +13,10 @@
  *    · 线上 > 本地：一律弹出更新弹窗（自动/手动共用同一弹窗组件：新版本号 + 更新简介 + 双按钮）
  *    · 线上 = 本地：自动检测静默不提示；手动入口 Toast「当前已是最新版本」
  *    · 网络失败：自动检测静默处理；手动入口 Toast「版本检查失败，请稍后重试」
+ * 3.1 更新类型自动识别（语义化版本号 vX.Y.Z 拆分主/次/修订逐段数字比对）：
+ *    · 主版本升级（X 增大）：弹窗标题【重大版本更新】，小字「本次为底层重大更新」
+ *    · 次版本升级（Y 增大）：弹窗标题【功能更新】，小字「新增功能与内容」
+ *    · 修订号升级（Z 增大）：弹窗标题【补丁更新】，小字「问题修复与细节优化」
  * 4. 弹窗交互：
  *    · 【立即更新】：关闭弹窗 → 加载云端新版静态资源并刷新页面（location.reload()）
  *    · 【暂不更新】：仅关闭弹窗，不下载任何新版资源、不修改本地版本号、
@@ -54,6 +58,21 @@ const Updater = (() => {
   const STORAGE_KEY = 'sdv-guide:installed-version';
 
   /**
+   * 语义化版本解析：v1.0.0 格式 → { major, minor, patch }（数字），
+   * 非法/缺段自动回退 0，便于分段数字比对
+   * @param {string} v 版本号（允许带 v 前缀，如 v1.0.0 / 1.0.0）
+   */
+  function parseVersion(v) {
+    const s = String(v || '').replace(/^v/i, '').trim();
+    const parts = s.split('.');
+    const num = (x) => {
+      const n = parseInt(x, 10);
+      return Number.isNaN(n) ? 0 : n;
+    };
+    return { major: num(parts[0]), minor: num(parts[1]), patch: num(parts[2]) };
+  }
+
+  /**
    * 语义化版本对比（标准实现）：remote > local 返回 1；remote < local 返回 -1；相等返回 0
    * 分段数字比较，禁止字符串直接比较
    * @param {string} remote 远端/线上版本号
@@ -69,6 +88,34 @@ const Updater = (() => {
       if (rv < lv) return -1;
     }
     return 0;
+  }
+
+  /* 更新类型：3=主版本升级（重大） / 2=次版本升级（功能） / 1=修订号升级（补丁） / 0=无更新 */
+  const UPDATE_TYPE = { MAJOR: 3, MINOR: 2, PATCH: 1, NONE: 0 };
+
+  /* 各更新类型对应的弹窗标题与小字提示 */
+  const TYPE_INFO = {
+    3: { title: '重大版本更新', tip: '本次为底层重大更新' },
+    2: { title: '功能更新', tip: '新增功能与内容' },
+    1: { title: '补丁更新', tip: '问题修复与细节优化' },
+  };
+
+  /**
+   * 更新类型自动识别：比较云端与本地语义化版本号，
+   * 按主版本 → 次版本 → 修订号优先级判定本次更新类型
+   * @param {string} remote 云端版本号
+   * @param {string} local 本地版本号
+   * @returns {number} 3 主版本升级（重大）/ 2 次版本升级（功能）/ 1 修订号升级（补丁）/ 0 无更新
+   */
+  function getUpdateType(remote, local) {
+    const r = parseVersion(remote);
+    const l = parseVersion(local);
+    if (r.major > l.major) return UPDATE_TYPE.MAJOR;
+    if (r.major < l.major) return UPDATE_TYPE.NONE;
+    if (r.minor > l.minor) return UPDATE_TYPE.MINOR;
+    if (r.minor < l.minor) return UPDATE_TYPE.NONE;
+    if (r.patch > l.patch) return UPDATE_TYPE.PATCH;
+    return UPDATE_TYPE.NONE;
   }
 
   /**
@@ -168,20 +215,25 @@ const Updater = (() => {
 
   /**
    * 更新弹窗（像素风格卡片）：
+   * 按更新类型自动设置标题与小字提示——
+   * 主版本升级【重大版本更新】/ 次版本升级【功能更新】/ 修订号升级【补丁更新】；
    * 内容包含新版本号、更新简介；底部一行两个控件——
    * 左侧【暂不更新】纯文字（灰色、无按钮样式）、右侧【立即更新】红色像素方块按钮
    * @param {{version: string, notes: string[]}} remote 线上版本信息
    * @param {string} local 本地版本号
    */
   function showUpdateModal(remote, local) {
+    const type = getUpdateType(remote.version, local);
+    const info = TYPE_INFO[type] || { title: '发现新版本', tip: '' };
     const brief = (remote.notes && remote.notes.length)
       ? remote.notes.map((n) => '<li>' + esc(n) + '</li>').join('')
       : '<li>更新内容详见发布说明</li>';
     const body =
+      '<p class="upd-type">' + esc(info.tip) + '</p>' +
       '<p>检测到新版本 v' + esc(remote.version) + '（当前 v' + esc(local) + '）。</p>' +
       '<ul>' + brief + '</ul>';
     Modal.show({
-      title: '发现新版本',
+      title: info.title,
       body,
       actions: [
         {
@@ -205,5 +257,5 @@ const Updater = (() => {
     });
   }
 
-  return { check, compareVersion, extractVersion, setMockEnabled };
+  return { check, compareVersion, extractVersion, parseVersion, getUpdateType, setMockEnabled };
 })();
