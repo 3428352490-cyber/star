@@ -92,7 +92,8 @@ test('M4-7 公告主页：默认展示最近 3 条公告 + 「更多/收起」�
   const html = Pages.news();
   assert.ok(html.includes('版本更新'), '缺少公告标题');
   assert.equal(count(html, 'notice-item'), 3, '主页应默认只展示最近 3 条公告');
-  assert.ok(html.includes('v' + CONFIG.app.version), '缺少最新版本徽标');
+  // 公告页展示的是公告条目版本（发布版本轨道），与代码版本 config.js 可能不同步
+  assert.ok(html.includes('v' + CONFIG.announcements[0].version), '缺少最新公告版本徽标');
   assert.ok(html.includes('data-action="news-toggle-more"'), '缺少「更多/收起」按钮动作');
   assert.ok(html.includes('更多'), '缺少「更多」按钮');
   assert.ok(!html.includes('data-action="check-update"'), '公告页不应有云端更新入口');
@@ -110,7 +111,7 @@ test('M4-7b 历史公告页：展示全部公告 + 左上角返回公告主页',
   assert.ok(html.includes('历史公告'), '缺少历史页标题');
   assert.ok(html.includes('往期公告'), '缺少往期公告区块');
   assert.ok(html.includes('data-route="#/news"'), '缺少返回公告主页按钮');
-  assert.ok(html.includes('v' + CONFIG.app.version), '历史页缺少最新版本徽标');
+  assert.ok(html.includes('v' + CONFIG.announcements[0].version), '历史页缺少最新公告版本徽标');
   if (CONFIG.announcements.length >= 2) {
     assert.ok(html.includes(CONFIG.announcements[1].version), '历史页缺少往期版本徽标');
   }

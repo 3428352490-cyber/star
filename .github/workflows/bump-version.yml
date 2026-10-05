@@ -1,12 +1,20 @@
 name: Bump Version
 
 # 触发条件：向 main 分支推送代码时执行
-# 版本递增规则（重要）：
-#   - 仅当本次提交包含业务代码/功能改动时，自动递增补丁版本号（+0.0.1）；
-#   - 若本次提交仅修改版本/公告相关文件（version.json / notice.json / js/config.js / sw.js），
-#     属于「当前版本内修正」（如更新公告文字），不递增版本号，直接随当前 vX.X.X 部署；
-#   - 公告 notice.json 必须与版本号一起打包：公告 version 字段需与 version.json 完全一致，
-#     每次构建前强制校验，不一致则阻断构建。
+# 版本递增规则（重要，v2.0.x 发布流程）：
+#   - 版本号分两轨：
+#     ① 代码版本（js/config.js 的 app.version + sw.js 的 CACHE_NAME）：
+#        仅当本次提交包含业务代码/功能改动时，自动递增补丁号（+0.0.1）；
+#     ② 发布版本（version.json 的 latestVersion + notice.json 的 version）：
+#        「更新弹窗触发器」——由开发者手动修改并单独推送，工作流绝不自动改动。
+#   - 发布顺序（GitHub 发布规则）：
+#     1) 先推送升级后的网页代码（LOCAL_VERSION 随 config.js 自动 +0.0.1），
+#        version.json 维持旧版 → 用户打开页面使用新代码但不弹更新提示；
+#     2) 需要向用户宣布更新时，再单独修改 version.json 的 latestVersion
+#        （同时维护 notice.json 公告文字）并推送 → 用户打开页面弹更新弹窗。
+#   - 防死循环：本次提交仅修改版本/公告相关文件
+#     （version.json / notice.json / js/config.js / sw.js）→ 不递增、不自动提交；
+#     手动单独推送 version.json/notice.json 属于公告发布，不会触发版本递增。
 on:
   push:
     branches: [ main ]
@@ -25,34 +33,46 @@ jobs:
                            # 否则 git diff BEFORE AFTER 失败会误判为「仅版本改动」而不递增
 
       # ---------------------------------------------------------------
-      # 版本一致性校验（每次构建前强制）：
-      # version.json.version、notice.json.version、js/config.js 的 app.version
-      # 三者必须完全一致；不一致 → 阻断本次构建并提示版本不匹配。
-      # 这保证公告与版本号一起打包、同一次 commit 部署，杜绝公告版本漂移。
+      # 版本一致性校验（每次构建前强制，两对独立校验）：
+      #   · 代码版本：js/config.js 的 app.version 与 sw.js 的 CACHE_NAME 必须一致；
+      #   · 发布版本：version.json 的 latestVersion 与 notice.json 的 version 必须一致
+      #     （公告必须与发布版本一起打包、同一次 commit 推送）。
+      # 两轨允许不同步：代码先发布（代码版本领先），公告后发布（发布版本跟进）。
       # ---------------------------------------------------------------
       - name: Validate version consistency
         run: |
           node - <<'EOF'
           const fs = require('fs');
-          function readVersion(p) {
+          function readJsonVersion(p, field) {
             const j = JSON.parse(fs.readFileSync(p, 'utf8'));
-            return String(j.version || j.latestVersion || '').trim();
+            return String(j[field] || '').trim();
           }
-          const verJson = readVersion('version.json');
-          const noticeJson = readVersion('notice.json');
           const cfg = fs.readFileSync('js/config.js', 'utf8');
           const m = cfg.match(/version:\s*'(\d+\.\d+\.\d+)'/);
           const cfgVer = m ? m[1] : '';
-          if (!verJson || !noticeJson || !cfgVer) {
-            console.error('版本校验失败：version.json / notice.json / config.js 缺少版本号');
+          const sw = fs.readFileSync('sw.js', 'utf8');
+          const swM = sw.match(/sdv-guide-v(\d+\.\d+\.\d+)/);
+          const swVer = swM ? swM[1] : '';
+          if (!cfgVer || !swVer) {
+            console.error('代码版本校验失败：js/config.js 或 sw.js 缺少版本号');
             process.exit(1);
           }
-          if (verJson !== noticeJson || verJson !== cfgVer) {
-            console.error('版本不匹配：version.json=' + verJson + '，notice.json=' + noticeJson + '，config.js=' + cfgVer);
-            console.error('公告 notice.json 必须与当前版本号一起打包并保持一致；请修正后重新推送。');
+          if (cfgVer !== swVer) {
+            console.error('代码版本不匹配：config.js=' + cfgVer + '，sw.js=' + swVer);
             process.exit(1);
           }
-          console.log('版本一致性校验通过：version.json / notice.json / config.js = ' + verJson);
+          const verJson = readJsonVersion('version.json', 'latestVersion');
+          const noticeJson = readJsonVersion('notice.json', 'version');
+          if (!verJson || !noticeJson) {
+            console.error('发布版本校验失败：version.json 或 notice.json 缺少版本号');
+            process.exit(1);
+          }
+          if (verJson !== noticeJson) {
+            console.error('发布版本不匹配：version.json=' + verJson + '，notice.json=' + noticeJson);
+            console.error('公告 notice.json 必须与发布版本 version.json 一起打包并保持一致；请修正后重新推送。');
+            process.exit(1);
+          }
+          console.log('版本一致性校验通过：代码版本=' + cfgVer + '（config.js/sw.js），发布版本=' + verJson + '（version.json/notice.json）');
           EOF
 
       # ---------------------------------------------------------------
@@ -60,7 +80,8 @@ jobs:
       # 对比本次 push 的 before/after 全部提交改动（避免多提交推送时只检查最后
       # 一个 commit 而漏检业务改动）；改动仅含版本/公告相关文件
       # （version.json / notice.json / js/config.js / sw.js）→ 判定为「当前版本内
-      # 修正 / 版本提交」，不递增版本号、不自动提交；包含任何业务代码/功能改动 → 触发补丁递增。
+      # 修正 / 版本提交 / 公告发布」，不递增版本号、不自动提交；包含任何业务
+      # 代码/功能改动 → 触发补丁递增（仅代码版本 config.js + sw.js）。
       # ---------------------------------------------------------------
       - name: Detect version-only changes
         id: detect
@@ -83,53 +104,40 @@ jobs:
           echo "changed_files=$CHANGED"
 
       # ---------------------------------------------------------------
-      # 版本递增（仅业务代码/功能改动触发）：
-      # version.json 补丁号 +1（1.0.4 → 1.0.5），并同步四处：
-      #   js/config.js 的 app.version、sw.js 的 CACHE_NAME、notice.json 的 version 字段
-      # （公告文字 items 由开发者人工维护，本次只同步版本号保持三者一致）
+      # 代码版本递增（仅业务代码/功能改动触发）：
+      # 只同步代码版本两处——js/config.js 的 app.version、sw.js 的 CACHE_NAME；
+      # version.json / notice.json 保持不动（发布版本由开发者单独推送，触发弹窗）。
       # ---------------------------------------------------------------
       - name: Bump patch version
         if: steps.detect.outputs.only_version_files == 'false'
         run: |
           node - <<'EOF'
           const fs = require('fs');
-          const p = 'version.json';
-          const j = JSON.parse(fs.readFileSync(p, 'utf8'));
-          const v = String(j.latestVersion || '0.0.0').split('.').map((n) => parseInt(n, 10) || 0);
-          while (v.length < 3) v.push(0);
-          v[2] = (v[2] || 0) + 1;
-          j.latestVersion = v.join('.');
-          fs.writeFileSync(p, JSON.stringify(j, null, 2) + '\n');
-          const ver = j.latestVersion;
-
-          // 同步 js/config.js 的 app.version
           const cfgPath = 'js/config.js';
           const cfg = fs.readFileSync(cfgPath, 'utf8');
+          const m = cfg.match(/version:\s*'(\d+\.\d+\.\d+)'/);
+          const cur = m ? m[1] : '0.0.0';
+          const v = cur.split('.').map((n) => parseInt(n, 10) || 0);
+          while (v.length < 3) v.push(0);
+          v[2] = (v[2] || 0) + 1;
+          const ver = v.join('.');
           fs.writeFileSync(cfgPath, cfg.replace(/(version:\s*')(\d+\.\d+\.\d+)/, '$1' + ver));
-
-          // 同步 sw.js 缓存名
           const swPath = 'sw.js';
           const sw = fs.readFileSync(swPath, 'utf8');
           fs.writeFileSync(swPath, sw.replace(/(sdv-guide-v)(\d+\.\d+\.\d+)/, '$1' + ver));
-
-          // 同步 notice.json 的 version 字段（公告文字 items 保留，下次发布时由开发者人工更新）
-          const nPath = 'notice.json';
-          const n = JSON.parse(fs.readFileSync(nPath, 'utf8'));
-          n.version = ver;
-          fs.writeFileSync(nPath, JSON.stringify(n, null, 2) + '\n');
-
-          console.log('bumped to ' + ver + '（version.json / notice.json / config.js / sw.js 已同步）');
+          console.log('代码版本 bumped to ' + ver + '（config.js + sw.js 已同步；version.json/notice.json 保持不动，等待单独发布）');
           EOF
 
       # ---------------------------------------------------------------
-      # 自动提交修改后的版本文件回仓库（仅版本递增时执行）
+      # 自动提交修改后的版本文件回仓库（仅代码版本递增时执行；
+      # version.json / notice.json 不参与自动提交，由开发者单独推送）
       # ---------------------------------------------------------------
       - name: Commit and push
         if: steps.detect.outputs.only_version_files == 'false'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add version.json notice.json js/config.js sw.js
-          NEW_VER=$(node -p "require('./version.json').latestVersion")
-          git commit -m "chore: bump version to v$NEW_VER" || true
+          git add js/config.js sw.js
+          NEW_VER=$(node -e "const s=require('fs').readFileSync('js/config.js','utf8');const m=s.match(/version:\\s*'(\\d+\\.\\d+\\.\\d+)'/);process.stdout.write(m?m[1]:'0.0.0')")
+          git commit -m "chore: bump code version to v$NEW_VER" || true
           git push origin main

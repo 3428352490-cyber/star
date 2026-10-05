@@ -16,13 +16,14 @@ before(() => {
   if (typeof API !== 'undefined' && API.resetForTest) API.resetForTest();
 });
 
-test('M15-1 版本升级至 2.0.0（四文件同步）', () => {
-  assert.equal(CONFIG.app.version, '2.0.0', 'config.js app.version 应为 2.0.0');
+test('M15-1 版本双轨同步：代码版本（config.js/sw.js）一致；发布版本（version.json/notice.json）一致', () => {
+  const cfgVer = CONFIG.app.version;
+  assert.ok(/^\d+\.\d+\.\d+$/.test(cfgVer), 'config.js 代码版本应为合法语义化版本');
+  assert.ok(readAppFile('sw.js').includes("CACHE_NAME = 'sdv-guide-v" + cfgVer + "'"), 'sw.js 缓存名应与 config.js 代码版本一致');
   const ver = JSON.parse(readAppFile('version.json'));
-  assert.equal(ver.latestVersion, '2.0.0', 'version.json latestVersion 应为 2.0.0');
   const notice = JSON.parse(readAppFile('notice.json'));
-  assert.equal(notice.version, '2.0.0', 'notice.json version 应为 2.0.0');
-  assert.ok(readAppFile('sw.js').includes("CACHE_NAME = 'sdv-guide-v2.0.0'"), 'sw.js 缓存名应为 2.0.0');
+  assert.equal(ver.latestVersion, notice.version, '发布版本（version.json / notice.json）应保持一致');
+  assert.ok(/^\d+\.\d+\.\d+$/.test(ver.latestVersion), '发布版本应为合法语义化版本');
 });
 
 test('M15-2 底部导航改造：公告 Tab 移除、消息 Tab 新增', () => {

@@ -1,6 +1,6 @@
 ﻿'use strict';
 /* M8 阶段测试：PRD §9 十八项验收标准（自动化映射；目视项以结构与行为断言覆盖） */
-const { test } = require('node:test');
+const { test, beforeEach } = require('node:test');
 const assert = require('node:assert/strict');
 const { loadApp, ref, readAppFile } = require('./helpers/harness.js');
 
@@ -14,8 +14,14 @@ const Theme = ref('Theme');
 const Modal = ref('Modal');
 const Updater = ref('Updater');
 const App = ref('App');
+const SecurityGuard = ref('SecurityGuard');
 const els = globalThis.__testEls;
 const mql = globalThis.__testMql;
+
+// 每次用例前重置前端请求限流窗口，避免同进程内连续用例互相影响
+beforeEach(() => {
+  if (SecurityGuard && SecurityGuard.resetLimits) SecurityGuard.resetLimits();
+});
 
 function count(html, token) {
   return (html.match(new RegExp(token, 'g')) || []).length;

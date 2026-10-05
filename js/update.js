@@ -10,17 +10,16 @@
  *   downloadUrl   — 立即更新跳转地址（刷新页面加载新版静态资源）
  *
  * 逻辑规则：
- * 1. 触发：页面载入完成自动执行版本检测（checkUpdate(false)，拉取云端
- *    version.json 与本地版本比对）；「我的」页【检查更新】按钮为备用手动
- *    入口（checkUpdate(true)），两套入口共用同一套版本解析、版本比对、
- *    弹窗渲染逻辑。
+ * 1. 触发：页面载入完成自动执行版本检测（checkUpdate(false)）＋定时轮询
+ *    （前台运行、页面后台暂停轮询，回到前台立即补检一次）；「我的」页
+ *    【检查更新】按钮为备用手动入口（checkUpdate(true)）。所有入口共用
+ *    同一套版本解析、版本比对、弹窗渲染逻辑。
  * 2. 版本检测：本地版本 = LOCAL_VERSION 常量（config.js 中网站当前版本，
- *    随发布流程四文件同步自动更新，绝不自动修改）；
- *    云端版本 = fetch 网站根目录 version.json（拼接 Date.now() 时间戳 +
- *    cache:'no-store' 绕过浏览器/ServiceWorker 缓存，每次读取最新数据）。
- *    禁止 Mock 硬编码版本，禁止写死固定版本文本。
+ *    随发布流程自动更新，绝不自动修改）；云端版本 = fetch 网站根目录
+ *    version.json（拼接 Date.now() 时间戳 + cache:'no-store' 绕过浏览器/
+ *    ServiceWorker 缓存，每次读取最新数据）。禁止 Mock 硬编码版本。
  * 3. 结果：
- *    · 云端 > 本地：一律弹出更新弹窗（自动/手动共用同一弹窗组件）
+ *    · 云端 > 本地：一律弹出更新弹窗（自动/手动/轮询共用同一弹窗组件）
  *    · 云端 = 本地：自动检测静默不提示；手动入口 Toast「当前已是最新版本」
  *    · 网络失败：自动检测静默处理；手动入口 Toast「版本检查失败，请稍后重试」
  * 4. 更新类型自动识别（SemVer 分段数字比对）：
@@ -34,8 +33,11 @@
  * 6. 硬性禁止：静默后台下载新版资源 / 未经用户确认自动修改本地版本号 /
  *    永久屏蔽某个版本 / 弹窗内硬编码任何版本号（全部变量渲染）。
  * 7. 代码结构：版本解析（parseVersion）、版本比对（compareVersion）、
- *    类型识别（getUpdateTypeInfo）、弹窗渲染（showUpdateModal）单独封装，
- *    与页面渲染代码分离。
+ *    类型识别（getUpdateTypeInfo）、弹窗渲染（showUpdateModal）、定时轮询
+ *    （startPolling）单独封装，与页面渲染代码分离。
+ * 8. 集成：版本检测请求/对比结果/fetch 异常/弹窗开关事件写入前端复盘日志
+ *    （ReviewLog）；每次轮询前执行页面简易自检（SelfCheck）；版本检测请求
+ *    受前端请求限流（SecurityGuard）保护。
  * ============================================================
  */
 const Updater = (() => {
@@ -136,7 +138,7 @@ const Updater = (() => {
   }
 
   /* 本地版本号常量：统一管理——从 config.js 读取，
-     随发布流程四文件同步（version.json / notice.json / config.js / sw.js）自动更新，
+     随发布流程（config.js / sw.js 代码版本同步）自动更新，
      弹窗中所有版本文字均由该常量与云端变量输出，禁止硬编码 */
   const LOCAL_VERSION = (() => {
     try {
@@ -153,9 +155,63 @@ const Updater = (() => {
     } catch (e) {}
   }
 
+  /* ---------- 复盘日志（模块缺失时静默，不阻断功能） ---------- */
+  function log(eventType, status, message, extra) {
+    try {
+      if (typeof ReviewLog !== 'undefined' && ReviewLog.log) {
+        ReviewLog.log(eventType, { status, message, extra });
+      }
+    } catch (e) { /* 日志失败不影响业务 */ }
+  }
+
+  /* ---------- 定时轮询（前台运行、页面后台暂停） ---------- */
+  const POLL_INTERVAL = 30 * 60 * 1000; // 30 分钟轮询一次
+  let pollTimer = null;
+
+  /** 轮询单次执行：轮询前先执行页面简易自检，再做自动版本检测（静默失败） */
+  async function pollCheck() {
+    try {
+      if (typeof SelfCheck !== 'undefined' && SelfCheck.run) SelfCheck.run();
+    } catch (e) {
+      log('self-check', 'fail', '轮询自检异常', { error: String(e && e.message ? e.message : e) });
+    }
+    try {
+      await checkUpdate(false);
+    } catch (e) {
+      log('version-fetch', 'fail', '轮询版本检测异常', { error: String(e && e.message ? e.message : e) });
+    }
+  }
+
   /**
-   * 检查更新（checkUpdate）：自动检测 + 手动入口共用同一套版本解析、比对、弹窗逻辑
-   * @param {boolean} manual true=【检查更新】按钮手动触发；false=页面载入完成自动检测
+   * 启动定时轮询：仅页面处于前台时执行检测；页面切到后台暂停；
+   * 从后台回到前台立即补检一次。App.init 中调用。
+   */
+  function startPolling() {
+    if (pollTimer) return;
+    pollTimer = setInterval(() => {
+      // 页面后台（document.hidden）时暂停轮询
+      if (typeof document !== 'undefined' && document.hidden) return;
+      pollCheck();
+    }, POLL_INTERVAL);
+    if (typeof document !== 'undefined' && document.addEventListener) {
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) pollCheck(); // 回到前台立即补检一次
+      });
+    }
+  }
+
+  /** 停止定时轮询（预留，一般不调用） */
+  function stopPolling() {
+    if (pollTimer) {
+      clearInterval(pollTimer);
+      pollTimer = null;
+    }
+  }
+
+  /**
+   * 检查更新（checkUpdate）：自动检测 + 手动入口 + 定时轮询共用同一套
+   * 版本解析、比对、弹窗逻辑
+   * @param {boolean} manual true=【检查更新】按钮手动触发；false=自动/轮询
    * 结果：
    * - 云端 > 本地：一律弹出更新弹窗（自动/手动完全相同）
    * - 云端 = 本地：自动检测静默不提示；手动入口 Toast「当前已是最新版本」
@@ -163,6 +219,13 @@ const Updater = (() => {
    * @returns {Promise<{updated: boolean, notice: string}>}
    */
   async function checkUpdate(manual) {
+    // 前端请求限流：同窗口超限则跳过本次请求（自动静默 / 手动提示稍后再试）
+    if (typeof SecurityGuard !== 'undefined' && SecurityGuard.allowRequest && !SecurityGuard.allowRequest('version-check')) {
+      log('security', 'fail', '版本检测请求被限流', { manual: !!manual });
+      if (manual) Toast.show('操作过于频繁，请稍后再试');
+      return { updated: false, notice: '操作过于频繁，请稍后再试' };
+    }
+    log('version-fetch', 'success', '发起版本检测请求', { manual: !!manual, url: SDV_CONFIG.app.cloudVersionUrl });
     try {
       const remote = await loadRemoteVersion();
       const cmp = compareVersion(LOCAL_VERSION, remote.latestVersion);
@@ -170,20 +233,25 @@ const Updater = (() => {
       if (cmp > 0) {
         // 云端版本更高：弹出更新弹窗（自动检测与手动点击共用同一弹窗组件），
         // 由用户手动选择是否立即更新（绝不后台自动下载）
+        log('version-compare', 'success', '检测到新版本', { local: LOCAL_VERSION, remote: remote.latestVersion, cmp });
         showUpdateModal(remote, LOCAL_VERSION);
         return { updated: true, notice: '发现新版本 v' + remote.latestVersion };
       }
       if (cmp === 0) {
         // 版本一致：自动检测静默；手动入口提示「当前已是最新版本」
+        log('version-compare', 'success', '版本一致，无需更新', { local: LOCAL_VERSION, remote: remote.latestVersion, cmp });
         if (manual) Toast.show('当前已是最新版本 v' + LOCAL_VERSION);
         return { updated: false, notice: '当前已是最新版本 v' + LOCAL_VERSION };
       }
       // 本地版本高于云端（正常不出现，仅防御）
+      log('version-compare', 'success', '本地版本高于云端', { local: LOCAL_VERSION, remote: remote.latestVersion, cmp });
       if (manual) Toast.show('本地版本高于云端（本地 v' + LOCAL_VERSION + ' / 云端 v' + remote.latestVersion + '）');
       return { updated: false, notice: '本地版本高于云端' };
     } catch (e) {
-      // 异常：控制台打印错误；页面不崩溃
-      console.error('[Updater] 版本检查失败：', e && e.message ? e.message : e);
+      // 异常：控制台打印错误；页面不崩溃；写入复盘日志
+      const errMsg = e && e.message ? e.message : String(e);
+      console.error('[Updater] 版本检查失败：', errMsg);
+      log('version-fetch', 'fail', '版本检测请求异常', { manual: !!manual, error: errMsg });
       if (manual) {
         // 手动入口：给出提示
         Toast.show('版本检查失败，请稍后重试');
@@ -211,6 +279,7 @@ const Updater = (() => {
       '<p class="upd-type">' + esc(info.tip) + '</p>' +
       '<hr>' +
       '<p>' + esc(desc) + '</p>';
+    log('modal-open', 'success', '更新弹窗已打开', { remote: remote.latestVersion, local });
     Modal.show({
       title: '',
       body,
@@ -221,6 +290,7 @@ const Updater = (() => {
           onClick: () => {
             // 仅关闭本次弹窗：不下载任何新版资源、不修改本地版本号、
             // 不保存忽略标记——下次打开页面依然会自动检测并弹窗
+            log('modal-close', 'success', '暂不更新，弹窗已关闭', { remote: remote.latestVersion });
           },
         },
         {
@@ -229,6 +299,7 @@ const Updater = (() => {
           onClick: () => {
             // 记录已确认版本 → 跳转下载地址刷新页面加载云端最新静态资源
             // （由用户动作触发，非后台静默下载）
+            log('modal-close', 'success', '立即更新，跳转加载新版资源', { remote: remote.latestVersion });
             setInstalledVersion(remote.latestVersion);
             location.href = remote.downloadUrl || location.href;
           },
@@ -237,5 +308,5 @@ const Updater = (() => {
     });
   }
 
-  return { checkUpdate, compareVersion, extractVersion, parseVersion, getUpdateTypeInfo };
+  return { checkUpdate, compareVersion, extractVersion, parseVersion, getUpdateTypeInfo, startPolling, stopPolling, pollCheck };
 })();

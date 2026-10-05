@@ -316,8 +316,16 @@ const App = (() => {
     Theme.apply();
     renderTabs();
     render();
+    // 前端复盘日志：页面初始化事件
+    if (typeof ReviewLog !== 'undefined' && ReviewLog.log) {
+      ReviewLog.log('page-init', { status: 'success', message: '页面初始化完成', extra: { version: SDV_CONFIG.app.version } });
+    }
+    // 页面加载完成执行简易 bug 自检（异常仅输出控制台，不打扰用户）
+    if (typeof SelfCheck !== 'undefined' && SelfCheck.run) SelfCheck.run();
     // 页面载入完成自动执行版本检测：云端更高弹更新弹窗；版本一致/网络失败静默处理
     if (typeof Updater !== 'undefined' && Updater.checkUpdate) Updater.checkUpdate(false);
+    // 定时轮询：前台运行、页面后台暂停（回到前台立即补检一次）
+    if (typeof Updater !== 'undefined' && Updater.startPolling) Updater.startPolling();
     registerSW();
   }
 

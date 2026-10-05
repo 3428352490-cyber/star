@@ -84,10 +84,15 @@ test('M14 版本更新提醒：GitHub Actions 工作流完整（main 推送触�
   assert.ok(wf.includes('github.event.before') && wf.includes('github.event.after'), '递增检测未覆盖本次 push 全部提交（多提交推送会漏检业务改动）');
   assert.ok(wf.includes('v[2] = (v[2] || 0) + 1'), '缺少补丁号 +1 递增');
   assert.ok(wf.includes('git commit') && wf.includes('git push origin main'), '缺少自动提交推送');
-  // 版本与公告同步规则
+  // 版本与公告同步规则（v2.0.x 发布规则：代码版本与发布版本两轨独立）
   assert.ok(wf.includes('Validate version consistency'), '缺少版本一致性校验步骤');
   assert.ok(wf.includes('版本不匹配'), '校验失败缺少版本不匹配提示');
   assert.ok(wf.includes('process.exit(1)'), '校验失败未阻断构建');
-  assert.ok(wf.includes("notice.json'") && wf.includes('n.version = ver'), 'bump 未同步 notice.json 的 version 字段（公告与版本号一起打包）');
-  assert.ok(wf.includes('git add version.json notice.json js/config.js sw.js'), '自动提交未包含 notice.json');
+  assert.ok(wf.includes('发布版本不匹配'), '缺少发布版本（version.json/notice.json）一致性校验');
+  assert.ok(wf.includes('代码版本不匹配'), '缺少代码版本（config.js/sw.js）一致性校验');
+  // 发布规则：bump 只改代码版本（config.js + sw.js），不动 version.json/notice.json
+  assert.ok(!wf.includes('n.version = ver'), 'bump 不应再自动同步 notice.json（发布版本由开发者单独推送）');
+  assert.ok(wf.includes('git add js/config.js sw.js'), '自动提交应只包含代码版本文件');
+  assert.ok(wf.includes('version.json/notice.json 保持不动'), 'bump 应明确不动发布版本文件');
+  assert.ok(wf.includes('先推送升级后的网页代码'), '缺少发布顺序说明（先代码后发布版本）');
 });

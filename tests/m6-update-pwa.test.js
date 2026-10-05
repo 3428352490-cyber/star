@@ -1,6 +1,6 @@
 ﻿'use strict';
 /* M6 阶段测试：PWA 更新检测（版本比较 / 云端拉取 / 弹窗与 Toast 联动） */
-const { test } = require('node:test');
+const { test, beforeEach } = require('node:test');
 const assert = require('node:assert/strict');
 const { loadApp, ref, readAppFile } = require('./helpers/harness.js');
 
@@ -9,7 +9,13 @@ loadApp();
 const CONFIG = ref('SDV_CONFIG');
 const Updater = ref('Updater');
 const Modal = ref('Modal');
+const SecurityGuard = ref('SecurityGuard');
 const els = globalThis.__testEls;
+
+// 每次用例前重置前端请求限流窗口（5 秒 3 次），避免同进程内连续用例互相影响
+beforeEach(() => {
+  if (SecurityGuard && SecurityGuard.resetLimits) SecurityGuard.resetLimits();
+});
 
 function mockFetch(json, ok = true) {
   globalThis.fetch = async () => ({ ok, json: async () => json });
@@ -66,14 +72,18 @@ test('M6-2b 版本解析转数字数组 + 更新类型自动识别（主/次/修
 });
 
 test('M6-2c 弹窗标题按更新类型变化：次版本/修订号升级', async () => {
-  // 次版本升级：2.1.0 vs 2.0.0 → 功能更新
-  mockFetch({ latestVersion: '2.1.0', updateDesc: '新增功能与内容', downloadUrl: './index.html' });
+  // 基于当前本地版本动态构造更高的云端版本（版本升级后断言不过期）
+  const loc = CONFIG.app.version.split('.').map(Number);
+  const minorUp = [loc[0], loc[1] + 1, 0].join('.');   // 次版本升级，如 2.1.0
+  const patchUp = [loc[0], loc[1], loc[2] + 1].join('.'); // 修订号升级，如 2.0.2
+  // 次版本升级 → 功能更新
+  mockFetch({ latestVersion: minorUp, updateDesc: '新增功能与内容', downloadUrl: './index.html' });
   await Updater.checkUpdate(false);
   assert.ok(els.get('modal-root').innerHTML.includes('功能更新'), '次版本升级标题应为「功能更新」');
   assert.ok(els.get('modal-root').innerHTML.includes('新增功能与内容'), '缺少次版本升级小字提示');
-  // 修订号升级：2.0.1 vs 2.0.0 → 补丁更新
+  // 修订号升级 → 补丁更新
   Modal.close();
-  mockFetch({ latestVersion: '2.0.1', updateDesc: '问题修复与细节优化', downloadUrl: './index.html' });
+  mockFetch({ latestVersion: patchUp, updateDesc: '问题修复与细节优化', downloadUrl: './index.html' });
   await Updater.checkUpdate(false);
   assert.ok(els.get('modal-root').innerHTML.includes('补丁更新'), '修订号升级标题应为「补丁更新」');
   assert.ok(els.get('modal-root').innerHTML.includes('问题修复与细节优化'), '缺少修订号升级小字提示');
