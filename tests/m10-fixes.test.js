@@ -146,8 +146,10 @@ test('公告页改版：主页默认 3 条 + 「更多/收起」同页展开全�
   const list = CONFIG.announcements;
   assert.ok(Array.isArray(list) && list.length >= 2, '应至少有一条最新与一条往期公告');
   const latest = list[0];
-  // 双轨发布规则：公告条目属于「发布版本」轨道（由开发者手动维护），
-  // 允许与代码版本（config.js）不同步；仅校验其为合法语义化版本
+  // 发布规则：每次更新版本必须同步发版本更新公告——
+  // 公告页最新条目版本必须等于发布版本（notice.json / version.json）
+  const notice = JSON.parse(readAppFile('notice.json'));
+  assert.equal(latest.version, notice.version, '公告页最新条目版本必须与发布版本一致（每次发版同步发布公告）');
   assert.ok(/^\d+\.\d+\.\d+$/.test(latest.version), '公告最新条目版本号应为合法语义化版本');
 
   // 主页：默认仅 3 条；含「更多/收起」按钮；不含往期（第 4 条起）版本徽标

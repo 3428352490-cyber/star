@@ -35,11 +35,14 @@ jobs:
                            # 否则 git diff BEFORE AFTER 失败会误判为「仅版本改动」而不递增
 
       # ---------------------------------------------------------------
-      # 版本一致性校验（每次构建前强制，两对独立校验）：
+      # 版本一致性校验（每次构建前强制，三组校验）：
       #   · 代码版本：js/config.js 的 app.version 与 sw.js 的 CACHE_NAME 必须一致；
       #   · 发布版本：version.json 的 latestVersion 与 notice.json 的 version 必须一致
-      #     （公告必须与发布版本一起打包、同一次 commit 推送）。
-      # 两轨允许不同步：代码先发布（代码版本领先），公告后发布（发布版本跟进）。
+      #     （公告必须与发布版本一起打包、同一次 commit 推送）；
+      #   · 公告页条目：js/config.js announcements[0].version 必须等于发布版本——
+      #     「每次更新版本必须同步发版本更新公告」，遗漏公告页条目将阻断构建。
+      # 两轨允许不同步：代码先发布（代码版本领先），公告后发布（发布版本跟进）；
+      # 但发布版本一旦变化，公告页最新条目必须同步出现对应公告。
       # ---------------------------------------------------------------
       - name: Validate version consistency
         run: |
@@ -74,7 +77,21 @@ jobs:
             console.error('公告 notice.json 必须与发布版本 version.json 一起打包并保持一致；请修正后重新推送。');
             process.exit(1);
           }
-          console.log('版本一致性校验通过：代码版本=' + cfgVer + '（config.js/sw.js），发布版本=' + verJson + '（version.json/notice.json）');
+          // 公告页条目校验：每次发版必须同步发版本更新公告——
+          // config.js announcements[0].version 必须等于发布版本（version.json）
+          const annM = cfg.match(/announcements:\s*\[[\s\S]*?version:\s*'(\d+\.\d+\.\d+)'/);
+          const annVer = annM ? annM[1] : '';
+          if (!annVer) {
+            console.error('公告页条目校验失败：js/config.js announcements 数组缺少最新条目');
+            console.error('每次更新版本必须同步发布版本更新公告，请在 announcements 数组头部补充对应版本公告后重新推送。');
+            process.exit(1);
+          }
+          if (annVer !== verJson) {
+            console.error('公告页条目不匹配：公告页最新条目=' + annVer + '，发布版本=' + verJson);
+            console.error('每次更新版本必须同步发布版本更新公告（announcements[0] 应为 v' + verJson + ' 条目）；请补充公告后重新推送。');
+            process.exit(1);
+          }
+          console.log('版本一致性校验通过：代码版本=' + cfgVer + '（config.js/sw.js），发布版本=' + verJson + '（version.json/notice.json），公告页条目=' + annVer);
           EOF
 
       # ---------------------------------------------------------------

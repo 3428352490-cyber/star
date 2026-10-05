@@ -94,6 +94,9 @@ test('M14 版本更新提醒：GitHub Actions 工作流完整（main 推送触�
   assert.ok(wf.includes('process.exit(1)'), '校验失败未阻断构建');
   assert.ok(wf.includes('发布版本不匹配'), '缺少发布版本（version.json/notice.json）一致性校验');
   assert.ok(wf.includes('代码版本不匹配'), '缺少代码版本（config.js/sw.js）一致性校验');
+  // 每次发版必须同步发布版本更新公告：公告页最新条目（announcements[0]）必须与发布版本一致
+  assert.ok(wf.includes('announcements[0]'), '缺少公告页最新条目校验');
+  assert.ok(wf.includes('每次更新版本必须同步发布版本更新公告'), '缺少「每次发版必须同步发布公告」校验');
   // 发布规则：bump 只改代码版本（config.js + sw.js），不动 version.json/notice.json
   assert.ok(!wf.includes('n.version = ver'), 'bump 不应再自动同步 notice.json（发布版本由开发者单独推送）');
   assert.ok(wf.includes('git add js/config.js sw.js'), '自动提交应只包含代码版本文件');

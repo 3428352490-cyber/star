@@ -104,9 +104,11 @@ test('M16-6 发布规则：工作流双轨版本（代码版本自动 bump、发
   assert.ok(wf.includes('release_changed'), '缺少发布版本文件改动检测（同步发版支持）');
   assert.ok(wf.includes('同步发版'), '缺少同步发版模式说明');
   assert.ok(wf.includes("steps.detect.outputs.release_changed == 'false'"), 'bump 条件未排除同步发版提交');
-  // 两对独立校验
+  // 两对独立校验 + 公告同步发布校验
   assert.ok(wf.includes('代码版本') && wf.includes('发布版本'), '缺少两轨版本校验');
   assert.ok(wf.includes('发布版本不匹配'), '缺少公告/发布版本一致性校验');
+  assert.ok(wf.includes('每次更新版本必须同步发布版本更新公告'), '缺少「每次发版必须同步发布公告」校验');
+  assert.ok(wf.includes('announcements[0]'), '缺少公告页最新条目校验');
 });
 
 test('M16-7 版本检测日志埋点：请求/对比/异常/弹窗开关事件写入复盘日志', async () => {
