@@ -106,6 +106,9 @@ jobs:
       #     跳过自动 bump（避免 Actions 再把代码版本 +1 导致两轨不同步）。
       # 仅当「包含业务代码改动」且「未手动改动发布版本」时，才触发补丁递增
       # （只改代码版本 config.js + sw.js）。
+      # 业务代码定义：index.html / js（除 config.js）/ css / assets；
+      # 测试（tests/）、工作流（.github/）、文档（*.md）改动不视为业务代码，
+      # 不触发版本递增——避免测试/CI 调整被误判为新版本发布。
       # ---------------------------------------------------------------
       - name: Detect version-only changes
         id: detect
@@ -125,6 +128,8 @@ jobs:
                 RELEASE_CHANGED=true
                 ONLY_VERSION_FILES=false ;;
               js/config.js|sw.js) ;;
+              tests/*|tests/*/*|tests/*/*/*|.github/*|*.md)
+                # 测试 / 工作流 / 文档改动不算业务代码，不触发版本递增 ;;
               *) ONLY_VERSION_FILES=false ;;
             esac
           done
