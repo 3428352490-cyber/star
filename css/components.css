@@ -337,127 +337,54 @@
   filter: brightness(0.9);
 }
 
+
 /* ============================================================
-   星露谷卷轴 UI（.scroll-* 系列）— 横向卷轴边框
-   素材 assets/scroll-frame.png（128×128，3×3 等分木纹九宫格）
-   布局规则：
-     顶/底：素材整图横向平铺（repeat-x，平铺单元 = 3×--scroll-h）
-     左/右：禁止拉伸横向图 → 橙色木质线性渐变模拟竖边框
-     四角：素材角块原样定格（整图放大 3 倍取对应角块，不扭曲）
-     中心：#f8f0d9 浅米色填充
+   星露谷卷轴 UI（.scroll-* 系列）— border-image 方案
+   素材 assets/scroll-frame.png（128×128 像素，星露谷卷轴九宫格图）
+   border-image-slice: 32 → 上下左右四边各裁 32px 作为边框，中间部分丢弃
+   border-image-repeat: stretch → 四边拉伸填充，无重复木纹
    硬性要求：像素渲染（全局 image-rendering: pixelated）/ 不要圆角 / 无毛玻璃
    ============================================================ */
 
 /* ---- scroll-card：大模块卡片（快捷功能、功能专区等） ---- */
 .scroll-card {
-  --scroll-h: 24px;                       /* 卷轴横条高度（同时是四角端头边长） */
-  background-color: #f8f0d9;              /* 中心浅米色，文字清晰 */
-  background-image:
-    url("../assets/scroll-frame.png"),    /* 1 左上端头（角块） */
-    url("../assets/scroll-frame.png"),    /* 2 右上端头（角块） */
-    url("../assets/scroll-frame.png"),    /* 3 左下端头（角块） */
-    url("../assets/scroll-frame.png"),    /* 4 右下端头（角块） */
-    url("../assets/scroll-frame.png"),    /* 5 顶部横条：水平平铺 */
-    url("../assets/scroll-frame.png"),    /* 6 底部横条：水平平铺 */
-    linear-gradient(90deg, #a86f2e 0%, #d9a75c 50%, #a86f2e 100%), /* 7 左边：橙色木质渐变竖边框 */
-    linear-gradient(90deg, #a86f2e 0%, #d9a75c 50%, #a86f2e 100%); /* 8 右边 */
-  background-position:
-    0 0,                                  /* 左上端头 */
-    100% 0,                               /* 右上端头 */
-    0 100%,                               /* 左下端头 */
-    100% 100%,                            /* 右下端头 */
-    0 0,                                  /* 顶条：从左缘起平铺 */
-    0 100%,                               /* 底条 */
-    0 0,                                  /* 左渐变条 */
-    100% 0;                               /* 右渐变条 */
-  background-size:
-    calc(3 * var(--scroll-h)) calc(3 * var(--scroll-h)), /* 端头：整图放大 3 倍取角块，不扭曲 */
-    calc(3 * var(--scroll-h)) calc(3 * var(--scroll-h)),
-    calc(3 * var(--scroll-h)) calc(3 * var(--scroll-h)),
-    calc(3 * var(--scroll-h)) calc(3 * var(--scroll-h)),
-    calc(3 * var(--scroll-h)) var(--scroll-h),          /* 顶条：平铺单元 3h×h */
-    calc(3 * var(--scroll-h)) var(--scroll-h),          /* 底条 */
-    var(--scroll-h) 100%,                               /* 左渐变：宽 h 满高 */
-    var(--scroll-h) 100%;                               /* 右渐变 */
-  background-repeat:
-    no-repeat, no-repeat, no-repeat, no-repeat,
-    repeat-x, repeat-x, no-repeat, no-repeat;           /* 顶/底水平平铺，其余不重复 */
-  border-radius: 0;                       /* 不要圆角 */
-  padding: calc(var(--scroll-h) + 12px);  /* 足够内边距：文字不会压到边框 */
+  border: 32px solid transparent;                 /* 上下左右边框宽度 32px（占位，图像绘于此） */
+  border-image-source: url("../assets/scroll-frame.png"); /* 卷轴九宫格素材 */
+  border-image-slice: 32;                         /* 四边各裁 32px 作为边框，中间部分丢弃 */
+  border-image-repeat: stretch;                   /* 四边拉伸填充，无重复条纹 */
+  background: #f8f0d9;                           /* 星露谷原版浅米黄中心底 */
+  border-radius: 0;                               /* 不要圆角 */
+  padding: 36px 32px;                             /* 内边距 ≥ 边框宽：内容不会压到边框 */
   margin-bottom: 16px;
-  box-shadow: 4px 4px 0 var(--shadow);    /* 硬像素投影 */
+  box-shadow: 4px 4px 0 var(--shadow);            /* 硬像素投影 */
 }
 
-/* ---- scroll-btn：内部小按钮卡片（快捷功能方格等） ---- */
+/* ---- scroll-btn：小按钮卡片（快捷功能方格等） ---- */
 .scroll-btn {
-  --scroll-h: 16px;                       /* 小按钮卷轴条更细 */
+  border: 16px solid transparent;                 /* 小按钮 border-width 缩小到 16px */
+  border-image-source: url("../assets/scroll-frame.png");
+  border-image-slice: 32;                         /* slice 保持不变（32px 图边） */
+  border-image-repeat: stretch;
   position: relative;
   display: flex; flex-direction: column; align-items: center; gap: 6px;
-  padding: 18px 12px;
-  background-color: #f8f0d9;              /* 中心浅米色 */
-  background-image:
-    url("../assets/scroll-frame.png"),
-    url("../assets/scroll-frame.png"),
-    url("../assets/scroll-frame.png"),
-    url("../assets/scroll-frame.png"),
-    url("../assets/scroll-frame.png"),
-    url("../assets/scroll-frame.png"),
-    linear-gradient(90deg, #a86f2e 0%, #d9a75c 50%, #a86f2e 100%),
-    linear-gradient(90deg, #a86f2e 0%, #d9a75c 50%, #a86f2e 100%);
-  background-position:
-    0 0, 100% 0, 0 100%, 100% 100%,       /* 四角端头 */
-    0 0, 0 100%,                          /* 顶/底条 */
-    0 0, 100% 0;                          /* 左/右渐变 */
-  background-size:
-    calc(3 * var(--scroll-h)) calc(3 * var(--scroll-h)),
-    calc(3 * var(--scroll-h)) calc(3 * var(--scroll-h)),
-    calc(3 * var(--scroll-h)) calc(3 * var(--scroll-h)),
-    calc(3 * var(--scroll-h)) calc(3 * var(--scroll-h)),
-    calc(3 * var(--scroll-h)) var(--scroll-h),
-    calc(3 * var(--scroll-h)) var(--scroll-h),
-    var(--scroll-h) 100%,
-    var(--scroll-h) 100%;
-  background-repeat:
-    no-repeat, no-repeat, no-repeat, no-repeat,
-    repeat-x, repeat-x, no-repeat, no-repeat;
+  padding: 20px 12px;                             /* ≥ 边框宽：内容不压框 */
+  background: #f8f0d9;
   border-radius: 0;
-  box-shadow: inset 2px 2px 0 #e8c886,     /* 内凹像素阴影（浅米高光） */
-              inset -2px -2px 0 #a86f2e,   /* 内凹暗部（橙棕） */
+  box-shadow: inset 2px 2px 0 #e8c886,            /* 内凹像素阴影（浅米高光） */
+              inset -2px -2px 0 #a86f2e,          /* 内凹暗部（橙棕） */
               3px 3px 0 var(--shadow);
   color: var(--text);
   transition: transform 0.08s, box-shadow 0.08s;
 }
 .scroll-btn:active { transform: translate(2px, 2px); box-shadow: inset 2px 2px 0 #e8c886, inset -2px -2px 0 #a86f2e, 1px 1px 0 var(--shadow); } /* 点击下压反馈 */
 
-/* ---- scroll-modal：全局弹窗（复用同一套卷轴 UI） ---- */
+/* ---- scroll-modal：全局弹窗，与 scroll-card 样式一致 ---- */
 .scroll-modal {
-  --scroll-h: 32px;                       /* 弹窗卷轴边框更粗 */
-  background-color: #f8f0d9;              /* 中心浅米色 */
-  background-image:
-    url("../assets/scroll-frame.png"),
-    url("../assets/scroll-frame.png"),
-    url("../assets/scroll-frame.png"),
-    url("../assets/scroll-frame.png"),
-    url("../assets/scroll-frame.png"),
-    url("../assets/scroll-frame.png"),
-    linear-gradient(90deg, #a86f2e 0%, #d9a75c 50%, #a86f2e 100%),
-    linear-gradient(90deg, #a86f2e 0%, #d9a75c 50%, #a86f2e 100%);
-  background-position:
-    0 0, 100% 0, 0 100%, 100% 100%,
-    0 0, 0 100%,
-    0 0, 100% 0;
-  background-size:
-    calc(3 * var(--scroll-h)) calc(3 * var(--scroll-h)),
-    calc(3 * var(--scroll-h)) calc(3 * var(--scroll-h)),
-    calc(3 * var(--scroll-h)) calc(3 * var(--scroll-h)),
-    calc(3 * var(--scroll-h)) calc(3 * var(--scroll-h)),
-    calc(3 * var(--scroll-h)) var(--scroll-h),
-    calc(3 * var(--scroll-h)) var(--scroll-h),
-    var(--scroll-h) 100%,
-    var(--scroll-h) 100%;
-  background-repeat:
-    no-repeat, no-repeat, no-repeat, no-repeat,
-    repeat-x, repeat-x, no-repeat, no-repeat;
+  border: 32px solid transparent;                 /* 与 scroll-card 一致：32px 边框 */
+  border-image-source: url("../assets/scroll-frame.png");
+  border-image-slice: 32;
+  border-image-repeat: stretch;
+  background: #f8f0d9;                           /* 浅米黄中心底 */
   border-radius: 0;
-  padding: calc(var(--scroll-h) + 12px);  /* 足够内边距：文字不压边框 */
+  padding: 40px 36px;                             /* 弹窗内边距更大，文字不压框 */
 }
