@@ -73,21 +73,21 @@ const Updater = (() => {
   }
 
   /**
-   * 语义化版本对比（标准实现）：remote > local 返回 1；remote < local 返回 -1；相等返回 0
-   * 分段数字比较，禁止字符串直接比较
-   * @param {string} remote 远端/线上版本号
-   * @param {string} local 本地版本号
+   * 语义化版本对比（SemVer，分段数字比较，禁止字符串直接比较）：
+   * @param {string} localVer 本地版本号（如 '1.0.10'）
+   * @param {string} remoteVer 云端版本号（如 'v1.0.11'）
+   * @returns {number} 1=云端版本更高；0=版本相同；-1=本地版本更高
    */
-  function compareVersion(remote, local) {
-    const r = remote.split('.').map(Number);
-    const l = local.split('.').map(Number);
-    for (let i = 0; i < Math.max(r.length, l.length); i++) {
-      const rv = r[i] || 0;
+  function compareVersion(localVer, remoteVer) {
+    const l = String(localVer || '').trim().replace(/^v/i, '').split('.').map(Number);
+    const r = String(remoteVer || '').trim().replace(/^v/i, '').split('.').map(Number);
+    for (let i = 0; i < Math.max(l.length, r.length); i++) {
       const lv = l[i] || 0;
-      if (rv > lv) return 1;
-      if (rv < lv) return -1;
+      const rv = r[i] || 0;
+      if (rv > lv) return 1;  // 云端更高
+      if (rv < lv) return -1; // 本地更高
     }
-    return 0;
+    return 0; // 相同
   }
 
   /* 更新类型：3=主版本升级（重大） / 2=次版本升级（功能） / 1=修订号升级（补丁） / 0=无更新 */
@@ -155,14 +155,16 @@ const Updater = (() => {
     return '';
   }
 
-  /** 本地固定版本号：读取 config.js 中网站当前版本（绝不自动修改） */
-  function getLocalVersion() {
+  /* 本地版本号常量：统一管理——从 config.js 读取，
+     随发布流程四文件同步（version.json / notice.json / config.js / sw.js）自动更新，
+     弹窗中所有版本文字均由该常量与云端变量输出，禁止硬编码 */
+  const LOCAL_VERSION = (() => {
     try {
       return SDV_CONFIG.app.version;
     } catch (e) {
       return '0.0.0';
     }
-  }
+  })();
 
   /** 写入已确认版本记录（仅用户点击【立即更新】时调用） */
   function setInstalledVersion(ver) {
@@ -172,33 +174,32 @@ const Updater = (() => {
   }
 
   /**
-   * 检查更新（自动检测 + 手动入口共用同一套检测与弹窗逻辑）
-   * @param {boolean} manual true=【检查更新】按钮手动触发；false=页面打开自动检测
+   * 检查更新（checkUpdate）：自动检测 + 手动入口共用同一套版本解析、比对、弹窗逻辑
+   * @param {boolean} manual true=【检查更新】按钮手动触发；false=页面载入完成自动检测
    * 结果：
-   * - 线上 > 本地：一律弹出更新弹窗（自动/手动完全相同）
-   * - 线上 = 本地：自动检测静默不提示；手动入口 Toast「当前已是最新版本」
+   * - 云端 > 本地：一律弹出更新弹窗（自动/手动完全相同）
+   * - 云端 = 本地：自动检测静默不提示；手动入口 Toast「当前已是最新版本」
    * - 网络失败：自动检测静默不提示；手动入口 Toast「版本检查失败，请稍后重试」
    * @returns {Promise<{updated: boolean, notice: string}>}
    */
-  async function check(manual) {
+  async function checkUpdate(manual) {
     try {
-      const local = getLocalVersion();
       const remote = await loadRemoteVersion();
-      const cmp = compareVersion(remote.version, local);
+      const cmp = compareVersion(LOCAL_VERSION, remote.version);
 
       if (cmp > 0) {
-        // 线上版本更高：弹出更新弹窗（自动检测与手动点击共用同一弹窗组件），
+        // 云端版本更高：弹出更新弹窗（自动检测与手动点击共用同一弹窗组件），
         // 由用户手动选择是否立即更新（绝不后台自动下载）
-        showUpdateModal(remote, local);
+        showUpdateModal(remote, LOCAL_VERSION);
         return { updated: true, notice: '发现新版本 v' + remote.version };
       }
       if (cmp === 0) {
         // 版本一致：自动检测静默；手动入口提示「当前已是最新版本」
-        if (manual) Toast.show('当前已是最新版本 v' + local);
-        return { updated: false, notice: '当前已是最新版本 v' + local };
+        if (manual) Toast.show('当前已是最新版本 v' + LOCAL_VERSION);
+        return { updated: false, notice: '当前已是最新版本 v' + LOCAL_VERSION };
       }
       // 本地版本高于云端（正常不出现，仅防御）
-      if (manual) Toast.show('本地版本高于云端（本地 v' + local + ' / 云端 v' + remote.version + '）');
+      if (manual) Toast.show('本地版本高于云端（本地 v' + LOCAL_VERSION + ' / 云端 v' + remote.version + '）');
       return { updated: false, notice: '本地版本高于云端' };
     } catch (e) {
       // 异常：控制台打印错误；页面不崩溃
@@ -214,26 +215,27 @@ const Updater = (() => {
   }
 
   /**
-   * 更新弹窗（像素风格卡片）：
-   * 按更新类型自动设置标题与小字提示——
-   * 主版本升级【重大版本更新】/ 次版本升级【功能更新】/ 修订号升级【补丁更新】；
-   * 内容包含新版本号、更新简介；底部一行两个控件——
-   * 左侧【暂不更新】纯文字（灰色、无按钮样式）、右侧【立即更新】红色像素方块按钮
-   * @param {{version: string, notes: string[]}} remote 线上版本信息
+   * 更新弹窗（像素风格，黄色边框，沿用现有 Modal 组件）：
+   * 所有版本文字均由变量输出（禁止硬编码版本号）；
+   * 结构：自动识别标题 → 检测到新版本 → 当前版本 → 类型小字提示 → 分隔线 → 更新简介 → 双按钮
+   * @param {{version: string, notes: string[]}} remote 云端版本信息
    * @param {string} local 本地版本号
    */
   function showUpdateModal(remote, local) {
     const type = getUpdateType(remote.version, local);
     const info = TYPE_INFO[type] || { title: '发现新版本', tip: '' };
-    const brief = (remote.notes && remote.notes.length)
-      ? remote.notes.map((n) => '<li>' + esc(n) + '</li>').join('')
-      : '<li>更新内容详见发布说明</li>';
+    const desc = (remote.notes && remote.notes.length)
+      ? remote.notes.join('；')
+      : '更新内容详见发布说明';
     const body =
+      '<h2 class="upd-title">' + esc(info.title) + '</h2>' +
+      '<p>检测到新版本 ' + esc(remote.version) + '</p>' +
+      '<p>当前版本：' + esc(local) + '</p>' +
       '<p class="upd-type">' + esc(info.tip) + '</p>' +
-      '<p>检测到新版本 v' + esc(remote.version) + '（当前 v' + esc(local) + '）。</p>' +
-      '<ul>' + brief + '</ul>';
+      '<hr>' +
+      '<p>' + esc(desc) + '</p>';
     Modal.show({
-      title: info.title,
+      title: '',
       body,
       actions: [
         {
@@ -248,7 +250,7 @@ const Updater = (() => {
           label: '立即更新',
           cls: 'btn-primary',
           onClick: () => {
-            // 记录已确认版本 → 刷新页面加载线上新版静态资源（由用户动作触发，非后台静默下载）
+            // 记录已确认版本 → 刷新页面加载云端最新静态资源（由用户动作触发，非后台静默下载）
             setInstalledVersion(remote.version);
             location.reload();
           },
@@ -257,5 +259,5 @@ const Updater = (() => {
     });
   }
 
-  return { check, compareVersion, extractVersion, parseVersion, getUpdateType, setMockEnabled };
+  return { checkUpdate, compareVersion, extractVersion, parseVersion, getUpdateType, setMockEnabled };
 })();

@@ -290,8 +290,20 @@
   padding-bottom: 8px;
   border-bottom: 2px dashed var(--dialog-border);
 }
-/* 更新弹窗：升级类型小字提示（主/次/修订版本升级） */
+/* 弹窗标题为空时隐藏（更新弹窗标题由 body 内 h2 渲染，避免空 h3 占位） */
+.modal-title:empty { display: none; }
+/* 更新弹窗：类型化标题（主/次/修订版本升级） */
+.modal-body .upd-title {
+  font-size: 16px; margin: 0 0 10px;
+  color: var(--accent);
+  padding-bottom: 8px;
+  border-bottom: 2px dashed var(--dialog-border);
+  font-weight: 700;
+}
+/* 更新弹窗：更新类型小字提示（主/次/修订版本升级） */
 .modal-body .upd-type { font-size: 12px; color: var(--accent-dim, var(--accent)); margin-bottom: 6px; }
+/* 更新弹窗：分隔线（更新简介与版本信息分界） */
+.modal-body hr { border: none; border-top: 2px dashed var(--dialog-border); margin: 10px 0; }
 /* 纯文本：默认纵向排版 */
 .modal-body { font-size: 13px; color: var(--dialog-text-dim); line-height: 1.7; }
 .modal-body ul { padding-left: 18px; list-style: disc; }

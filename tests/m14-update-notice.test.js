@@ -29,7 +29,8 @@ test('M14 版本更新提醒：update.js 自动检测 + 手动入口共用一套
   assert.ok(js.includes('USE_MOCK'), '缺少开发阶段 Mock 开关');
   assert.ok(js.includes('MOCK_VERSION'), '缺少 Mock 数据（模拟 version.json 方便调试弹窗）');
   assert.ok(js.includes('SDV_CONFIG.app.version'), '本地版本应读取 config.js 固定版本号（绝不自动修改）');
-  assert.ok(js.includes('compareVersion(remote.version, local)'), '缺少版本分段数字比较调用');
+  assert.ok(js.includes('compareVersion(LOCAL_VERSION, remote.version)'), '缺少本地/云端版本分段数字比较调用（参数序 localVer, remoteVer）');
+  assert.ok(js.includes('const LOCAL_VERSION'), '缺少本地版本常量 LOCAL_VERSION（统一管理本地版本号）');
   assert.ok(js.includes('cmp > 0'), '缺少「线上 > 本地固定版本才弹窗」触发规则');
   assert.ok(js.includes('当前已是最新版本 v\''), '版本一致缺少「当前已是最新版本」提示（手动入口）');
   assert.ok(js.includes('manual'), '缺少自动/手动模式区分参数');
@@ -44,10 +45,10 @@ test('M14 版本更新提醒：update.js 自动检测 + 手动入口共用一套
   assert.ok(js.includes('location.reload()'), '缺少立即更新刷新逻辑（用户手动选择后才加载新版本）');
   assert.ok(js.includes('setMockEnabled'), '缺少 Mock 开关切换能力（测试/调试可切到 fetch 分支）');
   assert.ok(js.includes('USE_MOCK 置 false 即启用 fetch'), '缺少上线切换说明（注释 Mock 启用 fetch，弹窗交互不用改动）');
-  // 页面打开自动检测 + 【检查更新】备用手动入口：共用 Updater.check
+  // 页面载入完成自动检测 + 【检查更新】备用手动入口：共用 checkUpdate
   const app = readAppFile('js/app.js');
-  assert.ok(app.includes("Updater.check(false)"), '页面打开缺少自动版本检测');
-  assert.ok(app.includes("Updater.check(true)"), '【检查更新】按钮缺少备用手动入口');
+  assert.ok(app.includes("Updater.checkUpdate(false)"), '页面载入完成缺少自动版本检测');
+  assert.ok(app.includes("Updater.checkUpdate(true)"), '【检查更新】按钮缺少备用手动入口');
 });
 
 test('M14 版本更新提醒：update.js 更新弹窗底部按钮改造（暂不更新纯文字 + 立即更新红按钮）', () => {

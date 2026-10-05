@@ -135,7 +135,7 @@ test('修复3b 刷新首页不可见云端更新卡片，版本检测底层逻�
   const Updater = ref('Updater');
   Updater.setMockEnabled(false);
   globalThis.fetch = async () => ({ ok: true, json: async () => ({ version: '9.9.9', notes: ['云端检测验证'] }) });
-  const r = await Updater.check();
+  const r = await Updater.checkUpdate(false);
   assert.equal(r.updated, true, '版本检测底层逻辑失效');
   assert.ok(r.notice.includes('发现新版本'), '未检出新版本');
   // 恢复 harness 默认 fetch（未 stub 时抛错），避免影响其他用例

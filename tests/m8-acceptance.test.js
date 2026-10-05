@@ -1,4 +1,4 @@
-'use strict';
+﻿'use strict';
 /* M8 阶段测试：PRD §9 十八项验收标准（自动化映射；目视项以结构与行为断言覆盖） */
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
@@ -174,12 +174,12 @@ test('验收14 检查更新失败不崩溃（手动入口提示，自动检测�
   Updater.setMockEnabled(false);
   globalThis.fetch = async () => { throw new Error('offline'); };
   // 自动检测：静默不崩溃
-  const rAuto = await Updater.check(false);
+  const rAuto = await Updater.checkUpdate(false);
   assert.equal(rAuto.updated, false);
   assert.equal(rAuto.notice, '', '自动检测网络失败应静默');
   assert.equal(els.get('modal-root').innerHTML, '', '自动检测失败不应弹窗');
   // 手动入口：Toast 提示不崩溃
-  const r = await Updater.check(true);
+  const r = await Updater.checkUpdate(true);
   assert.equal(r.updated, false);
   assert.ok(r.notice.includes('版本检查失败，请稍后重试'));
   assert.equal(els.get('modal-root').innerHTML, '');
@@ -190,12 +190,12 @@ test('验收15 云端版本更高 → 页面打开自动弹出更新提示，手
   Updater.setMockEnabled(false);
   globalThis.fetch = async () => ({ ok: true, json: async () => ({ version: '99.99.99', notes: ['一期验收'] }) });
   // 页面打开自动检测：云端更高 → 弹窗（99.99.99 属主版本升级 → 类型化标题）
-  const rAuto = await Updater.check(false);
+  const rAuto = await Updater.checkUpdate(false);
   assert.equal(rAuto.updated, true);
   assert.ok(els.get('modal-root').innerHTML.includes('重大版本更新'));
   // 手动入口：弹同一弹窗
   Modal.close();
-  const r = await Updater.check(true);
+  const r = await Updater.checkUpdate(true);
   assert.equal(r.updated, true);
   assert.ok(els.get('modal-root').innerHTML.includes('重大版本更新'));
 });
