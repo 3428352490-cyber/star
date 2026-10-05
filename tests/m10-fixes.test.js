@@ -142,37 +142,47 @@ test('修复3b 刷新首页不可见云端更新卡片，版本检测底层逻�
   globalThis.fetch = async () => { throw new Error('fetch 未在测试中 stub'); };
 });
 
-test('公告 本次更新内容写入公告页（数组驱动，最新在前）', () => {
+test('公告页改版：主页展示最新公告，更多进入历史页，返回回主页', () => {
   resetNav();
   const list = CONFIG.announcements;
-  assert.ok(Array.isArray(list) && list.length >= 1, '公告数组缺失或为空');
-
-  // 最新公告版本应与当前版本一致，且包含本次更新内容
+  assert.ok(Array.isArray(list) && list.length >= 2, '应至少有一条最新与一条往期公告');
   const latest = list[0];
   assert.equal(latest.version, CONFIG.app.version, '最新公告版本应等于当前版本');
-  assert.ok(latest.title, '最新公告缺标题');
-  assert.ok(latest.date, '最新公告缺日期');
-  assert.ok(Array.isArray(latest.notes) && latest.notes.length > 0, '最新公告缺内容');
 
-  // 每条公告结构完整
-  for (const a of list) {
-    assert.ok(a.title && a.date, '公告缺标题/日期: ' + a.version);
-    assert.ok(Array.isArray(a.notes) && a.notes.length > 0, '公告缺内容: ' + a.version);
-  }
+  // 主页：仅最新一条；含「更多」入口；不含往期版本徽标
+  const home = Pages.news();
+  assert.equal(count(home, 'notice-item'), 1, '主页应只展示最新一条');
+  assert.ok(home.includes('v' + latest.version), '主页未渲染最新版本徽标');
+  assert.ok(home.includes(latest.title), '主页未渲染最新公告标题');
+  assert.ok(home.includes('data-route="#/news-history"'), '主页缺少「更多」入口');
+  assert.ok(!home.includes(list[1].version), '主页不应展示往期公告');
+  assert.ok(!home.includes('当前版本'), '主页不应有当前版本卡片');
 
-  // 公告页渲染本次更新要点
-  const html = Pages.news();
-  assert.ok(html.includes('notice-item'), '公告页未渲染公告条目');
-  assert.ok(html.includes('v' + latest.version), '公告页未渲染最新版本徽标');
-  assert.ok(html.includes(latest.title), '公告页未渲染最新公告标题');
-  assert.ok(!html.includes('当前版本'), '公告页不应有当前版本卡片（版本信息由公告徽标承载）');
-  for (const kw of ['更多', '快捷键编辑', '按压动态反馈']) {
-    assert.ok(html.includes(kw), '公告页缺少本次更新要点: ' + kw);
-  }
-  // 旧版本公告也应保留（历史可追溯）
-  if (list.length >= 2) {
-    assert.ok(html.includes(list[1].version), '公告页缺少历史版本公告');
-  }
+  // 点击「更多」→ hash 变更 → 历史页渲染全部公告
+  globalThis.location.hash = '#/news';
+  Router.handle();
+  globalThis.__fireDoc('click', {
+    target: { closest: (sel) => (sel === '[data-route]' ? { dataset: { route: '#/news-history' } } : null) },
+  });
+  assert.equal(globalThis.location.hash, '#/news-history', '点更多未跳转历史页');
+  Router.handle();
+  const hist = els.get('page-container');
+  assert.equal(count(hist.innerHTML, 'notice-item'), list.length, '历史页应展示全部公告');
+  assert.ok(hist.innerHTML.includes(list[1].version), '历史页缺少往期公告');
+
+  // 历史页左上角返回按钮 → 回到公告主页
+  assert.ok(hist.innerHTML.includes('data-route="#/news"'), '历史页缺少返回公告主页按钮');
+  globalThis.__fireDoc('click', {
+    target: { closest: (sel) => (sel === '[data-route]' ? { dataset: { route: '#/news' } } : null) },
+  });
+  assert.equal(globalThis.location.hash, '#/news', '返回未回到公告主页');
+  Router.handle();
+  const back = els.get('page-container');
+  assert.equal(count(back.innerHTML, 'notice-item'), 1, '返回后主页应只展示最新一条');
+
+  // 还原 hash
+  globalThis.location.hash = '#/home';
+  Router.handle();
 });
 
 test('移除我的页快捷键编辑条目：入口收敛至首页「更多」，编辑页仍可达', () => {

@@ -2,7 +2,7 @@
 /* 星露谷攻略 · Service Worker
    一期：核心资源缓存（离线可用）+ 新版本发布后自动替换缓存。
    版本号必须与 js/config.js 中 SDV_CONFIG.app.version、version.json 三处同步。 */
-const CACHE_NAME = 'sdv-guide-v0.3.0';
+const CACHE_NAME = 'sdv-guide-v0.3.1';
 const CORE_ASSETS = [
   './',
   './index.html',

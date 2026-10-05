@@ -88,12 +88,27 @@ test('M4-6 搜索页：搜索框与结果区框架', () => {
   assert.ok(html.includes('输入关键词，检索全部词条'), '缺少空态提示');
 });
 
-test('M4-7 公告页：渲染公告列表（无当前版本卡片、无更新入口）', () => {
+test('M4-7 公告主页：只展示最新一条公告 + 右上角「更多」入口（无当前版本卡片、无更新入口）', () => {
   const html = Pages.news();
   assert.ok(html.includes('运营通知'), '缺少公告标题');
-  assert.ok(html.includes('notice-item'), '缺少公告条目');
+  assert.equal(count(html, 'notice-item'), 1, '主页应只展示最新一条公告');
+  assert.ok(html.includes('v' + CONFIG.app.version), '缺少最新版本徽标');
+  assert.ok(html.includes('data-route="#/news-history"'), '缺少「更多」按钮路由');
+  assert.ok(html.includes('更多'), '缺少「更多」按钮');
   assert.ok(!html.includes('当前版本'), '公告页不应有当前版本卡片');
   assert.ok(!html.includes('check-update'), '公告页不应有云端更新入口');
+});
+
+test('M4-7b 历史公告页：展示全部公告 + 左上角返回公告主页', () => {
+  const html = Pages.newsHistory();
+  assert.equal(count(html, 'notice-item'), CONFIG.announcements.length, '历史页应展示全部公告');
+  assert.ok(html.includes('历史公告'), '缺少历史页标题');
+  assert.ok(html.includes('往期公告'), '缺少往期公告区块');
+  assert.ok(html.includes('data-route="#/news"'), '缺少返回公告主页按钮');
+  assert.ok(html.includes('v' + CONFIG.app.version), '历史页缺少最新版本徽标');
+  if (CONFIG.announcements.length >= 2) {
+    assert.ok(html.includes(CONFIG.announcements[1].version), '历史页缺少往期版本徽标');
+  }
 });
 
 test('M4-8 我的页：账号卡 + 主题开关 + 版本（无快捷键编辑条目）', () => {

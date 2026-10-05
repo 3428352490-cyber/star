@@ -181,6 +181,18 @@
 .notice-date { margin-left: auto; font-size: 11px; color: var(--text-dim); }
 .notice-notes { padding-left: 18px; font-size: 12px; color: var(--text-dim); line-height: 1.8; }
 .notice-notes li { list-style: disc; }
+.notice-more {
+  flex: none;
+  padding: 5px 12px;
+  font-size: 12px;
+  background: var(--bg-deep);
+  color: var(--text);
+  border: 2px solid var(--tile-border);
+  border-radius: 8px;
+  box-shadow: 2px 2px 0 var(--shadow);
+  transition: transform 0.08s, box-shadow 0.08s, filter 0.08s;
+}
+.notice-more:active { transform: translate(2px, 2px); box-shadow: none; filter: brightness(0.9); }
 
 /* ---- 搜索 ---- */
 .search-bar input {

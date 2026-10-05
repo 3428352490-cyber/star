@@ -13,10 +13,22 @@ const Pages = (() => {
       (sub ? '<p class="empty-sub">' + esc(sub) + '</p>' : '') + '</div>';
   }
 
-  function pageHeader(title, back) {
+  function pageHeader(title, back, backRoute) {
     return '<header class="page-header">' +
-      (back ? '<button class="btn-back" data-route="#/home" aria-label="返回">←</button>' : '') +
+      (back ? '<button class="btn-back" data-route="' + (backRoute || '#/home') + '" aria-label="返回">←</button>' : '') +
       '<h1>' + esc(title) + '</h1></header>';
+  }
+
+  /** 单条公告卡片（主页与历史页共用，保持同一风格） */
+  function noticeItem(a) {
+    return '<article class="notice-item">' +
+      '<div class="notice-head">' +
+        '<span class="tag">v' + esc(a.version) + '</span>' +
+        '<h3>' + esc(a.title) + '</h3>' +
+        '<span class="notice-date">' + esc(a.date || '') + '</span>' +
+      '</div>' +
+      '<ul class="notice-notes">' + (a.notes || []).map((n) => '<li>' + esc(n) + '</li>').join('') + '</ul>' +
+    '</article>';
   }
 
   function tile(m, extraClass) {
@@ -73,24 +85,27 @@ const Pages = (() => {
       '<div id="search-result" class="search-result">' + emptyState('输入关键词，检索全部词条', '一期为基础检索框架，全量词条二期接入') + '</div></section>';
   }
 
-  /** 公告：运营通知与版本更新公告列表（数组驱动，最新在前；空数组回退空态） */
+  /** 公告主页：只展示最新一条公告；右上角「更多」进入历史公告页 */
   function news() {
     const list = SDV_CONFIG.announcements || [];
-    const items = list.map((a) =>
-      '<article class="notice-item">' +
-        '<div class="notice-head">' +
-          '<span class="tag">v' + esc(a.version) + '</span>' +
-          '<h3>' + esc(a.title) + '</h3>' +
-          '<span class="notice-date">' + esc(a.date || '') + '</span>' +
-        '</div>' +
-        '<ul class="notice-notes">' + (a.notes || []).map((n) => '<li>' + esc(n) + '</li>').join('') + '</ul>' +
-      '</article>'
-    ).join('');
+    const latest = list.length ? list[0] : null;
     return pageHeader('公告', false) +
-      '<section class="card"><div class="card-head"><h2>运营通知 · 版本更新</h2></div>' +
-      (list.length
-        ? '<div class="notice-list">' + items + '</div>'
-        : emptyState('暂无公告', '运营通知与版本更新公告将在此展示')) +
+      '<section class="card"><div class="card-head"><h2>运营通知 · 版本更新</h2>' +
+      (list.length > 1 ? '<button class="notice-more" data-route="#/news-history">更多 ›</button>' : '') +
+      '</div>' +
+      (latest ? '<div class="notice-list">' + noticeItem(latest) + '</div>'
+              : emptyState('暂无公告', '运营通知与版本更新公告将在此展示')) +
+      '</section>';
+  }
+
+  /** 历史公告页：展示全部往期公告；左上角返回公告主页 */
+  function newsHistory() {
+    const list = SDV_CONFIG.announcements || [];
+    const items = list.map(noticeItem).join('');
+    return pageHeader('历史公告', true, '#/news') +
+      '<section class="card"><div class="card-head"><h2>往期公告</h2><span class="card-sub">共 ' + list.length + ' 条</span></div>' +
+      (list.length ? '<div class="notice-list">' + items + '</div>'
+                  : emptyState('暂无公告', '运营通知与版本更新公告将在此展示')) +
       '</section>';
   }
 
@@ -182,5 +197,5 @@ const Pages = (() => {
     );
   }
 
-  return { home, codex, search, news, mine, quickEdit, modulePage, cardPage, notFound, emptyState, filterModules };
+  return { home, codex, search, news, newsHistory, mine, quickEdit, modulePage, cardPage, notFound, emptyState, filterModules };
 })();

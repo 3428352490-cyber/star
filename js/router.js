@@ -10,7 +10,7 @@
 const Router = (() => {
   const TAB_PATHS = ['home', 'codex', 'search', 'news', 'mine'];
   /** 路由 path → Pages 方法名映射（连字符路径对应驼峰方法） */
-  const PAGE_ALIASES = { 'quick-edit': 'quickEdit' };
+  const PAGE_ALIASES = { 'quick-edit': 'quickEdit', 'news-history': 'newsHistory' };
 
   function parseHash() {
     const raw = (location.hash || '#/home').replace(/^#\/?/, '');
