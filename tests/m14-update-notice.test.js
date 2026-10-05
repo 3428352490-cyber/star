@@ -3,18 +3,19 @@ const { test } = require('node:test');
 const assert = require('node:assert');
 const { readAppFile } = require('./helpers/harness');
 
-test('M14 版本更新提醒：version.json 线上版本与 config.js 同步、notice.json 公告文件存在', () => {
+test('M14 版本更新提醒：version.json 发布版本字段完整、notice.json 公告文件存在（双轨规则：发布版本与代码版本独立）', () => {
   const ver = JSON.parse(readAppFile('version.json'));
   const cfg = readAppFile('js/config.js');
   const m = cfg.match(/version:\s*'(\d+\.\d+\.\d+)'/);
   assert.ok(m, 'config.js 缺少 app.version');
-  assert.strictEqual(ver.latestVersion, m[1], 'version.json 的 latestVersion 应与 js/config.js 的 app.version 同步（Actions 自动递增后保持一致）');
+  // 双轨发布规则：version.json 为「发布版本」，由开发者单独推送，不再强制与代码版本同步
+  assert.ok(/^\d+\.\d+\.\d+$/.test(ver.latestVersion), 'version.json latestVersion 应为合法语义化版本（双轨规则下允许与 config.js 代码版本不同步）');
   assert.ok(ver.updateDesc && ver.updateDesc.length, 'version.json 缺少 updateDesc 更新简介');
   assert.ok(ver.downloadUrl && ver.downloadUrl.length, 'version.json 缺少 downloadUrl 下载地址');
   const notice = JSON.parse(readAppFile('notice.json'));
   assert.ok(notice.title && notice.title.length, '公告缺少标题');
   assert.ok(Array.isArray(notice.items) && notice.items.length > 0, '公告缺少更新内容');
-  assert.strictEqual(notice.version, ver.latestVersion, 'notice.json 的 version 字段必须与 version.json 完全一致（公告与版本号一起打包）');
+  assert.strictEqual(notice.version, ver.latestVersion, 'notice.json 的 version 字段必须与 version.json 完全一致（发布版本内部保持同步，公告与发布版本一起打包）');
 });
 
 test('M14 版本更新提醒：白色卡片弹窗 update-notice.js 已停用（index.html 不引用、文件已删除）', () => {
