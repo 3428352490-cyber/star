@@ -75,6 +75,14 @@ function setupGlobals() {
     clear() { this.store = {}; },
   };
 
+  const sessionStorage = {
+    store: {},
+    getItem(k) { return Object.prototype.hasOwnProperty.call(this.store, k) ? this.store[k] : null; },
+    setItem(k, v) { this.store[k] = String(v); },
+    removeItem(k) { delete this.store[k]; },
+    clear() { this.store = {}; },
+  };
+
   const mql = {
     matches: false,
     listeners: [],
@@ -122,7 +130,7 @@ function setupGlobals() {
     matchMedia() { return mql; },
   };
 
-  const location = { hash: '#/home', protocol: 'test:' };
+  const location = { hash: '#/home', protocol: 'test:', reloadCount: 0, reload() { this.reloadCount = (this.reloadCount || 0) + 1; } };
 
   globalThis.__testEls = els;
   globalThis.__testMql = mql;
@@ -132,6 +140,7 @@ function setupGlobals() {
     ((document.__listeners[type]) || []).forEach((fn) => fn(event));
   };
   globalThis.localStorage = localStorage;
+  globalThis.sessionStorage = sessionStorage;
   globalThis.window = window;
   globalThis.document = document;
   globalThis.location = location;

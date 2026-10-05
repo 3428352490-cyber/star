@@ -63,7 +63,9 @@ test('M14 版本更新提醒：update.js 更新弹窗底部按钮改造（暂不
   assert.ok(js.includes("label: '立即更新'"), '缺少【立即更新】按钮');
   assert.ok(js.includes("cls: 'btn-text'"), '暂不更新缺少纯文字样式类');
   assert.ok(js.includes("cls: 'btn-primary'"), '立即更新缺少像素红按钮样式类');
-  assert.ok(!js.includes('sessionStorage'), '暂不更新不应写入任何存储（仅关闭弹窗，不改本地版本号）');
+  // sessionStorage 仅用于「自动刷新防循环」会话标记；暂不更新不写任何存储
+  assert.ok(js.includes("sessionStorage.getItem(AUTO_REFRESH_KEY)"), '自动刷新缺少会话标记防循环检测');
+  assert.ok(js.includes('不保存忽略标记'), '暂不更新不应写入任何忽略标记');
   assert.ok(js.includes('localStorage.setItem(STORAGE_KEY'), '立即更新缺少本地版本写入');
   assert.ok(js.includes('location.href = remote.downloadUrl'), '立即更新缺少跳转下载地址刷新');
   assert.ok(js.includes('检测到新版本'), '弹窗缺少新版本号内容');

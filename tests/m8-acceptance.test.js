@@ -191,14 +191,17 @@ test('验收14 检查更新失败不崩溃（手动入口提示，自动检测�
   assert.equal(els.get('modal-root').innerHTML, '');
 });
 
-test('验收15 云端版本更高 → 页面打开自动弹出更新提示，手动检查同样弹窗', async () => {
+test('验收15 云端版本更高 → 页面打开自动刷新（不弹窗）；手动检查弹更新弹窗', async () => {
   Modal.close();
+  globalThis.location.reloadCount = 0;
+  globalThis.sessionStorage.clear();
   globalThis.fetch = async () => ({ ok: true, json: async () => ({ latestVersion: '99.99.99', updateDesc: '一期验收', downloadUrl: './index.html' }) });
-  // 页面打开自动检测：云端更高 → 弹窗（99.99.99 属主版本升级 → 类型化标题）
+  // 页面打开自动检测：云端更高 → 自动刷新页面，不弹窗（99.99.99 属主版本升级）
   const rAuto = await Updater.checkUpdate(false);
   assert.equal(rAuto.updated, true);
-  assert.ok(els.get('modal-root').innerHTML.includes('重大版本更新'));
-  // 手动入口：弹同一弹窗
+  assert.equal(els.get('modal-root').innerHTML, '', '自动检测不应弹更新弹窗');
+  assert.ok(globalThis.location.reloadCount >= 1, '云端更高应自动刷新页面');
+  // 手动入口：弹更新弹窗
   Modal.close();
   const r = await Updater.checkUpdate(true);
   assert.equal(r.updated, true);

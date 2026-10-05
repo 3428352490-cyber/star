@@ -118,8 +118,10 @@ test('M16-7 版本检测日志埋点：请求/对比/异常/弹窗开关事件�
   assert.ok(logs.some((x) => x.eventType === 'version-fetch' && x.status === 'fail'), 'fetch 异常应写 fail 日志');
   assert.ok(logs.some((x) => x.eventType === 'version-fetch' && x.status === 'success'), '请求发起应写日志');
 
-  // 云端更高 → 弹窗 + modal-open 日志
+  // 云端更高 → 自动刷新（不弹窗）+ auto-refresh 日志；手动检测 → 弹窗 + modal-open 日志
   ReviewLog.clearLogs();
+  globalThis.location.reloadCount = 0;
+  globalThis.sessionStorage.clear();
   globalThis.fetch = async () => ({
     ok: true,
     json: async () => ({ latestVersion: '9.9.9', updateDesc: '测试', downloadUrl: './index.html' }),
@@ -127,9 +129,15 @@ test('M16-7 版本检测日志埋点：请求/对比/异常/弹窗开关事件�
   const r2 = await Updater.checkUpdate(false);
   assert.equal(r2.updated, true);
   logs = ReviewLog.readAll();
-  assert.ok(logs.some((x) => x.eventType === 'modal-open' && x.status === 'success'), '弹窗打开应写日志');
+  assert.ok(logs.some((x) => x.eventType === 'auto-refresh' && x.status === 'success'), '自动刷新应写日志');
   assert.ok(logs.some((x) => x.eventType === 'version-compare' && x.status === 'success'), '对比结果应写日志');
   assert.ok(logs.some((x) => x.eventType === 'version-compare' && x.extra && x.extra.cmp === 1), '对比日志应含 cmp=1');
+  // 手动检测：弹窗打开写 modal-open 日志
+  ReviewLog.clearLogs();
+  const m = await Updater.checkUpdate(true);
+  assert.equal(m.updated, true);
+  logs = ReviewLog.readAll();
+  assert.ok(logs.some((x) => x.eventType === 'modal-open' && x.status === 'success'), '手动弹窗打开应写日志');
   // 恢复 harness 默认 fetch
   globalThis.fetch = async () => { throw new Error('fetch 未在测试中 stub'); };
 });
@@ -153,7 +161,10 @@ test('M16-9 update.js 原有规则完整保留：禁 mock、数字数组对比�
   assert.ok(js.includes("'?t=' + ts") || js.includes("Date.now()"), '缺少时间戳防缓存');
   assert.ok(js.includes('parseVersion'), '缺少版本解析函数');
   assert.ok(js.includes('compareVersion'), '缺少版本对比函数');
-  assert.ok(!js.includes('sessionStorage'), '暂不更新不应写入任何存储');
+  // sessionStorage 仅用于自动刷新防循环标记（H5 自动更新）；暂不更新不写任何存储
+  assert.ok(js.includes("sessionStorage.getItem(AUTO_REFRESH_KEY)"), '自动刷新缺少会话标记防循环检测');
+  assert.ok(js.includes('AUTO_REFRESH_KEY'), '缺少会话自动刷新标记定义');
+  assert.ok(js.includes('不保存忽略标记'), '暂不更新不应写入任何忽略标记');
   assert.ok(js.includes("label: '暂不更新'") && js.includes("cls: 'btn-text'"), '缺少暂不更新纯文字按钮');
   assert.ok(js.includes("label: '立即更新'") && js.includes("cls: 'btn-primary'"), '缺少立即更新红按钮');
   assert.ok(js.includes('LOCAL_VERSION'), '缺少本地版本常量');

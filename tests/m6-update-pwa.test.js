@@ -71,36 +71,55 @@ test('M6-2b 版本解析转数字数组 + 更新类型自动识别（主/次/修
   assert.equal(info.type, null, '云端更低应为无更新');
 });
 
-test('M6-2c 弹窗标题按更新类型变化：次版本/修订号升级', async () => {
+test('M6-2c 弹窗标题按更新类型变化：次版本/修订号升级（手动入口弹窗）', async () => {
   // 基于当前本地版本动态构造更高的云端版本（版本升级后断言不过期）
   const loc = CONFIG.app.version.split('.').map(Number);
   const minorUp = [loc[0], loc[1] + 1, 0].join('.');   // 次版本升级，如 2.1.0
   const patchUp = [loc[0], loc[1], loc[2] + 1].join('.'); // 修订号升级，如 2.0.2
-  // 次版本升级 → 功能更新
+  // 次版本升级 → 功能更新（手动检测才弹窗）
   mockFetch({ latestVersion: minorUp, updateDesc: '新增功能与内容', downloadUrl: './index.html' });
-  await Updater.checkUpdate(false);
+  await Updater.checkUpdate(true);
   assert.ok(els.get('modal-root').innerHTML.includes('功能更新'), '次版本升级标题应为「功能更新」');
   assert.ok(els.get('modal-root').innerHTML.includes('新增功能与内容'), '缺少次版本升级小字提示');
   // 修订号升级 → 补丁更新
   Modal.close();
   mockFetch({ latestVersion: patchUp, updateDesc: '问题修复与细节优化', downloadUrl: './index.html' });
-  await Updater.checkUpdate(false);
+  await Updater.checkUpdate(true);
   assert.ok(els.get('modal-root').innerHTML.includes('补丁更新'), '修订号升级标题应为「补丁更新」');
   assert.ok(els.get('modal-root').innerHTML.includes('问题修复与细节优化'), '缺少修订号升级小字提示');
   Modal.close();
 });
 
-test('M6-3 发现新版本：自动/手动均弹窗（云端 > 本地固定版本），不额外弹 Toast', async () => {
-  // 本地版本 = config.js 固定版本号（LOCAL_VERSION），云端 9.9.9 更高 → 弹窗
+test('M6-3 自动检测发现新版本：不弹窗、直接自动刷新页面，会话标记防无限循环', async () => {
+  // 本地版本 = config.js 固定版本号（LOCAL_VERSION），云端 9.9.9 更高
+  globalThis.location.reloadCount = 0;
+  globalThis.sessionStorage.clear();
   mockFetch({ latestVersion: '9.9.9', updateDesc: '新增图鉴；修复问题', downloadUrl: './index.html' });
   const r = await Updater.checkUpdate(false);
   assert.equal(r.updated, true);
   assert.ok(r.notice.includes('发现新版本 v9.9.9'), 'notice 错误: ' + r.notice);
-  assert.ok(els.get('modal-root').innerHTML.includes('重大版本更新'), '弹窗标题应为类型化标题（9.9.9 属主版本升级）');
-  assert.ok(els.get('modal-root').innerHTML.includes('本次为底层重大更新'), '弹窗缺少主版本升级小字提示');
-  assert.ok(els.get('modal-root').innerHTML.includes('9.9.9'), '弹窗未含新版本号');
+  // 自动：不弹窗、不弹 Toast
+  assert.equal(els.get('modal-root').innerHTML, '', '自动检测不应弹更新弹窗');
   const toastEl = els.get('created:div');
-  assert.equal(toastEl ? toastEl.textContent : '', '', '更新弹窗本身即提示，不应额外弹 Toast');
+  assert.equal(toastEl ? toastEl.textContent : '', '', '自动检测不应额外弹 Toast');
+  // 自动刷新页面 + 写入会话标记
+  assert.ok(globalThis.location.reloadCount >= 1, '云端更高应自动刷新页面');
+  assert.equal(globalThis.sessionStorage.getItem('sdv-guide:auto-refreshed'), '1', '自动刷新前应写会话标记');
+  // 再次自动检测（模拟刷新后）：会话标记存在 → 不再刷新（防无限循环）
+  const r2 = await Updater.checkUpdate(false);
+  assert.equal(r2.updated, true);
+  assert.equal(globalThis.location.reloadCount, 1, '会话内不应重复自动刷新');
+});
+
+test('M6-8 手动检查发现新版本：弹窗确认刷新，不额外弹 Toast', async () => {
+  const prev = els.get('created:div');
+  if (prev) prev.textContent = ''; // 清空前置用例残留 Toast
+  mockFetch({ latestVersion: '9.9.9', updateDesc: '', downloadUrl: './index.html' });
+  const r = await Updater.checkUpdate(true);
+  assert.equal(r.updated, true);
+  assert.ok(els.get('modal-root').innerHTML.includes('重大版本更新'), '手动检测应弹更新弹窗（9.9.9 属主版本升级）');
+  const toastEl = els.get('created:div');
+  assert.equal(toastEl ? toastEl.textContent : '', '', '弹窗即反馈，不应再弹 Toast');
 });
 
 test('M6-4 已是最新版本：自动检测静默不提示；手动入口 Toast 提示', async () => {
@@ -154,16 +173,6 @@ test('M6-7 云端版本为空：自动静默；手动入口提示检查失败', 
   const r = await Updater.checkUpdate(true);
   assert.equal(r.updated, false);
   assert.ok(r.notice.includes('版本检查失败'), 'notice 错误: ' + r.notice);
-});
-
-test('M6-8 发现新版本仅弹窗提示：不额外弹 Toast（弹窗与手动/自动一致）', async () => {
-  const prev = els.get('created:div');
-  if (prev) prev.textContent = ''; // 清空前置用例残留 Toast
-  mockFetch({ latestVersion: '9.9.9', updateDesc: '', downloadUrl: './index.html' });
-  const r = await Updater.checkUpdate(false);
-  assert.equal(r.updated, true);
-  const toastEl = els.get('created:div');
-  assert.equal(toastEl ? toastEl.textContent : '', '', '弹窗即反馈，不应再弹 Toast');
 });
 
 test('M6-9 manifest.webmanifest 结构完整', () => {
