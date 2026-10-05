@@ -185,6 +185,53 @@ test('公告页改版：主页展示最新公告，更多进入历史页，返�
   Router.handle();
 });
 
+test('UI 星露谷像素木风格：卡片/长条/物品面板/成就条/对话框多形态 + 深浅主题适配', () => {
+  const base = readAppFile('css/base.css');
+  const comp = readAppFile('css/components.css');
+
+  // 大卡片：木质纹理背景 + 深棕立体木制外框（结构/选择器不变）
+  assert.ok(comp.includes('.card {'), '卡片选择器结构被破坏');
+  assert.ok(comp.includes('var(--wood-bg)'), '卡片未使用木纹背景');
+  assert.ok(comp.includes('var(--wood-frame)'), '卡片未使用深棕木制外框');
+  assert.ok(comp.includes('var(--wood-frame-edge)'), '卡片缺少外框外缘高光');
+  assert.ok(comp.includes('border-radius: var(--radius)'), '卡片圆角变量丢失');
+
+  // 长条面板/列表：行分隔、公告条、勾选项、搜索结果均为木纹边框
+  assert.ok(comp.includes('var(--wood-border)') && comp.includes('1px dashed var(--wood-border)'), '行分隔未木质化');
+  assert.ok(comp.includes('.notice-item') && comp.includes('var(--wood-bg)'), '公告长条未木质化');
+  assert.ok(comp.includes('.search-hit') && comp.includes('var(--wood-border)'), '搜索结果未木质化');
+  assert.ok(comp.includes('.check-item') && comp.includes('var(--wood-border)'), '勾选项未木质化');
+
+  // 成就提示条：Toast 为木质横条（对话框背景 + 深棕外框）
+  assert.ok(comp.includes('.toast {') && comp.includes('var(--dialog-bg)'), 'Toast 未改为木质成就条');
+  assert.ok(comp.includes('.toast') && comp.includes('var(--wood-frame)'), 'Toast 缺少深棕木框');
+
+  // 对话弹窗：对话框样式 + 纯文本 / 右侧头像两种形态
+  assert.ok(comp.includes('.modal {'), '弹窗选择器结构被破坏');
+  assert.ok(comp.includes('var(--dialog-bg)'), '弹窗未使用对话框背景');
+  assert.ok(comp.includes('var(--dialog-border)'), '弹窗未使用对话框边框');
+  assert.ok(comp.includes('.modal-body.avatar'), '缺少右侧头像对话框形态');
+  assert.ok(comp.includes('.modal-avatar'), '缺少头像占位样式');
+  assert.ok(comp.includes('.modal-title') && comp.includes('border-bottom'), '对话框标题装饰缺失');
+
+  // 木纹/外框/对话框变量定义于主题变量区，且深浅主题均适配
+  assert.ok(base.includes('--wood-bg:'), '缺少木纹背景变量');
+  assert.ok(base.includes('--wood-frame:'), '缺少深棕木制外框变量');
+  assert.ok(base.includes('--wood-frame-edge:'), '缺少外框外缘高光变量');
+  assert.ok(base.includes('--wood-border:'), '缺少木纹边框变量');
+  assert.ok(base.includes('--dialog-bg:'), '缺少对话框背景变量');
+  assert.ok(base.includes('repeating-linear-gradient'), '木纹未使用纹理渐变');
+  const darkStart = base.indexOf('[data-theme="dark"]');
+  assert.ok(darkStart > 0, '缺少深色主题块');
+  const darkBlock = base.slice(darkStart);
+  assert.ok(darkBlock.includes('--wood-bg:') && darkBlock.includes('--wood-frame:'), '深色主题缺少木纹/外框变量');
+  assert.ok(darkBlock.includes('--dialog-bg:') && darkBlock.includes('--dialog-border:'), '深色主题缺少对话框变量');
+
+  // 可读性：文字仍使用主题文字色（不随木纹丢失对比度）
+  assert.ok(comp.includes('color: var(--text)'), '文字颜色未保持主题适配');
+  assert.ok(comp.includes('--text-dim'), '次要文字颜色未保持主题适配');
+});
+
 test('移除我的页快捷键编辑条目：入口收敛至首页「更多」，编辑页仍可达', () => {
   resetNav();
   // 我的页：无「快捷功能/快捷键编辑」条目

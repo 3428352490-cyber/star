@@ -2,16 +2,20 @@
    通用组件：卡片 / 瓦片 / 按钮 / 开关 / 弹窗 / Toast / 空态
    ============================================================ */
 
-/* ---- 卡片（半透明磨砂圆角 + 像素硬阴影） ---- */
+/* ---- 卡片（星露谷木质纹理 + 深棕立体木制外框） ---- */
 .card {
-  background: var(--card-bg);
-  backdrop-filter: blur(12px) saturate(1.1);
-  -webkit-backdrop-filter: blur(12px) saturate(1.1);
-  border: 2px solid var(--card-border);
+  background: var(--wood-bg);
+  border: 3px solid var(--wood-frame);
   border-radius: var(--radius);
   padding: 14px;
   margin-bottom: 14px;
-  box-shadow: 4px 4px 0 var(--shadow);
+  box-shadow:
+    0 0 0 1px var(--wood-frame-edge),
+    4px 4px 0 var(--shadow),
+    inset 2px 2px 0 var(--wood-light),
+    inset -2px -2px 0 var(--wood-dark);
+  backdrop-filter: blur(2px) saturate(1.05);
+  -webkit-backdrop-filter: blur(2px) saturate(1.05);
 }
 .card-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; }
 .card-head h2 { font-size: 15px; }
@@ -111,7 +115,7 @@
 
 /* ---- 设置行 ---- */
 .setting-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; }
-.setting-row + .setting-row { border-top: 1px dashed var(--card-border); }
+.setting-row + .setting-row { border-top: 1px dashed var(--wood-border); }
 .setting-title { font-size: 14px; }
 .setting-desc { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
 
@@ -130,7 +134,7 @@
   display: flex; align-items: center; justify-content: space-between;
   width: 100%; padding: 12px 0;
   background: none; border: none;
-  border-top: 1px dashed var(--card-border);
+  border-top: 1px dashed var(--wood-border);
   font-size: 14px; color: var(--text);
 }
 .row-btn:first-of-type { border-top: none; }
@@ -141,7 +145,7 @@
 .check-item {
   display: flex; align-items: center; gap: 8px;
   padding: 9px 10px;
-  border: 2px solid var(--card-border); border-radius: 8px;
+  border: 2px solid var(--wood-border); border-radius: 8px;
   cursor: pointer; font-size: 13px;
   background: var(--bg-deep);
 }
@@ -171,10 +175,11 @@
 /* ---- 公告列表 ---- */
 .notice-list { display: grid; gap: 10px; }
 .notice-item {
-  background: var(--bg-deep);
-  border: 2px dashed var(--card-border);
+  background: var(--wood-bg);
+  border: 2px dashed var(--wood-border);
   border-radius: 10px;
   padding: 12px;
+  box-shadow: inset 2px 2px 0 var(--wood-light), inset -2px -2px 0 var(--wood-dark);
 }
 .notice-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
 .notice-head h3 { font-size: 14px; }
@@ -207,7 +212,7 @@
   display: flex; align-items: center; gap: 10px;
   padding: 8px 10px;
   background: var(--bg-deep);
-  border: 2px solid var(--card-border); border-radius: 8px;
+  border: 2px solid var(--wood-border); border-radius: 8px;
   font-size: 14px; color: var(--text);
 }
 .search-hit .tag { margin-left: auto; }
@@ -235,7 +240,7 @@
   outline-offset: 2px;
 }
 
-/* ---- 弹窗 ---- */
+/* ---- 弹窗（星露谷原版对话框样式，支持纯文本与右侧头像两种形态） ---- */
 .modal-mask {
   position: fixed; inset: 0;
   background: rgba(0, 0, 0, 0.5);
@@ -244,27 +249,53 @@
 }
 .modal {
   width: 100%; max-width: 360px;
-  background: var(--card-bg);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 3px solid var(--card-border);
-  border-radius: var(--radius);
+  background: var(--dialog-bg);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 3px solid var(--wood-frame);
+  border-radius: 10px;
   padding: 18px;
-  box-shadow: 6px 6px 0 var(--shadow);
+  box-shadow:
+    0 0 0 1px var(--wood-frame-edge),
+    6px 6px 0 var(--shadow),
+    inset 2px 2px 0 var(--dialog-light),
+    inset -2px -2px 0 var(--dialog-dark);
 }
-.modal-title { font-size: 16px; margin-bottom: 10px; }
+.modal-title {
+  font-size: 16px; margin-bottom: 10px;
+  color: var(--text);
+  padding-bottom: 8px;
+  border-bottom: 2px dashed var(--dialog-border);
+}
+/* 纯文本：默认纵向排版 */
 .modal-body { font-size: 13px; color: var(--text-dim); line-height: 1.7; }
 .modal-body ul { padding-left: 18px; list-style: disc; }
+/* 右侧头像形态：头像在右、文本在左（对话框双样式能力，业务可选启用） */
+.modal-body.avatar { display: flex; align-items: flex-start; gap: 12px; }
+.modal-body.avatar .modal-avatar {
+  width: 56px; height: 56px; flex: none;
+  border: 3px solid var(--dialog-border);
+  border-radius: 8px;
+  background: var(--dialog-bg);
+  box-shadow: inset 2px 2px 0 var(--dialog-light), inset -2px -2px 0 var(--dialog-dark);
+}
+.modal-body.avatar .modal-avatar + div { flex: 1; }
 .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; }
 
-/* ---- Toast ---- */
+/* ---- Toast（星露谷成就提示条：木质横条 + 深棕外框） ---- */
 .toast {
   position: fixed; left: 50%; bottom: 96px;
   transform: translateX(-50%);
-  background: var(--text); color: var(--bg);
+  background: var(--dialog-bg);
+  border: 3px solid var(--wood-frame);
+  color: var(--text);
   padding: 9px 16px; border-radius: 9px;
   font-size: 13px; z-index: 120;
-  box-shadow: 3px 3px 0 var(--shadow);
+  box-shadow:
+    0 0 0 1px var(--wood-frame-edge),
+    3px 3px 0 var(--shadow),
+    inset 1px 1px 0 var(--dialog-light),
+    inset -1px -1px 0 var(--dialog-dark);
   animation: toastIn 0.18s ease-out;
   white-space: nowrap;
 }

@@ -10,7 +10,7 @@
 const SDV_CONFIG = {
   app: {
     name: '星露谷攻略',
-    version: '0.3.1',
+    version: '0.4.0',
     /**
      * 云端版本清单地址（GitHub Pages 部署后替换为实际地址）：
      * 例如 'https://你的用户名.github.io/仓库名/version.json'
@@ -56,6 +56,16 @@ const SDV_CONFIG = {
 
   /** 软件公告（公告页渲染；新版本发布时向数组头部追加条目） */
   announcements: [
+    {
+      version: '0.4.0',
+      date: '2026-10-05',
+      title: '星露谷木质 UI 风格',
+      notes: [
+        '全局页面卡片替换为星露谷木质纹理样式',
+        '交互弹窗改为星露谷原版对话框样式',
+        '页面结构、功能逻辑不变，深浅色主题均适配',
+      ],
+    },
     {
       version: '0.3.1',
       date: '2026-10-05',

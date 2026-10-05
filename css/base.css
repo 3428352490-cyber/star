@@ -18,7 +18,26 @@
   --tile-border: #7c6a3f;
   --tile-light: rgba(255, 255, 255, 0.35);
   --tile-dark: rgba(0, 0, 0, 0.22);
-  --radius: 14px;
+  --radius: 10px;
+
+  /* 星露谷木质卡片（浅色：暖木纹 + 深棕立体木制外框） */
+  --wood-bg:
+    repeating-linear-gradient(0deg, rgba(122, 90, 51, 0.12) 0 2px, transparent 2px 7px),
+    repeating-linear-gradient(90deg, rgba(122, 90, 51, 0.14) 0 1px, transparent 1px 36px),
+    linear-gradient(135deg, #f8e9c9, #e6cd9a);
+  --wood-frame: #4a2e14;                  /* 木制外框主色（深棕像素框） */
+  --wood-frame-edge: rgba(201, 160, 102, 0.55); /* 外框外缘亮木边 */
+  --wood-border: #5b3a1a;                 /* 内部木分隔/元素边框 */
+  --wood-light: rgba(255, 255, 255, 0.40);
+  --wood-dark: rgba(0, 0, 0, 0.24);
+
+  /* 星露谷原版对话框（浅色：暖棕面板 + 深棕外框） */
+  --dialog-bg:
+    repeating-linear-gradient(0deg, rgba(255, 236, 190, 0.07) 0 2px, transparent 2px 7px),
+    linear-gradient(160deg, #8a6a3f, #6d4e2a);
+  --dialog-border: #3a2410;
+  --dialog-light: rgba(255, 255, 255, 0.28);
+  --dialog-dark: rgba(0, 0, 0, 0.30);
 }
 
 [data-theme="dark"] {
@@ -35,6 +54,25 @@
   --danger: #e0674b;
   --shadow: rgba(0, 0, 0, 0.5);
   --tile-border: #4a4d5c;
+
+  /* 星露谷木质卡片（深色：深棕木纹 + 亮棕立体外框） */
+  --wood-bg:
+    repeating-linear-gradient(0deg, rgba(255, 214, 150, 0.05) 0 2px, transparent 2px 7px),
+    repeating-linear-gradient(90deg, rgba(255, 214, 150, 0.06) 0 1px, transparent 1px 36px),
+    linear-gradient(135deg, #453622, #332714);
+  --wood-frame: #8a6a3f;                  /* 木制外框主色（深色主题亮棕） */
+  --wood-frame-edge: rgba(0, 0, 0, 0.35); /* 外框外缘暗边 */
+  --wood-border: #a07c4c;                 /* 内部木分隔/元素边框 */
+  --wood-light: rgba(255, 255, 255, 0.10);
+  --wood-dark: rgba(0, 0, 0, 0.35);
+
+  /* 星露谷原版对话框（深色：深棕面板 + 亮棕外框） */
+  --dialog-bg:
+    repeating-linear-gradient(0deg, rgba(255, 214, 150, 0.05) 0 2px, transparent 2px 7px),
+    linear-gradient(160deg, #3b2f1c, #2a2012);
+  --dialog-border: #b8945c;
+  --dialog-light: rgba(255, 255, 255, 0.08);
+  --dialog-dark: rgba(0, 0, 0, 0.40);
 }
 
 /* ===== 重置与基础 ===== */
