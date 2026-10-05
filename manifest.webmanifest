@@ -1,0 +1,26 @@
+{
+  "name": "星露谷攻略",
+  "short_name": "星露谷攻略",
+  "description": "星露谷物语攻略：图鉴、村民、日历、种植计算器与工具合集",
+  "lang": "zh-CN",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f2edd9",
+  "theme_color": "#f2edd9",
+  "icons": [
+    {
+      "src": "assets/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

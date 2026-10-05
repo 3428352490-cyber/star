@@ -1,0 +1,62 @@
+/* ============================================================
+   布局：应用外壳 / 底部导航 / 双端自适应
+   ============================================================ */
+#app { max-width: 1080px; margin: 0 auto; padding: 12px 12px 96px; min-height: 100vh; }
+
+.page-container { animation: pageIn 0.18s ease-out; }
+@keyframes pageIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+.page-header { display: flex; align-items: center; gap: 10px; margin: 4px 0 14px; }
+.page-header h1 { font-size: 20px; }
+.btn-back {
+  width: 34px; height: 34px; display: grid; place-items: center;
+  font-size: 18px; background: var(--bg-deep);
+  border: 2px solid var(--tile-border); border-radius: 8px;
+  box-shadow: 3px 3px 0 var(--shadow); color: var(--text);
+}
+.btn-back:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--shadow); }
+
+/* ===== 底部固定导航：5 Tab 均分，搜索居中视觉核心 ===== */
+.bottom-nav {
+  position: fixed; left: 0; right: 0; bottom: 0;
+  display: flex;
+  background: var(--nav-bg);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-top: 3px solid var(--card-border);
+  z-index: 50;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.nav-item {
+  flex: 1; min-width: 0;
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  padding: 8px 0 6px;
+  background: none; border: none;
+  color: var(--text-dim); font-size: 12px;
+}
+.nav-item .nav-icon { width: 26px; height: 26px; display: grid; place-items: center; }
+.nav-item .nav-icon svg { width: 100%; height: 100%; }
+.nav-item.active { color: var(--accent-deep); font-weight: 700; }
+[data-theme="dark"] .nav-item.active { color: var(--accent); }
+.nav-item:active { opacity: 0.7; }
+.nav-item.search .nav-icon {
+  width: 36px; height: 36px; margin-top: -18px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 3px solid var(--bg);
+  box-shadow: 0 3px 0 var(--shadow);
+}
+.nav-item.search .nav-icon svg { stroke: #fff; }
+
+/* ===== 双端自适应：手机竖屏单列；电脑宽屏双栏 ===== */
+.home-grid { display: block; }
+@media (min-width: 1024px) {
+  #app { padding-top: 22px; }
+  .home-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: start; }
+  .codex-grid { grid-template-columns: repeat(6, 1fr); }
+  .check-grid { grid-template-columns: repeat(4, 1fr); }
+  .quick-nav-grid { gap: 12px; }
+  .tile { padding: 14px 6px 12px; }
+  .tile-icon { width: 48px; height: 48px; }
+  .page-header h1 { font-size: 24px; }
+}
