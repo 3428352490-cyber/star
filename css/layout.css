@@ -82,6 +82,22 @@
 .nav-item.active { color: #fff; background: var(--accent); font-weight: 700; }
 [data-theme="dark"] .nav-item.active { color: #fff; background: var(--accent); }
 .nav-item:active { opacity: 0.7; }
+/* ===== 底部导航激活缩放动画：选中项图标放大 + 文字轻微放大，切换平滑过渡；
+     仅缩放图标与文字，不改导航背景/布局/配色/主题；未选中项保持原始尺寸 ===== */
+.nav-item .nav-icon,
+.nav-item .nav-label {
+  transition: transform 0.22s ease-out;
+  will-change: transform;
+  transform-origin: center bottom;
+}
+.nav-item.active .nav-icon { transform: scale(1.28); }
+.nav-item.active .nav-label { transform: scale(1.1); }
+/* 搜索核心按钮上浮布局特殊：放大时锚定中心，避免偏移抖动 */
+.nav-item.search.active .nav-icon { transform-origin: center center; transform: scale(1.2); }
+@media (prefers-reduced-motion: reduce) {
+  .nav-item .nav-icon,
+  .nav-item .nav-label { transition: none; }
+}
 .nav-item.search .nav-icon {
   width: 36px; height: 36px; margin-top: -18px;
   border-radius: 0;                            /* 直角：8-bit */

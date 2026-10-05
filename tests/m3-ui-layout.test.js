@@ -22,6 +22,20 @@ test('M3-1 layout.css 含底部导航与双端断点结构', () => {
   assert.ok(css.includes('flex: 1'), '底部导航未均分宽度');
 });
 
+test('M3-1b 底部导航激活缩放动画：选中项图标/文字放大、transition 平滑过渡、未选中保持原尺寸', () => {
+  const css = readAppFile('css/layout.css');
+  assert.ok(css.includes('.nav-item.active .nav-icon'), '缺少激活图标放大规则');
+  assert.ok(css.includes('.nav-item.active .nav-label'), '缺少激活文字放大规则');
+  assert.ok(css.includes('transform: scale('), '缺少 transform 缩放');
+  assert.ok(css.includes('transition: transform'), '缺少平滑过渡动画 transition');
+  assert.ok(css.includes('prefers-reduced-motion'), '缺少减弱动效适配');
+  // 缩放只作用于激活项：默认态无 scale 覆盖（保持原始尺寸）
+  const navBlock = css.slice(css.indexOf('.nav-item .nav-icon'), css.indexOf('.nav-item.search .nav-icon'));
+  assert.ok(!navBlock.includes('.nav-item .nav-icon { width: 26px; height: 26px; display: grid; place-items: center; transform:'), '默认图标不应被强制缩放');
+  // 激活项保留红块背景（不修改导航背景/配色）
+  assert.ok(css.includes('.nav-item.active { color: #fff; background: var(--accent); font-weight: 700; }'), '激活项背景样式被改动');
+});
+
 test('M3-2 components.css 含核心组件选择器', () => {
   const css = readAppFile('css/components.css');
   for (const sel of [
