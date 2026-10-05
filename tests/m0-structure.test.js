@@ -41,10 +41,13 @@ test('M0-3 index.html 含核心容器，且所有资源引用可解析', () => {
   }
 });
 
-test('M0-4 version.json 为合法 JSON 且版本为 0.1.0', () => {
+test('M0-4 version.json 为合法 JSON 且版本与 js/config.js 同步', () => {
   const v = JSON.parse(fs.readFileSync(path.join(ROOT, 'version.json'), 'utf8'));
-  assert.equal(v.version, '0.1.0');
-  assert.ok(Array.isArray(v.notes) && v.notes.length > 0);
+  const configSrc = fs.readFileSync(path.join(ROOT, 'js/config.js'), 'utf8');
+  const m = configSrc.match(/version:\s*'([^']+)'/);
+  assert.ok(m, 'js/config.js 缺少版本号');
+  assert.equal(v.version, m[1], 'version.json 与 js/config.js 版本不同步');
+  assert.ok(Array.isArray(v.notes) && v.notes.length > 0, 'notes 缺失');
 });
 
 test('M0-5 图标为合法 PNG（签名 + 尺寸）', () => {
