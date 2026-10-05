@@ -199,20 +199,24 @@ test('UI 星露谷像素木风格：纯色木板+SVG木纹、禁止渐变与毛�
   // SVG 木纹纹理（纯色木板填充）
   assert.ok(base.includes('--wood-texture:') && base.includes('data:image/svg+xml'), '缺少 SVG 木纹纹理');
 
-  // 大卡片：像素木板外框 + 粗像素描边 + 像素圆角
-  assert.ok(comp.includes('.card {'), '卡片选择器结构被破坏');
-  assert.ok(comp.includes('var(--wood-texture)'), '卡片未填充木纹纹理');
-  assert.ok(comp.includes('var(--wood-frame)'), '卡片未使用深棕像素描边');
-  assert.ok(comp.includes('border-radius: var(--radius)'), '卡片圆角变量丢失');
-  assert.ok(base.includes('--radius: 4px'), '未使用像素小圆角变量');
+  // 星露谷原版浅米黄底色
+  assert.ok(base.includes('#f8f0d9'), '缺少星露谷原版浅米黄底色 #f8f0d9');
 
-  // 快捷瓦片 /「更多」/ 按钮：木板像素按钮（内凹像素阴影）
-  assert.ok(comp.includes('.tile {') && comp.includes('var(--wood-texture)'), '快捷功能瓦片未用木板样式');
-  assert.ok(comp.includes('.tile-more') && comp.includes('var(--wood-texture)'), '「更多」按钮未用木板样式');
-  assert.ok(comp.includes('.btn {') && comp.includes('var(--wood-texture)'), '按钮未用木板样式');
+  // 大卡片：border-image 九宫格像素木板外框（无圆角/无渐变/无毛玻璃）
+  assert.ok(comp.includes('.stardew-card,') && comp.includes('.card {'), '卡片选择器结构被破坏');
+  assert.ok(comp.includes('border-image') && comp.includes('url("../assets/stardew-wood-frame.png")'), '卡片未使用九宫格木板素材');
+  assert.ok(comp.includes('33.33%'), '九宫格未按 33.33% 等分切片');
+  assert.ok(comp.includes('border-radius: 0'), '卡片未关闭圆角');
+  assert.ok(comp.includes('var(--card-bg)'), '卡片未使用主题木板底色');
+
+  // 快捷瓦片 /「更多」：九宫格木板小按钮（.stardew-btn）
+  assert.ok(comp.includes('.stardew-btn,') && comp.includes('.tile {'), '快捷瓦片选择器结构被破坏');
+  assert.ok(comp.includes('.tile') && comp.includes('border-image'), '快捷功能瓦片未用九宫格木板');
+  assert.ok(comp.includes('.tile-more') && comp.includes('var(--card-bg)'), '「更多」按钮未用木板底');
   assert.ok(comp.includes('.home-card') && comp.includes('.card'), '功能专区卡片未复用木板卡片');
 
-  // 长条/列表：公告条木板纹理，行分隔/勾选/搜索结果木边框
+  // 普通按钮/公告条：木板样式保留
+  assert.ok(comp.includes('.btn {') && comp.includes('var(--wood-texture)'), '按钮未用木板样式');
   assert.ok(comp.includes('.notice-item') && comp.includes('var(--wood-texture)'), '公告长条未用木板样式');
   assert.ok(comp.includes('1px dashed var(--wood-border)'), '行分隔未木质化');
   assert.ok(comp.includes('.search-hit') && comp.includes('var(--wood-border)'), '搜索结果未木边框');
@@ -229,9 +233,9 @@ test('UI 星露谷像素木风格：纯色木板+SVG木纹、禁止渐变与毛�
   // 标题栏：顶部像素木边框标题条
   assert.ok(layout.includes('.page-header') && layout.includes('var(--wood-frame)'), '标题栏缺少像素木框');
 
-  // 底部导航：整块木板栏 + 5 等宽像素按钮
-  assert.ok(layout.includes('.bottom-nav') && layout.includes('var(--nav-bg)'), '底部导航未用木板栏');
-  assert.ok(layout.includes('var(--wood-texture)'), '导航木板栏缺少木纹');
+  // 底部导航：整块木板栏（.stardew-nav 九宫格）+ 5 等宽像素按钮
+  assert.ok(layout.includes('.stardew-nav,') && layout.includes('.bottom-nav {'), '底部导航选择器结构被破坏');
+  assert.ok(layout.includes('var(--nav-bg)') && layout.includes('border-image'), '底部导航未用九宫格木板栏');
   assert.ok(layout.includes('.nav-item {') && layout.includes('flex: 1'), '导航按钮非等宽');
 
   // 深浅主题：两套木板纹理与对话面板变量

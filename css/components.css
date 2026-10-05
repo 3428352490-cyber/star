@@ -2,18 +2,23 @@
    通用组件：卡片 / 瓦片 / 按钮 / 开关 / 弹窗 / Toast / 空态
    ============================================================ */
 
-/* ---- 卡片（星露谷像素木板：粗像素描边 + 木纹纹理 + 内凹像素阴影） ---- */
+/* ============================================================
+   星露谷像素木板九宫格（.stardew-* 系列）
+   素材 assets/stardew-wood-frame.png（2048×2048，3×3 等分九宫格）
+   border-image: slice 33.33% 等分切 9 块 → 四角原样、四边拉伸
+   硬性要求：像素渲染 / 无圆角 / 无渐变 / 无毛玻璃
+   ============================================================ */
+
+/* ---- 卡片（.stardew-card 用于所有卡片；现有 .card 复用同一样式） ---- */
+.stardew-card,
 .card {
-  background: var(--card-bg);
-  background-image: var(--wood-texture);
-  border: 4px solid var(--wood-frame);
-  border-radius: var(--radius);
-  padding: 14px;
-  margin-bottom: 14px;
-  box-shadow:
-    inset 3px 3px 0 var(--wood-light),
-    inset -3px -3px 0 var(--wood-dark),
-    4px 4px 0 var(--shadow);
+  border: 20px solid transparent;                 /* 边框占位，九宫格图像绘制于此 */
+  border-image: url("../assets/stardew-wood-frame.png") 33.33% / 20px stretch;
+  background: var(--card-bg);                    /* 星露谷原版浅米黄底（深色主题自动压暗） */
+  border-radius: 0;                               /* 不要圆角 */
+  padding: 16px;
+  margin-bottom: 16px;
+  box-shadow: 4px 4px 0 var(--shadow);            /* 硬像素投影（无柔和阴影） */
 }
 .card-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; }
 .card-head h2 { font-size: 15px; }
@@ -24,19 +29,21 @@
 
 /* ---- 快捷导航瓦片 ---- */
 .quick-nav-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+/* ---- 快捷功能方格按钮（.stardew-btn 用于快捷功能小方格；现有 .tile 复用） ---- */
+.stardew-btn,
 .tile {
   position: relative;
   display: flex; flex-direction: column; align-items: center; gap: 6px;
   padding: 12px 4px 10px;
+  border: 12px solid transparent;
+  border-image: url("../assets/stardew-wood-frame.png") 33.33% / 12px stretch;
   background: var(--card-bg);
-  background-image: var(--wood-texture);
-  border: 4px solid var(--wood-frame);
-  border-radius: 4px;
-  box-shadow: inset 3px 3px 0 var(--wood-light), inset -3px -3px 0 var(--wood-dark), 3px 3px 0 var(--shadow);
+  border-radius: 0;
+  box-shadow: inset 2px 2px 0 var(--wood-light), inset -2px -2px 0 var(--wood-dark), 3px 3px 0 var(--shadow);
   color: var(--text);
   transition: transform 0.08s, box-shadow 0.08s, filter 0.08s;
 }
-.tile:active { transform: translate(2px, 2px); box-shadow: inset 3px 3px 0 var(--wood-light), inset -3px -3px 0 var(--wood-dark), 1px 1px 0 var(--shadow); }
+.tile:active { transform: translate(2px, 2px); box-shadow: inset 2px 2px 0 var(--wood-light), inset -2px -2px 0 var(--wood-dark), 1px 1px 0 var(--shadow); }
 .tile-icon {
   width: 42px; height: 42px;
   display: grid; place-items: center;
@@ -54,7 +61,7 @@
 .tile-icon.big .tile-fallback { font-size: 26px; }
 .tile-label { font-size: 13px; text-align: center; line-height: 1.2; }
 .tile-empty { border-style: dashed; opacity: 0.45; box-shadow: none; cursor: default; }
-.tile-more { background: var(--card-bg); background-image: var(--wood-texture); border-color: var(--wood-frame); color: var(--text); }
+.tile-more { background: var(--card-bg); color: var(--text); }
 .tile-more .tile-icon { background: var(--bg-deep); border-color: var(--wood-border); }
 .tile-more .tile-fallback { color: var(--text); font-size: 24px; }
 
