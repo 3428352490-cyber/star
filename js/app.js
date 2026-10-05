@@ -77,6 +77,19 @@ const App = (() => {
     }
     const actionEl = t.closest('[data-action]');
     if (actionEl) handleAction(actionEl.dataset.action);
+
+    /* 快捷键上限：点击已达上限而被禁用的未勾选项 → 弹出提示弹窗（仅提示，不执行新增动作） */
+    const navItem = t.closest('.check-item');
+    if (navItem) {
+      const navCheck = navItem.querySelector('input[data-nav-check]');
+      if (navCheck && navCheck.disabled && !navCheck.checked) {
+        Modal.show({
+          title: '提示',
+          body: '<p>快捷键数量已达到上限，无法继续添加更多快捷键。</p>',
+          actions: [{ label: '确定', cls: 'btn-primary' }]
+        });
+      }
+    }
   });
 
   document.addEventListener('change', (e) => {
