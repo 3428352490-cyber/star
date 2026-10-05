@@ -70,7 +70,7 @@ test('M4-4 首页：四大卡片与信息卡占位', () => {
   for (const key of ['map', 'guide', 'calculator', 'mods']) {
     assert.ok(html.includes('data-route="#/card/' + key + '"'), '卡片路由缺失: ' + key);
   }
-  assert.ok(html.includes('本地存档'), '缺少本地存档信息卡');
+  assert.ok(!html.includes('本地存档'), 'APP 不应展示本地存档表现');
   assert.ok(html.includes('云端更新'), '缺少云端更新信息卡');
 });
 

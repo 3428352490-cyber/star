@@ -38,3 +38,18 @@ test('修复1 首页「更多」按钮进入快捷键编辑页（quick-edit 路�
   globalThis.location.hash = '#/home';
   Router.handle();
 });
+
+test('修复2 APP 不展示本地存档功能表现（持久化仍为系统功能）', () => {
+  resetNav();
+  assert.ok(!Pages.home().includes('本地存档'), '首页不应展示本地存档说明');
+  assert.ok(!Pages.mine().includes('本地存档'), '我的页不应展示本地存档说明');
+
+  // 持久化能力本身不因界面移除而受影响（写透 + 重启保持）
+  Store.setSelectedNav(['fish', 'crops']);
+  const raw = localStorage.getItem('sdv-guide:config');
+  localStorage.clear();
+  localStorage.setItem('sdv-guide:config', raw);
+  Store.load();
+  assert.deepEqual(Store.getSelectedNav(), ['fish', 'crops'], '本地存档功能失效');
+  resetNav();
+});

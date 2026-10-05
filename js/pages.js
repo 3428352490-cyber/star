@@ -49,8 +49,6 @@ const Pages = (() => {
         '<div>' +
           '<section class="card"><div class="card-head"><h2>快捷功能</h2><span class="card-sub">' + selected.length + '/' + SDV_CONFIG.quickNav.maxSelected + '</span></div>' +
           '<div class="quick-nav-grid">' + cells.join('') + '</div></section>' +
-          '<section class="card info-card"><div class="card-head"><h2>本地存档</h2></div>' +
-          '<p>配置自动保存在本机，重启不丢；双端互通由后期云端同步承担。</p></section>' +
         '</div>' +
         '<div>' +
           '<section class="card"><div class="card-head"><h2>功能专区</h2></div>' +
@@ -113,10 +111,6 @@ const Pages = (() => {
 
       '<section class="card"><div class="card-head"><h2>快捷功能</h2></div>' +
         '<button class="row-btn" data-route="#/quick-edit"><span>快捷键编辑</span><span>›</span></button>' +
-      '</section>' +
-
-      '<section class="card"><div class="card-head"><h2>本地存档</h2></div>' +
-        '<p class="setting-desc">配置自动保存在本机，重启不丢；双端互通由后期云端数据同步承担。</p>' +
       '</section>' +
 
       '<section class="card"><div class="card-head"><h2>关于</h2></div>' +
