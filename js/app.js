@@ -55,10 +55,11 @@ const App = (() => {
     });
   }
 
-  /** 渲染当前路由页面 + 挂载图标 */
+  /** 渲染当前路由页面 + 挂载图标 + 搜索页挂载搜索面板（历史/AI 推荐） */
   function render() {
     if (typeof Router !== 'undefined') Router.handle();
     mountIcons($('#page-container'));
+    if (typeof SearchUI !== 'undefined' && location.hash.indexOf('#/search') === 0) SearchUI.mount();
   }
 
   /* ---------- 全局事件（事件委托） ---------- */

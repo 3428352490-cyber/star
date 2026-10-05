@@ -83,7 +83,8 @@ const Pages = (() => {
   /** 搜索：搜索框 + 结果区 */
   function search() {
     return pageHeader('搜索', false) +
-      '<section class="card"><div class="search-bar"><input id="search-input" type="search" placeholder="搜索游戏全部词条（如：村民、蓝莓、鱼）" aria-label="全局搜索"></div>' +
+      '<section class="card search-area"><div class="search-bar"><input id="search-input" type="search" placeholder="搜索游戏全部词条（如：村民、蓝莓、鱼）" aria-label="全局搜索"></div>' +
+      '<div id="search-panel" class="search-panel"></div>' +
       '<div id="search-result" class="search-result">' + emptyState('输入关键词，检索全部词条', '一期为基础检索框架，全量词条二期接入') + '</div></section>';
   }
 

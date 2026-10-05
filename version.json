@@ -1,5 +1,5 @@
 {
-  "latestVersion": "2.0.5",
-  "updateDesc": "导航选中更醒目：去掉红色高亮更干净；当前页面图标放大显示",
+  "latestVersion": "2.1.0",
+  "updateDesc": "搜索更聪明：新增搜索历史与 AI 搜索推荐，点一下直接搜",
   "downloadUrl": "./index.html"
 }

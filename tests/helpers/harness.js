@@ -13,7 +13,8 @@ const vm = require('vm');
 const ROOT = path.resolve(__dirname, '..', '..');
 const APP_FILES = [
   'js/util.js', 'js/config.js', 'js/store.js', 'js/theme.js', 'js/ui.js',
-  'js/pages.js', 'js/api.js', 'js/community.js', 'js/router.js',
+  'js/pages.js', 'js/api.js', 'js/community.js', 'js/search-ui.js',
+  'js/router.js',
   'js/review-log.js', 'js/self-check.js', 'js/security-guard.js',
   'js/update.js', 'js/app.js',
 ];
@@ -45,12 +46,35 @@ function fakeEl(id) {
     querySelector(sel) {
       // 按选择器缓存子元素，保证 Modal 挂载监听与测试派发使用同一对象
       this.__children || (this.__children = {});
-      this.__children[sel] || (this.__children[sel] = fakeEl(this.id + ' ' + sel));
+      if (!this.__children[sel]) {
+        const el = fakeEl(this.id + ' ' + sel);
+        // 从选择器提取 [data-x] 并写入 dataset，使 closest('[data-x]') 可命中
+        const m = String(sel).match(/\[data-([a-zA-Z-]+)\]/);
+        if (m) {
+          const prop = m[1].replace(/-([a-z])/g, (_, c) => c.toUpperCase());
+          el.dataset[prop] = '';
+        }
+        this.__children[sel] = el;
+      }
       return this.__children[sel];
     },
     querySelectorAll() { return []; },
-    closest() { return null; },
+    closest(sel) {
+      // 支持 [data-x] 匹配自身 dataset（供搜索面板等事件委托测试使用）
+      const m = sel && String(sel).match(/^\[data-([a-zA-Z-]+)\]$/);
+      if (m) {
+        const prop = m[1].replace(/-([a-z])/g, (_, c) => c.toUpperCase());
+        if (this.dataset && this.dataset[prop] !== undefined) return this;
+        return null;
+      }
+      return null;
+    },
     matches() { return false; },
+    dispatchEvent(ev) {
+      const type = (ev && ev.type) || '';
+      const fns = (this.__listeners && this.__listeners[type]) || [];
+      fns.forEach((fn) => fn(ev || { target: this }));
+    },
   };
 }
 
