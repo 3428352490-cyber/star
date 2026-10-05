@@ -46,8 +46,9 @@ test('M0-4 version.json 为合法 JSON 且版本与 js/config.js 同步', () => 
   const configSrc = fs.readFileSync(path.join(ROOT, 'js/config.js'), 'utf8');
   const m = configSrc.match(/version:\s*'([^']+)'/);
   assert.ok(m, 'js/config.js 缺少版本号');
-  assert.equal(v.version, m[1], 'version.json 与 js/config.js 版本不同步');
-  assert.ok(Array.isArray(v.notes) && v.notes.length > 0, 'notes 缺失');
+  assert.equal(v.latestVersion, m[1], 'version.json 的 latestVersion 与 js/config.js 版本不同步');
+  assert.ok(v.updateDesc && v.updateDesc.length > 0, 'updateDesc 缺失');
+  assert.ok(v.downloadUrl && v.downloadUrl.length > 0, 'downloadUrl 缺失');
 });
 
 test('M0-5 图标为合法 PNG（签名 + 尺寸）', () => {

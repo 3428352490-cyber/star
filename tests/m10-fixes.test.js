@@ -71,7 +71,7 @@ test('修复1c 版本三处同步（config / sw.js / version.json），升级触
   const sw = readAppFile('sw.js');
   assert.ok(sw.includes("CACHE_NAME = 'sdv-guide-v" + v + "'"), 'sw.js 缓存名与版本不同步');
   const vj = JSON.parse(readAppFile('version.json'));
-  assert.equal(vj.version, v, 'version.json 与版本不同步');
+  assert.equal(vj.latestVersion, v, 'version.json 的 latestVersion 与版本不同步');
 });
 
 test('修复2 APP 不展示本地存档功能表现（持久化仍为系统功能）', () => {
@@ -133,8 +133,7 @@ test('修复3b 刷新首页不可见云端更新卡片，版本检测底层逻�
   }
   // 版本检测底层逻辑保留：云端更高版本（> 本地固定版本）→ 仍能检出更新
   const Updater = ref('Updater');
-  Updater.setMockEnabled(false);
-  globalThis.fetch = async () => ({ ok: true, json: async () => ({ version: '9.9.9', notes: ['云端检测验证'] }) });
+  globalThis.fetch = async () => ({ ok: true, json: async () => ({ latestVersion: '9.9.9', updateDesc: '云端检测验证', downloadUrl: './index.html' }) });
   const r = await Updater.checkUpdate(false);
   assert.equal(r.updated, true, '版本检测底层逻辑失效');
   assert.ok(r.notice.includes('发现新版本'), '未检出新版本');

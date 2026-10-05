@@ -29,40 +29,51 @@ test('M6-1 compareVersion 语义化比较（compareVersion(localVer, remoteVer)�
   assert.equal(Updater.compareVersion('1.0.10', '1.0.10'), 0, '相同版本应为 0');
 });
 
-test('M6-2 extractVersion 容错', () => {
-  assert.equal(Updater.extractVersion({ version: '0.2.0' }), '0.2.0');
-  assert.equal(Updater.extractVersion({ version: ' 0.3.0 ' }), '0.3.0');
+test('M6-2 extractVersion 容错（latestVersion 字段优先，兼容旧 version）', () => {
+  assert.equal(Updater.extractVersion({ latestVersion: '0.2.0' }), '0.2.0');
+  assert.equal(Updater.extractVersion({ latestVersion: ' 0.3.0 ' }), '0.3.0');
+  assert.equal(Updater.extractVersion({ version: '0.4.0' }), '0.4.0', '旧 version 字段应兼容');
   assert.equal(Updater.extractVersion({}), '');
   assert.equal(Updater.extractVersion(null), '');
 });
 
-test('M6-2b 更新类型自动识别：主版本/次版本/修订号升级与无更新', () => {
-  // 主版本升级
-  assert.equal(Updater.getUpdateType('2.0.0', '1.10.5'), 3, '2.0.0 vs 1.10.5 应为主版本升级');
-  // 次版本升级（主版本相同，次版本变大）
-  assert.equal(Updater.getUpdateType('1.2.0', '1.1.9'), 2, '1.2.0 vs 1.1.9 应为次版本升级');
-  // 修订号升级（主/次相同，修订变大）
-  assert.equal(Updater.getUpdateType('1.1.10', '1.1.9'), 1, '1.1.10 vs 1.1.9 应为修订号升级');
+test('M6-2b 版本解析转数字数组 + 更新类型自动识别（主/次/修订/无更新）', () => {
+  // parseVersion：v1.0.10 → [1, 0, 10]（数字数组，禁止字符串直接比较）
+  assert.deepEqual(Updater.parseVersion('v1.0.10'), [1, 0, 10], 'v1.0.10 应解析为 [1,0,10]');
+  assert.deepEqual(Updater.parseVersion('1.2.3'), [1, 2, 3], '1.2.3 应解析为 [1,2,3]');
+  assert.deepEqual(Updater.parseVersion('2'), [2, 0, 0], '缺位应补 0');
+  assert.deepEqual(Updater.parseVersion(''), [0, 0, 0], '空串应全 0');
+  // getUpdateTypeInfo：主版本升级 → major / 重大版本更新
+  let info = Updater.getUpdateTypeInfo('2.0.0', '1.10.5');
+  assert.equal(info.type, 'major', '2.0.0 vs 1.10.5 应为主版本升级');
+  assert.equal(info.title, '重大版本更新');
+  assert.equal(info.tip, '本次为底层重大更新');
+  // 次版本升级（主版本相同，次版本变大）→ minor / 功能更新
+  info = Updater.getUpdateTypeInfo('1.2.0', '1.1.9');
+  assert.equal(info.type, 'minor', '1.2.0 vs 1.1.9 应为次版本升级');
+  assert.equal(info.title, '功能更新');
+  assert.equal(info.tip, '新增功能与内容');
+  // 修订号升级（主/次相同，修订变大）→ patch / 补丁更新
+  info = Updater.getUpdateTypeInfo('1.1.10', '1.1.9');
+  assert.equal(info.type, 'patch', '1.1.10 vs 1.1.9 应为修订号升级');
+  assert.equal(info.title, '补丁更新');
+  assert.equal(info.tip, '问题修复与细节优化');
   // 无更新：相等 / 云端更低
-  assert.equal(Updater.getUpdateType('1.1.9', '1.1.9'), 0, '版本相等应为无更新');
-  assert.equal(Updater.getUpdateType('1.0.9', '1.1.0'), 0, '云端更低应为无更新');
-  // 版本号解析：支持 v 前缀与缺位补 0
-  const p = Updater.parseVersion('v1.2.3');
-  assert.deepEqual(p, { major: 1, minor: 2, patch: 3 }, 'parseVersion 解析错误');
-  assert.deepEqual(Updater.parseVersion('2'), { major: 2, minor: 0, patch: 0 }, '缺位应补 0');
-  assert.deepEqual(Updater.parseVersion(''), { major: 0, minor: 0, patch: 0 }, '空串应全 0');
+  info = Updater.getUpdateTypeInfo('1.1.9', '1.1.9');
+  assert.equal(info.type, null, '版本相等应为无更新');
+  info = Updater.getUpdateTypeInfo('1.0.9', '1.1.0');
+  assert.equal(info.type, null, '云端更低应为无更新');
 });
 
 test('M6-2c 弹窗标题按更新类型变化：次版本/修订号升级', async () => {
-  Updater.setMockEnabled(false);
   // 次版本升级：1.1.0 vs 1.0.10 → 功能更新
-  mockFetch({ version: '1.1.0' });
+  mockFetch({ latestVersion: '1.1.0', updateDesc: '新增功能与内容', downloadUrl: './index.html' });
   await Updater.checkUpdate(false);
   assert.ok(els.get('modal-root').innerHTML.includes('功能更新'), '次版本升级标题应为「功能更新」');
   assert.ok(els.get('modal-root').innerHTML.includes('新增功能与内容'), '缺少次版本升级小字提示');
   // 修订号升级：1.0.11 vs 1.0.10 → 补丁更新
   Modal.close();
-  mockFetch({ version: '1.0.11' });
+  mockFetch({ latestVersion: '1.0.11', updateDesc: '问题修复与细节优化', downloadUrl: './index.html' });
   await Updater.checkUpdate(false);
   assert.ok(els.get('modal-root').innerHTML.includes('补丁更新'), '修订号升级标题应为「补丁更新」');
   assert.ok(els.get('modal-root').innerHTML.includes('问题修复与细节优化'), '缺少修订号升级小字提示');
@@ -70,9 +81,8 @@ test('M6-2c 弹窗标题按更新类型变化：次版本/修订号升级', asyn
 });
 
 test('M6-3 发现新版本：自动/手动均弹窗（云端 > 本地固定版本），不额外弹 Toast', async () => {
-  // 本地版本 = config.js 固定版本号（SDV_CONFIG.app.version），云端 9.9.9 更高 → 弹窗
-  Updater.setMockEnabled(false); // 关闭 Mock，走 fetch 分支（等价上线状态）
-  mockFetch({ version: '9.9.9', notes: ['新增图鉴', '修复问题'] });
+  // 本地版本 = config.js 固定版本号（LOCAL_VERSION），云端 9.9.9 更高 → 弹窗
+  mockFetch({ latestVersion: '9.9.9', updateDesc: '新增图鉴；修复问题', downloadUrl: './index.html' });
   const r = await Updater.checkUpdate(false);
   assert.equal(r.updated, true);
   assert.ok(r.notice.includes('发现新版本 v9.9.9'), 'notice 错误: ' + r.notice);
@@ -85,8 +95,7 @@ test('M6-3 发现新版本：自动/手动均弹窗（云端 > 本地固定版�
 
 test('M6-4 已是最新版本：自动检测静默不提示；手动入口 Toast 提示', async () => {
   Modal.close();
-  Updater.setMockEnabled(false);
-  mockFetch({ version: CONFIG.app.version, notes: [] });
+  mockFetch({ latestVersion: CONFIG.app.version, updateDesc: '', downloadUrl: './index.html' });
   // 自动检测（false）：静默，不弹窗不 Toast
   const rAuto = await Updater.checkUpdate(false);
   assert.equal(rAuto.updated, false);
@@ -103,8 +112,7 @@ test('M6-4 已是最新版本：自动检测静默不提示；手动入口 Toast
 
 test('M6-5 本地版本高于云端：自动静默，手动提示不回退', async () => {
   Modal.close();
-  Updater.setMockEnabled(false);
-  mockFetch({ version: '0.0.1' });
+  mockFetch({ latestVersion: '0.0.1', updateDesc: '', downloadUrl: './index.html' });
   const rAuto = await Updater.checkUpdate(false);
   assert.equal(rAuto.updated, false);
   const r = await Updater.checkUpdate(true);
@@ -115,7 +123,6 @@ test('M6-5 本地版本高于云端：自动静默，手动提示不回退', asy
 
 test('M6-6 网络失败：自动检测静默不提示；手动入口提示「版本检查失败，请稍后重试」', async () => {
   Modal.close();
-  Updater.setMockEnabled(false);
   mockFetchError();
   // 自动检测：静默（无 Toast、无弹窗、无报错）
   const rAuto = await Updater.checkUpdate(false);
@@ -131,8 +138,7 @@ test('M6-6 网络失败：自动检测静默不提示；手动入口提示「版
 
 test('M6-7 云端版本为空：自动静默；手动入口提示检查失败', async () => {
   Modal.close();
-  Updater.setMockEnabled(false);
-  mockFetch({ notes: [] });
+  mockFetch({ updateDesc: '', downloadUrl: './index.html' });
   const rAuto = await Updater.checkUpdate(false);
   assert.equal(rAuto.updated, false);
   const r = await Updater.checkUpdate(true);
@@ -141,10 +147,9 @@ test('M6-7 云端版本为空：自动静默；手动入口提示检查失败', 
 });
 
 test('M6-8 发现新版本仅弹窗提示：不额外弹 Toast（弹窗与手动/自动一致）', async () => {
-  Updater.setMockEnabled(false);
   const prev = els.get('created:div');
   if (prev) prev.textContent = ''; // 清空前置用例残留 Toast
-  mockFetch({ version: '9.9.9' });
+  mockFetch({ latestVersion: '9.9.9', updateDesc: '', downloadUrl: './index.html' });
   const r = await Updater.checkUpdate(false);
   assert.equal(r.updated, true);
   const toastEl = els.get('created:div');

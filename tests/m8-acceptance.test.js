@@ -171,7 +171,6 @@ test('验收13 我的页账号弹窗可打开可关闭', () => {
 
 test('验收14 检查更新失败不崩溃（手动入口提示，自动检测静默）', async () => {
   Modal.close();
-  Updater.setMockEnabled(false);
   globalThis.fetch = async () => { throw new Error('offline'); };
   // 自动检测：静默不崩溃
   const rAuto = await Updater.checkUpdate(false);
@@ -187,8 +186,7 @@ test('验收14 检查更新失败不崩溃（手动入口提示，自动检测�
 
 test('验收15 云端版本更高 → 页面打开自动弹出更新提示，手动检查同样弹窗', async () => {
   Modal.close();
-  Updater.setMockEnabled(false);
-  globalThis.fetch = async () => ({ ok: true, json: async () => ({ version: '99.99.99', notes: ['一期验收'] }) });
+  globalThis.fetch = async () => ({ ok: true, json: async () => ({ latestVersion: '99.99.99', updateDesc: '一期验收', downloadUrl: './index.html' }) });
   // 页面打开自动检测：云端更高 → 弹窗（99.99.99 属主版本升级 → 类型化标题）
   const rAuto = await Updater.checkUpdate(false);
   assert.equal(rAuto.updated, true);
