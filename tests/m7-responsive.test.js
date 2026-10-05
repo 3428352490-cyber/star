@@ -46,12 +46,13 @@ test('M7-5 键盘焦点态：主要交互元素 focus-visible', () => {
   }
 });
 
-test('M7-6 像素美术风格：图片抗锯齿关闭 + 磨砂卡片', () => {
+test('M7-6 像素美术风格：图片抗锯齿关闭 + 像素木板卡片（禁止毛玻璃）', () => {
   const base = readAppFile('css/base.css');
   assert.ok(base.includes('image-rendering: pixelated'), '缺少像素渲染');
   const comp = readAppFile('css/components.css');
-  assert.ok(comp.includes('backdrop-filter'), '卡片缺少毛玻璃');
   assert.ok(comp.includes('border-radius: var(--radius)'), '卡片缺少圆角变量');
+  const all = base + comp + readAppFile('css/layout.css');
+  assert.ok(!all.includes('backdrop-filter'), '禁止毛玻璃：仍存在 backdrop-filter');
 });
 
 test('M7-7 触控目标尺寸：瓦片与开关不小于 44px 交互区', () => {

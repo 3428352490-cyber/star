@@ -185,69 +185,63 @@ test('公告页改版：主页展示最新公告，更多进入历史页，返�
   Router.handle();
 });
 
-test('UI 星露谷像素木风格：卡片/长条/物品面板/成就条/对话框多形态 + 深浅主题适配', () => {
+test('UI 星露谷像素木风格：纯色木板+SVG木纹、禁止渐变与毛玻璃、多形态+深浅主题', () => {
   const base = readAppFile('css/base.css');
   const comp = readAppFile('css/components.css');
+  const layout = readAppFile('css/layout.css');
+  const all = base + comp + layout;
 
-  // 大卡片：木质纹理背景 + 深棕立体木制外框（结构/选择器不变）
+  // 硬性要求：禁止渐变、毛玻璃；像素渲染
+  assert.ok(!all.includes('linear-gradient') && !all.includes('radial-gradient'), '禁止渐变：仍存在 gradient');
+  assert.ok(!all.includes('backdrop-filter'), '禁止毛玻璃：仍存在 backdrop-filter');
+  assert.ok(all.includes('image-rendering: pixelated'), '缺少像素渲染');
+
+  // SVG 木纹纹理（纯色木板填充）
+  assert.ok(base.includes('--wood-texture:') && base.includes('data:image/svg+xml'), '缺少 SVG 木纹纹理');
+
+  // 大卡片：像素木板外框 + 粗像素描边 + 像素圆角
   assert.ok(comp.includes('.card {'), '卡片选择器结构被破坏');
-  assert.ok(comp.includes('var(--wood-bg)'), '卡片未使用木纹背景');
-  assert.ok(comp.includes('var(--wood-frame)'), '卡片未使用深棕木制外框');
-  assert.ok(comp.includes('5px solid var(--wood-frame)'), '大面板外框未加粗');
-  assert.ok(comp.includes('var(--wood-frame-edge)'), '卡片缺少外框外缘高光');
+  assert.ok(comp.includes('var(--wood-texture)'), '卡片未填充木纹纹理');
+  assert.ok(comp.includes('var(--wood-frame)'), '卡片未使用深棕像素描边');
   assert.ok(comp.includes('border-radius: var(--radius)'), '卡片圆角变量丢失');
-
-  // 木纹质感：纹理渐变 + 木节点（radial-gradient）强化
-  assert.ok(base.includes('radial-gradient'), '木纹缺少木节点质感');
-
-  // 页面背景：像素网格纹理（纸张复古质感），深浅主题各有网格线变量
-  assert.ok(base.includes('--grid-line:'), '缺少页面网格线变量');
-  assert.ok(base.includes('background-size: var(--grid-size) var(--grid-size)'), '页面缺少像素网格铺排');
-  assert.ok(base.includes('var(--grid-line) 1px'), '网格线未应用');
-
-  // 像素小圆角：无平滑大圆角
   assert.ok(base.includes('--radius: 4px'), '未使用像素小圆角变量');
 
-  // 中等尺寸木矩形框：快捷功能瓦片/功能专区按钮卡片/「更多」木质按钮
-  assert.ok(comp.includes('.tile {') && comp.includes('var(--wood-bg)'), '快捷功能瓦片未木质化');
-  assert.ok(comp.includes('.tile') && comp.includes('4px solid var(--wood-frame)'), '瓦片缺少粗木边框');
-  assert.ok(comp.includes('.tile-more') && comp.includes('var(--wood-bg)'), '「更多」按钮未改为木质按钮');
-  assert.ok(comp.includes('.tile-more') && comp.includes('var(--wood-frame)'), '「更多」按钮缺少木框');
-  assert.ok(comp.includes('.home-card') && comp.includes('.card'), '功能专区卡片未复用木质卡片');
-  assert.ok(comp.includes('.btn {') && comp.includes('var(--wood-bg)'), '普通按钮未木质化');
+  // 快捷瓦片 /「更多」/ 按钮：木板像素按钮（内凹像素阴影）
+  assert.ok(comp.includes('.tile {') && comp.includes('var(--wood-texture)'), '快捷功能瓦片未用木板样式');
+  assert.ok(comp.includes('.tile-more') && comp.includes('var(--wood-texture)'), '「更多」按钮未用木板样式');
+  assert.ok(comp.includes('.btn {') && comp.includes('var(--wood-texture)'), '按钮未用木板样式');
+  assert.ok(comp.includes('.home-card') && comp.includes('.card'), '功能专区卡片未复用木板卡片');
 
-  // 长条面板/列表：行分隔、公告条、勾选项、搜索结果均为木纹边框
-  assert.ok(comp.includes('var(--wood-border)') && comp.includes('1px dashed var(--wood-border)'), '行分隔未木质化');
-  assert.ok(comp.includes('.notice-item') && comp.includes('var(--wood-bg)'), '公告长条未木质化');
-  assert.ok(comp.includes('.search-hit') && comp.includes('var(--wood-border)'), '搜索结果未木质化');
-  assert.ok(comp.includes('.check-item') && comp.includes('var(--wood-border)'), '勾选项未木质化');
+  // 长条/列表：公告条木板纹理，行分隔/勾选/搜索结果木边框
+  assert.ok(comp.includes('.notice-item') && comp.includes('var(--wood-texture)'), '公告长条未用木板样式');
+  assert.ok(comp.includes('1px dashed var(--wood-border)'), '行分隔未木质化');
+  assert.ok(comp.includes('.search-hit') && comp.includes('var(--wood-border)'), '搜索结果未木边框');
+  assert.ok(comp.includes('.check-item') && comp.includes('var(--wood-border)'), '勾选项未木边框');
 
-  // 成就提示条：Toast 为木质横条（对话框背景 + 深棕外框）
-  assert.ok(comp.includes('.toast {') && comp.includes('var(--dialog-bg)'), 'Toast 未改为木质成就条');
-  assert.ok(comp.includes('.toast') && comp.includes('var(--wood-frame)'), 'Toast 缺少深棕木框');
+  // 对话弹窗：纯色对话面板 + 木框 + 对话框文字色 + 头像形态
+  assert.ok(comp.includes('.modal {') && comp.includes('var(--dialog-bg)'), '弹窗未用对话面板');
+  assert.ok(comp.includes('.modal-body.avatar') && comp.includes('.modal-avatar'), '缺少头像对话框形态');
+  assert.ok(comp.includes('var(--dialog-text)'), '对话框文字未用对话文字色');
 
-  // 对话弹窗：对话框样式 + 纯文本 / 右侧头像两种形态
-  assert.ok(comp.includes('.modal {'), '弹窗选择器结构被破坏');
-  assert.ok(comp.includes('var(--dialog-bg)'), '弹窗未使用对话框背景');
-  assert.ok(comp.includes('var(--dialog-border)'), '弹窗未使用对话框边框');
-  assert.ok(comp.includes('.modal-body.avatar'), '缺少右侧头像对话框形态');
-  assert.ok(comp.includes('.modal-avatar'), '缺少头像占位样式');
-  assert.ok(comp.includes('.modal-title') && comp.includes('border-bottom'), '对话框标题装饰缺失');
+  // 成就提示条：深棕对话面板横条
+  assert.ok(comp.includes('.toast {') && comp.includes('var(--dialog-bg)'), 'Toast 未用对话面板');
 
-  // 木纹/外框/对话框变量定义于主题变量区，且深浅主题均适配
-  assert.ok(base.includes('--wood-bg:'), '缺少木纹背景变量');
-  assert.ok(base.includes('--wood-frame:'), '缺少深棕木制外框变量');
-  assert.ok(base.includes('--wood-frame-edge:'), '缺少外框外缘高光变量');
-  assert.ok(base.includes('--wood-border:'), '缺少木纹边框变量');
-  assert.ok(base.includes('--dialog-bg:'), '缺少对话框背景变量');
-  assert.ok(base.includes('repeating-linear-gradient'), '木纹未使用纹理渐变');
+  // 标题栏：顶部像素木边框标题条
+  assert.ok(layout.includes('.page-header') && layout.includes('var(--wood-frame)'), '标题栏缺少像素木框');
+
+  // 底部导航：整块木板栏 + 5 等宽像素按钮
+  assert.ok(layout.includes('.bottom-nav') && layout.includes('var(--nav-bg)'), '底部导航未用木板栏');
+  assert.ok(layout.includes('var(--wood-texture)'), '导航木板栏缺少木纹');
+  assert.ok(layout.includes('.nav-item {') && layout.includes('flex: 1'), '导航按钮非等宽');
+
+  // 深浅主题：两套木板纹理与对话面板变量
   const darkStart = base.indexOf('[data-theme="dark"]');
   assert.ok(darkStart > 0, '缺少深色主题块');
   const darkBlock = base.slice(darkStart);
-  assert.ok(darkBlock.includes('--wood-bg:') && darkBlock.includes('--wood-frame:'), '深色主题缺少木纹/外框变量');
-  assert.ok(darkBlock.includes('--dialog-bg:') && darkBlock.includes('--dialog-border:'), '深色主题缺少对话框变量');
+  assert.ok(darkBlock.includes('--wood-texture:'), '深色主题缺少木纹纹理');
+  assert.ok(darkBlock.includes('--dialog-bg:') && darkBlock.includes('--dialog-border:'), '深色主题缺少对话面板');
 
-  // 可读性：文字仍使用主题文字色（不随木纹丢失对比度）
+  // 可读性：正文使用主题文字色
   assert.ok(comp.includes('color: var(--text)'), '文字颜色未保持主题适配');
   assert.ok(comp.includes('--text-dim'), '次要文字颜色未保持主题适配');
 });

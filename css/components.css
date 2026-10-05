@@ -2,20 +2,18 @@
    通用组件：卡片 / 瓦片 / 按钮 / 开关 / 弹窗 / Toast / 空态
    ============================================================ */
 
-/* ---- 卡片（星露谷木质纹理 + 深棕立体木制外框） ---- */
+/* ---- 卡片（星露谷像素木板：粗像素描边 + 木纹纹理 + 内凹像素阴影） ---- */
 .card {
-  background: var(--wood-bg);
-  border: 5px solid var(--wood-frame);
+  background: var(--card-bg);
+  background-image: var(--wood-texture);
+  border: 4px solid var(--wood-frame);
   border-radius: var(--radius);
   padding: 14px;
   margin-bottom: 14px;
   box-shadow:
-    0 0 0 1px var(--wood-frame-edge),
-    4px 4px 0 var(--shadow),
-    inset 2px 2px 0 var(--wood-light),
-    inset -2px -2px 0 var(--wood-dark);
-  backdrop-filter: blur(2px) saturate(1.05);
-  -webkit-backdrop-filter: blur(2px) saturate(1.05);
+    inset 3px 3px 0 var(--wood-light),
+    inset -3px -3px 0 var(--wood-dark),
+    4px 4px 0 var(--shadow);
 }
 .card-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; }
 .card-head h2 { font-size: 15px; }
@@ -30,7 +28,8 @@
   position: relative;
   display: flex; flex-direction: column; align-items: center; gap: 6px;
   padding: 12px 4px 10px;
-  background: var(--wood-bg);
+  background: var(--card-bg);
+  background-image: var(--wood-texture);
   border: 4px solid var(--wood-frame);
   border-radius: 4px;
   box-shadow: inset 3px 3px 0 var(--wood-light), inset -3px -3px 0 var(--wood-dark), 3px 3px 0 var(--shadow);
@@ -55,7 +54,7 @@
 .tile-icon.big .tile-fallback { font-size: 26px; }
 .tile-label { font-size: 13px; text-align: center; line-height: 1.2; }
 .tile-empty { border-style: dashed; opacity: 0.45; box-shadow: none; cursor: default; }
-.tile-more { background: var(--wood-bg); border-color: var(--wood-frame); color: var(--text); }
+.tile-more { background: var(--card-bg); background-image: var(--wood-texture); border-color: var(--wood-frame); color: var(--text); }
 .tile-more .tile-icon { background: var(--bg-deep); border-color: var(--wood-border); }
 .tile-more .tile-fallback { color: var(--text); font-size: 24px; }
 
@@ -71,17 +70,22 @@
 .home-card h3 { font-size: 15px; margin-bottom: 4px; }
 .home-card p { font-size: 12px; color: var(--text-dim); }
 
-/* ---- 按钮（普通按钮木质化；主操作按钮保留绿色像素按钮） ---- */
+/* ---- 按钮（木板像素按钮：木纹底 + 内凹像素阴影；主操作绿色像素按钮） ---- */
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
   padding: 8px 16px; font-size: 13px;
-  background: var(--wood-bg); color: var(--text);
+  background: var(--card-bg);
+  background-image: var(--wood-texture);
+  color: var(--text);
   border: 3px solid var(--wood-frame); border-radius: 4px;
-  box-shadow: 3px 3px 0 var(--shadow);
+  box-shadow: inset 2px 2px 0 var(--wood-light), inset -2px -2px 0 var(--wood-dark), 3px 3px 0 var(--shadow);
   transition: transform 0.08s, box-shadow 0.08s, filter 0.08s;
 }
-.btn:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--shadow); }
-.btn-primary { background: var(--accent); border-color: var(--accent-deep); color: #fff; }
+.btn:active { transform: translate(2px, 2px); box-shadow: inset 2px 2px 0 var(--wood-light), inset -2px -2px 0 var(--wood-dark), 1px 1px 0 var(--shadow); }
+.btn-primary {
+  background: var(--accent); border-color: var(--accent-deep); color: #fff;
+  box-shadow: inset 2px 2px 0 rgba(255, 255, 255, 0.30), inset -2px -2px 0 rgba(0, 0, 0, 0.20), 3px 3px 0 var(--shadow);
+}
 .btn-group { display: flex; gap: 10px; margin-top: 12px; }
 
 /* ---- 开关 ---- */
@@ -178,7 +182,8 @@
 /* ---- 公告列表 ---- */
 .notice-list { display: grid; gap: 10px; }
 .notice-item {
-  background: var(--wood-bg);
+  background: var(--card-bg);
+  background-image: var(--wood-texture);
   border: 2px dashed var(--wood-border);
   border-radius: 4px;
   padding: 12px;
@@ -243,7 +248,7 @@
   outline-offset: 2px;
 }
 
-/* ---- 弹窗（星露谷原版对话框样式，支持纯文本与右侧头像两种形态） ---- */
+/* ---- 弹窗（星露谷对话面板：纯色深棕 + 木框 + 浅色文字，支持纯文本与右侧头像） ---- */
 .modal-mask {
   position: fixed; inset: 0;
   background: rgba(0, 0, 0, 0.5);
@@ -253,52 +258,49 @@
 .modal {
   width: 100%; max-width: 360px;
   background: var(--dialog-bg);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border: 5px solid var(--wood-frame);
+  border: 5px solid var(--dialog-border);
   border-radius: 4px;
   padding: 18px;
+  color: var(--dialog-text);
   box-shadow:
-    0 0 0 1px var(--wood-frame-edge),
-    6px 6px 0 var(--shadow),
-    inset 2px 2px 0 var(--dialog-light),
-    inset -2px -2px 0 var(--dialog-dark);
+    inset 3px 3px 0 var(--dialog-light),
+    inset -3px -3px 0 var(--dialog-dark),
+    6px 6px 0 var(--shadow);
 }
 .modal-title {
   font-size: 16px; margin-bottom: 10px;
-  color: var(--text);
+  color: var(--dialog-text);
   padding-bottom: 8px;
   border-bottom: 2px dashed var(--dialog-border);
 }
 /* 纯文本：默认纵向排版 */
-.modal-body { font-size: 13px; color: var(--text-dim); line-height: 1.7; }
+.modal-body { font-size: 13px; color: var(--dialog-text-dim); line-height: 1.7; }
 .modal-body ul { padding-left: 18px; list-style: disc; }
 /* 右侧头像形态：头像在右、文本在左（对话框双样式能力，业务可选启用） */
 .modal-body.avatar { display: flex; align-items: flex-start; gap: 12px; }
 .modal-body.avatar .modal-avatar {
   width: 56px; height: 56px; flex: none;
   border: 3px solid var(--dialog-border);
-  border-radius: 8px;
-  background: var(--dialog-bg);
-  box-shadow: inset 2px 2px 0 var(--dialog-light), inset -2px -2px 0 var(--dialog-dark);
+  border-radius: 4px;
+  background: var(--dialog-light);
+  box-shadow: inset 2px 2px 0 rgba(255, 255, 255, 0.18), inset -2px -2px 0 var(--dialog-dark);
 }
 .modal-body.avatar .modal-avatar + div { flex: 1; }
 .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; }
 
-/* ---- Toast（星露谷成就提示条：木质横条 + 深棕外框） ---- */
+/* ---- Toast（星露谷成就提示条：深棕对话面板横条 + 木框 + 浅色文字） ---- */
 .toast {
   position: fixed; left: 50%; bottom: 96px;
   transform: translateX(-50%);
   background: var(--dialog-bg);
-  border: 5px solid var(--wood-frame);
-  color: var(--text);
+  border: 5px solid var(--dialog-border);
+  color: var(--dialog-text);
   padding: 9px 16px; border-radius: 4px;
   font-size: 13px; z-index: 120;
   box-shadow:
-    0 0 0 1px var(--wood-frame-edge),
-    3px 3px 0 var(--shadow),
-    inset 1px 1px 0 var(--dialog-light),
-    inset -1px -1px 0 var(--dialog-dark);
+    inset 2px 2px 0 var(--dialog-light),
+    inset -2px -2px 0 var(--dialog-dark),
+    3px 3px 0 var(--shadow);
   animation: toastIn 0.18s ease-out;
   white-space: nowrap;
 }

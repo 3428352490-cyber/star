@@ -1,89 +1,78 @@
 /* ============================================================
-   星露谷像素风 · 基础与深浅主题变量
-   浅色（米纸色系） / 深色（墨黑系），通过 [data-theme] 切换
+   星露谷像素UI · 基础与深浅主题变量（纯色木板 + SVG木纹纹理，禁止渐变/毛玻璃）
+   浅色（浅米黄纸张） / 深色（暗棕木板），通过 [data-theme] 切换
    ============================================================ */
 :root {
-  --bg: #f2edd9;
-  --bg-deep: #e7dfc2;
-  --card-bg: rgba(255, 252, 242, 0.62);
-  --card-border: rgba(121, 100, 61, 0.35);
-  --nav-bg: rgba(255, 252, 242, 0.88);
+  --bg: #f2e3c4;                    /* 全局浅米黄星露谷纸张底色 */
+  --bg-deep: #ecdcb6;               /* 内嵌块底色 */
+  --card-bg: #f6ecd2;               /* 卡片/木板内底 */
+  --card-border: rgba(91, 58, 26, 0.5);
+  --nav-bg: #f6ecd2;                /* 底部导航木板栏底 */
   --text: #3a2f1e;
   --text-dim: rgba(58, 47, 30, 0.62);
   --accent: #5aa02c;
   --accent-deep: #3f7a1e;
   --accent-2: #f0a71e;
   --danger: #c84b31;
-  --shadow: rgba(58, 47, 30, 0.25);
-  --tile-border: #7c6a3f;
-  --tile-light: rgba(255, 255, 255, 0.35);
-  --tile-dark: rgba(0, 0, 0, 0.22);
-  --radius: 4px; /* 像素小圆角，保留手绘像素质感 */
+  --shadow: rgba(58, 47, 30, 0.28);
+  --tile-border: #5b3a1a;
+  --tile-light: #8a6a3f;
+  --tile-dark: #4a2e14;
+  --radius: 4px;                     /* 像素圆角（非平滑圆角） */
 
-  /* 页面背景像素网格（纸张复古质感） */
-  --grid-line: rgba(122, 90, 51, 0.10);
-  --grid-size: 24px;
+  /* 星露谷像素木板（纯色分层 + SVG 木纹纹理，无渐变） */
+  --wood-plank: #f6ecd2;            /* 木板内底 */
+  --wood-frame: #4a2e14;            /* 深棕粗像素描边 */
+  --wood-mid: #5b3a1a;              /* 中棕 */
+  --wood-border: #5b3a1a;           /* 内部木分隔/元素边框 */
+  --wood-light: #8a6a3f;            /* 浅木高光（内凹像素阴影上/左） */
+  --wood-dark: #3a2410;             /* 深暗角（内凹像素阴影下/右） */
+  --wood-frame-edge: #d8ac6e;       /* 外框外缘亮木边 */
+  --wood-texture: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='56' height='56'><rect width='56' height='56' fill='%23f6ecd2'/><path d='M0 10h56M0 28h56M0 44h56M0 52h56' stroke='%23e2cd9a' stroke-width='2'/><circle cx='18' cy='18' r='3' fill='%23e2cd9a'/><circle cx='42' cy='48' r='3' fill='%23e2cd9a'/></svg>");
 
-  /* 星露谷木质卡片（浅色：暖木纹 + 木节点 + 深棕立体木制外框） */
-  --wood-bg:
-    radial-gradient(circle at 12% 28%, rgba(140, 100, 55, 0.20) 0 5px, transparent 7px),
-    radial-gradient(circle at 82% 62%, rgba(140, 100, 55, 0.16) 0 4px, transparent 6px),
-    repeating-linear-gradient(90deg, rgba(122, 90, 51, 0.18) 0 2px, transparent 2px 16px),
-    repeating-linear-gradient(0deg, rgba(122, 90, 51, 0.10) 0 1px, transparent 1px 4px),
-    linear-gradient(180deg, #f8e9c9, #e2c58c);
-  --wood-frame: #3f2510;                  /* 木制外框主色（深棕像素框） */
-  --wood-frame-edge: rgba(216, 172, 110, 0.65); /* 外框外缘亮木边 */
-  --wood-border: #5b3a1a;                 /* 内部木分隔/元素边框 */
-  --wood-light: rgba(255, 255, 255, 0.45);
-  --wood-dark: rgba(0, 0, 0, 0.26);
-
-  /* 星露谷原版对话框（浅色：暖棕面板 + 深棕外框） */
-  --dialog-bg:
-    repeating-linear-gradient(0deg, rgba(255, 236, 190, 0.07) 0 2px, transparent 2px 7px),
-    linear-gradient(160deg, #8a6a3f, #6d4e2a);
+  /* 星露谷对话面板（纯色深棕，文字浅色） */
+  --dialog-bg: #6d4e2a;
   --dialog-border: #3a2410;
-  --dialog-light: rgba(255, 255, 255, 0.28);
-  --dialog-dark: rgba(0, 0, 0, 0.30);
+  --dialog-light: #8a6a3f;
+  --dialog-dark: #2a1a0e;
+  --dialog-text: #f6ecd2;
+  --dialog-text-dim: rgba(246, 236, 210, 0.75);
 }
 
 [data-theme="dark"] {
-  --bg: #14151a;
-  --bg-deep: #0f1014;
-  --card-bg: rgba(32, 34, 42, 0.62);
-  --card-border: rgba(255, 255, 255, 0.12);
-  --nav-bg: rgba(22, 23, 29, 0.9);
-  --text: #e9e4d6;
-  --text-dim: rgba(233, 228, 214, 0.6);
+  --bg: #1b1710;
+  --bg-deep: #262015;
+  --card-bg: #2b2015;
+  --card-border: rgba(160, 124, 76, 0.4);
+  --nav-bg: #2b2015;
+  --text: #f0e8d4;
+  --text-dim: rgba(240, 232, 212, 0.6);
   --accent: #7cc24a;
   --accent-deep: #569b2c;
   --accent-2: #f0b13d;
   --danger: #e0674b;
   --shadow: rgba(0, 0, 0, 0.5);
-  --tile-border: #4a4d5c;
+  --tile-border: #a07c4c;
+  --tile-light: #6d4e2a;
+  --tile-dark: #1a1208;
 
-  /* 页面背景像素网格（深色：暗网格线） */
-  --grid-line: rgba(255, 255, 255, 0.05);
+  /* 星露谷像素木板（深色：暗棕木板） */
+  --wood-plank: #2b2015;
+  --wood-frame: #a07c4c;            /* 深色主题亮棕粗描边 */
+  --wood-mid: #8a6a3f;
+  --wood-border: #a07c4c;
+  --wood-light: #6d4e2a;
+  --wood-dark: #151009;
+  --wood-frame-edge: rgba(0, 0, 0, 0.4);
+  --wood-texture: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='56' height='56'><rect width='56' height='56' fill='%232b2015'/><path d='M0 10h56M0 28h56M0 44h56M0 52h56' stroke='%23382a18' stroke-width='2'/><circle cx='18' cy='18' r='3' fill='%23382a18'/><circle cx='42' cy='48' r='3' fill='%23382a18'/></svg>");
 
-  /* 星露谷木质卡片（深色：深棕木纹 + 木节点 + 亮棕立体外框） */
-  --wood-bg:
-    radial-gradient(circle at 12% 28%, rgba(255, 190, 110, 0.10) 0 5px, transparent 7px),
-    radial-gradient(circle at 82% 62%, rgba(255, 190, 110, 0.08) 0 4px, transparent 6px),
-    repeating-linear-gradient(90deg, rgba(255, 214, 150, 0.08) 0 2px, transparent 2px 16px),
-    repeating-linear-gradient(0deg, rgba(255, 214, 150, 0.05) 0 1px, transparent 1px 4px),
-    linear-gradient(180deg, #473826, #2f2314);
-  --wood-frame: #8a6a3f;                  /* 木制外框主色（深色主题亮棕） */
-  --wood-frame-edge: rgba(0, 0, 0, 0.40); /* 外框外缘暗边 */
-  --wood-border: #a07c4c;                 /* 内部木分隔/元素边框 */
-  --wood-light: rgba(255, 255, 255, 0.12);
-  --wood-dark: rgba(0, 0, 0, 0.38);
-
-  /* 星露谷原版对话框（深色：深棕面板 + 亮棕外框） */
-  --dialog-bg:
-    repeating-linear-gradient(0deg, rgba(255, 214, 150, 0.05) 0 2px, transparent 2px 7px),
-    linear-gradient(160deg, #3b2f1c, #2a2012);
+  /* 星露谷对话面板（深色：更暗棕面板） */
+  --dialog-bg: #3b2f1c;
   --dialog-border: #b8945c;
-  --dialog-light: rgba(255, 255, 255, 0.08);
-  --dialog-dark: rgba(0, 0, 0, 0.40);
+  --dialog-light: #6d4e2a;
+  --dialog-dark: #14100a;
+  --dialog-text: #f0e8d4;
+  --dialog-text-dim: rgba(240, 232, 212, 0.72);
 }
 
 /* ===== 重置与基础 ===== */
@@ -91,11 +80,7 @@
 html { height: 100%; }
 body {
   font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans SC", system-ui, sans-serif;
-  background:
-    linear-gradient(var(--grid-line) 1px, transparent 1px),
-    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px),
-    var(--bg);
-  background-size: var(--grid-size) var(--grid-size);
+  background: var(--bg);             /* 纯色星露谷纸张底色（无渐变、无网格） */
   color: var(--text);
   min-height: 100%;
   transition: background 0.25s, color 0.25s;
@@ -107,5 +92,5 @@ input, select { font: inherit; }
 ul, ol { list-style: none; }
 h1, h2, h3, h4 { font-weight: 700; }
 ::-webkit-scrollbar { width: 10px; height: 10px; }
-::-webkit-scrollbar-thumb { background: var(--card-border); border-radius: 6px; }
+::-webkit-scrollbar-thumb { background: var(--card-border); border-radius: 4px; }
 .noscript { padding: 40px; text-align: center; }
