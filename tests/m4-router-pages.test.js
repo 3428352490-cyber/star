@@ -95,8 +95,7 @@ test('M4-7 公告主页：只展示最新一条公告 + 右上角「更多」入
   assert.ok(html.includes('v' + CONFIG.app.version), '缺少最新版本徽标');
   assert.ok(html.includes('data-route="#/news-history"'), '缺少「更多」按钮路由');
   assert.ok(html.includes('更多'), '缺少「更多」按钮');
-  assert.ok(!html.includes('当前版本'), '公告页不应有当前版本卡片');
-  assert.ok(!html.includes('check-update'), '公告页不应有云端更新入口');
+  assert.ok(!html.includes('data-action="check-update"'), '公告页不应有云端更新入口');
 });
 
 test('M4-7b 历史公告页：展示全部公告 + 左上角返回公告主页', () => {

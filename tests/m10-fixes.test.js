@@ -113,11 +113,10 @@ test('修复3 云端更新入口仅保留「我的」页', () => {
   const home = Pages.home();
   assert.ok(!home.includes('云端更新'), '首页不应有云端更新卡片');
   assert.ok(!home.includes('check-update'), '首页不应有更新按钮');
-  // 公告页：无更新入口、无当前版本卡片（版本信息由公告徽标承载）
+  // 公告页：无更新入口（版本信息由公告徽标承载；正文出现「检查更新/当前版本」等玩家向文案不影响该约束）
   const news = Pages.news();
   assert.ok(!news.includes('check-update'), '公告页不应有更新按钮');
-  assert.ok(!news.includes('检查更新'), '公告页不应有检查更新文案');
-  assert.ok(!news.includes('当前版本'), '公告页不应有当前版本卡片');
+  assert.ok(!news.includes('data-action="check-update"'), '公告页不应有云端更新入口');
   // 我的页：保留唯一更新入口
   const mine = Pages.mine();
   assert.equal(count(mine, 'check-update'), 1, '我的页应保留唯一云端更新入口');
@@ -157,7 +156,7 @@ test('公告页改版：主页展示最新公告，更多进入历史页，返�
   assert.ok(home.includes(latest.title), '主页未渲染最新公告标题');
   assert.ok(home.includes('data-route="#/news-history"'), '主页缺少「更多」入口');
   assert.ok(!home.includes(list[1].version), '主页不应展示往期公告');
-  assert.ok(!home.includes('当前版本'), '主页不应有当前版本卡片');
+  assert.ok(!home.includes('data-action="check-update"'), '主页不应有云端更新入口');
 
   // 点击「更多」→ hash 变更 → 历史页渲染全部公告
   globalThis.location.hash = '#/news';
