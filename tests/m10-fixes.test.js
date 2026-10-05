@@ -205,7 +205,7 @@ test('UI 星露谷像素木风格：纯色木板+SVG木纹、禁止渐变与毛�
   // 大卡片：background 多图九宫格木板（4角+4边独立定位，无 border-image）
   assert.ok(comp.includes('.stardew-card,') && comp.includes('.card {'), '卡片选择器结构被破坏');
   assert.ok(comp.includes('background-image') && comp.includes('url("../assets/stardew-wood-frame.png")'), '卡片未使用九宫格木板素材');
-  assert.ok(comp.includes('background-position') && comp.includes('calc(100% - var(--frame))'), '九宫格边角定位缺失');
+  assert.ok(comp.includes('background-size') && comp.includes('calc(300% - 6 * var(--frame))'), '九宫格中列拉伸公式缺失');
   assert.ok(comp.includes('background-repeat: no-repeat'), '九宫格边未禁重复（会出现重复木纹）');
   assert.ok(comp.includes('border-radius: 0'), '卡片未关闭圆角');
   assert.ok(comp.includes('var(--card-bg)'), '卡片未使用主题木板底色');

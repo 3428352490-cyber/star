@@ -45,22 +45,22 @@
     url("../assets/stardew-wood-frame.png");
   background-position:
     0 0,
-    calc(100% - var(--frame)) 0,
-    0 calc(100% - var(--frame)),
-    calc(100% - var(--frame)) calc(100% - var(--frame)),
-    var(--frame) 0,
-    var(--frame) calc(100% - var(--frame)),
-    0 var(--frame),
-    calc(100% - var(--frame)) var(--frame);
+    100% 0,
+    0 100%,
+    100% 100%,
+    50% 0,
+    50% 100%,
+    0 50%,
+    100% 50%;
   background-size:
-    var(--frame) var(--frame),
-    var(--frame) var(--frame),
-    var(--frame) var(--frame),
-    var(--frame) var(--frame),
-    calc(100% - 2 * var(--frame)) var(--frame),
-    calc(100% - 2 * var(--frame)) var(--frame),
-    var(--frame) calc(100% - 2 * var(--frame)),
-    var(--frame) calc(100% - 2 * var(--frame));
+    calc(3 * var(--frame)) calc(3 * var(--frame)),
+    calc(3 * var(--frame)) calc(3 * var(--frame)),
+    calc(3 * var(--frame)) calc(3 * var(--frame)),
+    calc(3 * var(--frame)) calc(3 * var(--frame)),
+    calc(300% - 6 * var(--frame)) var(--frame),
+    calc(300% - 6 * var(--frame)) var(--frame),
+    var(--frame) calc(300% - 6 * var(--frame)),
+    var(--frame) calc(300% - 6 * var(--frame));
   background-repeat: no-repeat;
   z-index: 50;
   padding-top: var(--frame);                      /* 内容避开顶部木框 */
