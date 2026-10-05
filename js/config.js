@@ -57,6 +57,15 @@ const SDV_CONFIG = {
   /** 软件公告（公告页渲染；新版本发布时向数组头部追加条目） */
   announcements: [
     {
+      version: '1.0.5',
+      date: '2026-10-05',
+      title: '自动化发布与版本同步优化',
+      notes: [
+        '版本检测改为手动确认模式：仅云端版本高于本地已确认版本时弹窗，禁止静默自动更新',
+        '自动化发布新增构建前版本一致性校验（version.json / notice.json / config.js 完全一致），公告与版本号同 commit 打包',
+      ],
+    },
+    {
       version: '1.0.4',
       date: '2026-10-05',
       title: '版本检测与更新提醒优化',
