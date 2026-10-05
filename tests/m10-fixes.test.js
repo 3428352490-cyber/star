@@ -70,3 +70,19 @@ test('修复3 云端更新入口仅保留「我的」页', () => {
   assert.equal(count(mine, 'check-update'), 1, '我的页应保留唯一云端更新入口');
   assert.ok(mine.includes('data-action="check-update"'), '我的页缺少检查更新按钮');
 });
+
+test('修复4 按钮按压动态反馈：全部可点元素含 :active 与过渡动画', () => {
+  const css = readAppFile('css/components.css');
+  // 覆盖快捷键瓦片、底部导航、按钮、chip、勾选项、行按钮、首页卡片、账号卡、搜索结果
+  const interactive = [
+    '.nav-item', '.tile', '.btn', '.chip', '.check-item',
+    '.row-btn', '.home-card', '.account-card', '.search-hit',
+  ];
+  for (const sel of interactive) {
+    assert.ok(css.includes(sel + ':active'), '缺少按压反馈: ' + sel + ':active');
+  }
+  assert.ok(css.includes('transition: transform 0.08s'), '缺少按压过渡动画');
+  assert.ok(css.includes('filter: brightness'), '缺少按压亮度变化');
+  // 按压应产生位移（像素风按下凹陷）
+  assert.ok(css.includes('translate(2px, 2px)'), '缺少按下位移');
+});

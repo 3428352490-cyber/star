@@ -31,7 +31,7 @@
   border-radius: 10px;
   box-shadow: inset 3px 3px 0 var(--tile-light), inset -3px -3px 0 var(--tile-dark), 3px 3px 0 var(--shadow);
   color: var(--text);
-  transition: transform 0.08s;
+  transition: transform 0.08s, box-shadow 0.08s, filter 0.08s;
 }
 .tile:active { transform: translate(2px, 2px); box-shadow: inset 3px 3px 0 var(--tile-light), inset -3px -3px 0 var(--tile-dark), 1px 1px 0 var(--shadow); }
 .tile-icon {
@@ -74,6 +74,7 @@
   background: var(--bg-deep); color: var(--text);
   border: 2px solid var(--tile-border); border-radius: 8px;
   box-shadow: 3px 3px 0 var(--shadow);
+  transition: transform 0.08s, box-shadow 0.08s, filter 0.08s;
 }
 .btn:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--shadow); }
 .btn-primary { background: var(--accent); border-color: var(--accent-deep); color: #fff; }
@@ -242,3 +243,24 @@
   white-space: nowrap;
 }
 @keyframes toastIn { from { opacity: 0; transform: translate(-50%, 6px); } to { opacity: 1; transform: translate(-50%, 0); } }
+
+/* ---- 按压动态反馈（统一：按下凹陷 + 亮度变化；覆盖导航/按钮/勾选/卡片等全部可点元素） ---- */
+.nav-item,
+.chip,
+.check-item,
+.row-btn,
+.home-card,
+.account-card,
+.search-hit {
+  transition: transform 0.08s, box-shadow 0.08s, filter 0.08s;
+}
+.nav-item:active,
+.chip:active,
+.check-item:active,
+.row-btn:active,
+.home-card:active,
+.account-card:active,
+.search-hit:active {
+  transform: translate(2px, 2px);
+  filter: brightness(0.9);
+}
