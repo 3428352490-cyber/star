@@ -1,0 +1,109 @@
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+/* ============================================================
+   复古 8-bit 红白机像素UI · 基础与深浅主题变量
+   高饱和撞色（正红/明亮蓝/暖黄/深灰/砖红）+ 米白底 + 直角粗像素边框
+   浅色（米白纸感） / 深色（暗灰机箱），通过 [data-theme] 切换
+   硬性要求：全局 image-rendering: pixelated / 关闭抗锯齿 / 无渐变 / 无毛玻璃
+   ============================================================ */
+:root {
+  /* 红白机高饱和撞色 */
+  --nes-red: #E6342C;                /* 正红（马里奥红） */
+  --nes-blue: #2E6BD8;               /* 明亮蓝 */
+  --nes-yellow: #FFB800;             /* 暖黄 */
+  --nes-gray: #2B2B2B;               /* 深灰 */
+  --nes-brick: #B8452E;              /* 砖红 */
+  --nes-paper: #F8F2E4;              /* 米白底 */
+
+  --bg: #F8F2E4;                     /* 页面米白底色（8bit 纸感） */
+  --bg-deep: #EFE4CC;                /* 内嵌块底色（深一档米色） */
+  --card-bg: #FFFDF5;                /* 卡片纯色块底（亮米白） */
+  --card-border: rgba(43, 43, 43, 0.35);
+  --nav-bg: #FFFDF5;                 /* 底部导航块底 */
+  --text: #1F1B16;                   /* 近黑文字 */
+  --text-dim: rgba(31, 27, 22, 0.62);
+  --accent: #E6342C;                 /* 正红（主操作/强调） */
+  --accent-deep: #B3231C;
+  --accent-2: #FFB800;               /* 暖黄 */
+  --danger: #B8452E;                 /* 砖红 */
+  --shadow: #2B2B2B;                 /* 硬像素阴影（纯色深灰，无模糊） */
+  --tile-border: #2B2B2B;
+  --tile-light: #FFFFFF;
+  --tile-dark: #B8452E;
+  --radius: 0px;                     /* 直角矩形：8-bit 无圆角 */
+
+  /* 像素纹理（兼容旧变量名，值为 8-bit 棋盘点阵） */
+  --wood-plank: #FFFDF5;
+  --wood-frame: #2B2B2B;             /* 粗像素描边：深灰 */
+  --wood-mid: #4A443C;
+  --wood-border: #2B2B2B;
+  --wood-light: #FFFFFF;             /* 内描边高光：白 */
+  --wood-dark: #B8452E;              /* 暗部：砖红 */
+  --wood-frame-edge: #E6342C;        /* 外缘撞色：正红 */
+  --wood-texture: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16'><rect width='16' height='16' fill='%23fffdf5'/><rect x='0' y='0' width='8' height='8' fill='%23f4ecd8'/><rect x='8' y='8' width='8' height='8' fill='%23f4ecd8'/></svg>");
+
+  /* 红白机对话框（米白面板 + 粗黑框 + 撞色描边） */
+  --dialog-bg: #FFFDF5;
+  --dialog-border: #2B2B2B;
+  --dialog-light: #FFB800;           /* 内描边：暖黄 */
+  --dialog-dark: #B8452E;            /* 暗部：砖红 */
+  --dialog-text: #1F1B16;
+  --dialog-text-dim: rgba(31, 27, 22, 0.7);
+}
+
+[data-theme="dark"] {
+  --bg: #1E1B17;                     /* 暗灰机箱底 */
+  --bg-deep: #2A2621;
+  --card-bg: #2F2A25;
+  --card-border: rgba(0, 0, 0, 0.5);
+  --nav-bg: #2F2A25;
+  --text: #F5EFE2;
+  --text-dim: rgba(245, 239, 226, 0.6);
+  --accent: #FF4B40;                 /* 更亮的正红 */
+  --accent-deep: #D92E26;
+  --accent-2: #FFC93E;
+  --danger: #E0634A;
+  --shadow: #000000;
+  --tile-border: #000000;
+  --tile-light: #555555;
+  --tile-dark: #14110E;
+
+  --wood-plank: #2F2A25;
+  --wood-frame: #000000;
+  --wood-mid: #3A342E;
+  --wood-border: #000000;
+  --wood-light: #4A443C;
+  --wood-dark: #14110E;
+  --wood-frame-edge: #FFB800;
+  --wood-texture: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16'><rect width='16' height='16' fill='%232f2a25'/><rect x='0' y='0' width='8' height='8' fill='%2326221d'/><rect x='8' y='8' width='8' height='8' fill='%2326221d'/></svg>");
+
+  --dialog-bg: #2F2A25;
+  --dialog-border: #000000;
+  --dialog-light: #FFB800;
+  --dialog-dark: #14110E;
+  --dialog-text: #F5EFE2;
+  --dialog-text-dim: rgba(245, 239, 226, 0.7);
+}
+
+/* ===== 重置与基础 ===== */
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html { height: 100%; }
+body {
+  font-family: "Press Start 2P", "PingFang SC", "Microsoft YaHei", "Noto Sans SC", system-ui, sans-serif;
+  background: var(--bg);             /* 纯色米白底（无渐变、无网格） */
+  color: var(--text);
+  min-height: 100%;
+  -webkit-font-smoothing: none;      /* 关闭抗锯齿：硬像素字 */
+  font-smooth: never;
+  line-height: 1.7;
+  transition: background 0.25s, color 0.25s;
+}
+img, canvas { image-rendering: pixelated; image-rendering: crisp-edges; }
+a { color: inherit; text-decoration: none; }
+button { font: inherit; cursor: pointer; }
+input, select { font: inherit; }
+ul, ol { list-style: none; }
+h1, h2, h3, h4 { font-weight: 700; letter-spacing: 0.5px; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: var(--card-border); border-radius: 0; }
+.noscript { padding: 40px; text-align: center; }

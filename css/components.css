@@ -1,0 +1,407 @@
+/* ============================================================
+   通用组件：卡片 / 瓦片 / 按钮 / 开关 / 弹窗 / Toast / 空态
+   复古 8-bit 红白机风格：直角矩形纯色块 + 粗像素边框 + 高饱和撞色
+   ============================================================ */
+
+/* ============================================================
+   8-bit 像素块（.stardew-* 系列）— 纯色块 + 粗像素边框方案
+   边框：深灰粗描边 + 白色内描边（NES 经典双层描边）
+   立体感：底部/右侧纯色硬阴影（blur=0，无柔和阴影）
+   硬性要求：直角矩形 / 无渐变 / 无毛玻璃 / 无 border-image 素材
+   ============================================================ */
+
+/* ---- 卡片（.stardew-card 用于所有卡片；现有 .card 复用同一样式） ---- */
+.stardew-card,
+.card {
+  border: 4px solid var(--wood-frame);            /* 粗像素边框：深灰 */
+  background: var(--card-bg);                     /* 纯色块底：亮米白 */
+  background-image: var(--wood-texture);          /* 8bit 点阵纹理 */
+  border-radius: var(--radius);                   /* 直角矩形 */
+  padding: 20px;                                  /* 宽松内边距 */
+  margin-bottom: 16px;
+  box-shadow: inset 0 0 0 3px var(--wood-light),  /* 内白描边（NES 双层框） */
+              5px 5px 0 var(--shadow);            /* 纯色硬阴影 */
+}
+.card-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 14px; }
+.card-head h2 { font-size: 15px; color: var(--accent); }
+.card-sub { font-size: 12px; color: var(--text-dim); }
+.card-foot { margin-top: 10px; font-size: 12px; color: var(--text-dim); }
+.info-card p { font-size: 13px; line-height: 1.7; color: var(--text-dim); }
+.row-text { font-size: 14px; }
+
+/* ---- 快捷导航瓦片 ---- */
+.quick-nav-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+/* ---- 快捷功能方格按钮（.stardew-btn 用于快捷功能小方格；现有 .tile 复用） ---- */
+.stardew-btn,
+.tile {
+  position: relative;
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: 10px 4px 8px;
+  border: 3px solid var(--wood-frame);            /* 粗像素边框 */
+  border-radius: var(--radius);
+  background: var(--card-bg);                     /* 纯白块底 */
+  box-shadow: inset 0 0 0 2px var(--wood-light),  /* 内白描边 */
+              4px 4px 0 var(--shadow);            /* 硬阴影 */
+  color: var(--text);
+  transition: transform 0.08s, box-shadow 0.08s, filter 0.08s;
+}
+.tile:active { transform: translate(2px, 2px); box-shadow: inset 0 0 0 2px var(--wood-light), 2px 2px 0 var(--shadow); }
+.tile-icon {
+  width: 42px; height: 42px;
+  display: grid; place-items: center;
+  background: var(--bg-deep);
+  border: 3px solid var(--wood-frame);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+/* 撞色循环：图标格按 红 → 蓝 → 黄 → 砖红 交错，复古游戏色块感 */
+.quick-nav-grid .tile:nth-child(4n+1) .tile-icon { background: var(--nes-red); }
+.quick-nav-grid .tile:nth-child(4n+2) .tile-icon { background: var(--nes-blue); }
+.quick-nav-grid .tile:nth-child(4n+3) .tile-icon { background: var(--nes-yellow); }
+.quick-nav-grid .tile:nth-child(4n+4) .tile-icon { background: var(--nes-brick); }
+.tile-icon.sm { width: 30px; height: 30px; }
+.tile-icon.big { width: 64px; height: 64px; }
+.tile-img { width: 100%; height: 100%; object-fit: contain; }
+.tile-fallback { font-size: 18px; font-weight: 700; color: #fff; text-shadow: 2px 2px 0 var(--shadow); }
+[data-theme="dark"] .tile-fallback { color: #fff; }
+/* 暖黄块上的文字用深色，保证对比 */
+.quick-nav-grid .tile:nth-child(4n+3) .tile-fallback { color: var(--text); text-shadow: none; }
+.tile-icon.sm .tile-fallback { font-size: 14px; }
+.tile-icon.big .tile-fallback { font-size: 26px; }
+.tile-label { font-size: 13px; text-align: center; line-height: 1.4; }
+.tile-empty { border-style: dashed; opacity: 0.45; box-shadow: none; cursor: default; }
+.tile-empty .tile-icon { background: var(--bg-deep); }
+.tile-more { background-color: var(--accent-2); }  /* 暖黄「更多」块 */
+.tile-more .tile-icon { background: var(--card-bg); border-color: var(--wood-frame); }
+.tile-more .tile-fallback { color: var(--text); font-size: 24px; text-shadow: none; }
+
+/* ---- 图鉴分类网格 ---- */
+.codex-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+@media (min-width: 640px) { .codex-grid { grid-template-columns: repeat(4, 1fr); } }
+.tile-codex { padding: 10px 4px; }
+
+/* ---- 首页四大卡片 ---- */
+.home-cards { display: grid; grid-template-columns: 1fr; gap: 10px; }
+@media (min-width: 640px) { .home-cards { grid-template-columns: 1fr 1fr; } }
+.home-card { display: block; text-align: left; width: 100%; }
+.home-card h3 { font-size: 15px; margin-bottom: 4px; color: var(--accent); }
+.home-card p { font-size: 12px; color: var(--text-dim); }
+
+/* ---- 按钮（8bit 像素按钮：白块黑框；主操作正红块白字） ---- */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 8px 16px; font-size: 13px;
+  background: var(--card-bg);
+  background-image: var(--wood-texture);
+  color: var(--text);
+  border: 3px solid var(--wood-frame); border-radius: var(--radius);
+  box-shadow: inset 0 0 0 2px var(--wood-light), 3px 3px 0 var(--shadow);
+  transition: transform 0.08s, box-shadow 0.08s, filter 0.08s;
+}
+.btn:active { transform: translate(2px, 2px); box-shadow: inset 0 0 0 2px var(--wood-light), 1px 1px 0 var(--shadow); }
+.btn-primary {
+  background: var(--accent); border-color: var(--accent-deep); color: #fff;
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.35), 3px 3px 0 var(--shadow);
+}
+.btn-group { display: flex; gap: 10px; margin-top: 12px; }
+
+/* ---- 开关（NES 拨动开关：白块黑框，开启亮蓝） ---- */
+.switch { position: relative; display: inline-block; width: 46px; height: 26px; flex: none; }
+.switch input { position: absolute; opacity: 0; width: 0; height: 0; }
+.switch .slider {
+  position: absolute; inset: 0;
+  background: var(--bg-deep);
+  border: 2px solid var(--wood-border);
+  border-radius: var(--radius);
+  transition: background 0.15s;
+}
+.switch .slider::before {
+  content: ""; position: absolute; left: 3px; top: 3px;
+  width: 16px; height: 16px;
+  background: var(--text-dim);
+  border-radius: 0;
+  transition: transform 0.15s, background 0.15s;
+}
+.switch input:checked + .slider { background: var(--nes-blue); border-color: var(--wood-frame); }
+.switch input:checked + .slider::before { transform: translateX(18px); background: #fff; }
+
+/* ---- 主题切换 chip（NES 双键：白块黑框，激活正红白字） ---- */
+.theme-switch-btns { display: flex; gap: 8px; }
+.chip {
+  padding: 6px 14px; font-size: 13px;
+  border: 2px solid var(--tile-border); border-radius: var(--radius);
+  background: var(--bg-deep); color: var(--text);
+}
+.chip.active { background: var(--accent); border-color: var(--accent-deep); color: #fff; }
+
+/* 像素手绘文字：标题硬边描影（不改变字号与排版） */
+.card-head h2, .page-header h1 { text-shadow: 2px 2px 0 var(--shadow); }
+
+/* ---- 设置行 ---- */
+.setting-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; }
+.setting-row + .setting-row { border-top: 1px dashed var(--wood-border); }
+.setting-title { font-size: 14px; }
+.setting-desc { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
+
+/* ---- 我的页：账号卡片 / 行按钮 ---- */
+.account-card { display: flex; align-items: center; gap: 14px; width: 100%; text-align: left; }
+.avatar {
+  width: 54px; height: 54px; flex: none;
+  border-radius: var(--radius);                  /* 直角：8-bit */
+  border: 3px solid var(--tile-border);
+  background: var(--bg-deep);
+  box-shadow: inset 0 0 0 2px var(--tile-light), 2px 2px 0 var(--shadow);
+}
+.account-text { font-size: 16px; font-weight: 700; color: var(--text); }
+.account-arrow { margin-left: auto; color: var(--text-dim); font-size: 20px; }
+.row-btn {
+  display: flex; align-items: center; justify-content: space-between;
+  width: 100%; padding: 12px 0;
+  background: none; border: none;
+  border-top: 1px dashed var(--wood-border);
+  font-size: 14px; color: var(--text);
+}
+.row-btn:first-of-type { border-top: none; }
+
+/* ---- 勾选列表（快捷键编辑页） ---- */
+.check-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 10px; }
+@media (min-width: 640px) { .check-grid { grid-template-columns: repeat(3, 1fr); } }
+.check-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 9px 10px;
+  border: 2px solid var(--wood-border); border-radius: var(--radius);
+  cursor: pointer; font-size: 13px;
+  background: var(--bg-deep);
+}
+.check-item input { display: none; }
+.check-box {
+  width: 18px; height: 18px; flex: none;
+  border: 2px solid var(--tile-border); border-radius: var(--radius);
+  background: var(--card-bg); position: relative;
+}
+.check-item.on .check-box { background: var(--accent); border-color: var(--accent-deep); }
+.check-item.on .check-box::after {
+  content: "✓"; position: absolute; inset: 0;
+  display: grid; place-items: center;
+  color: #fff; font-size: 12px; font-weight: 700;
+}
+.check-item input:disabled ~ * { opacity: 0.4; }
+
+/* ---- 空状态 ---- */
+.empty-state { text-align: center; padding: 36px 12px; }
+.empty-box {
+  display: inline-block; padding: 14px 18px;
+  border: 2px dashed var(--card-border); border-radius: var(--radius);
+  color: var(--text-dim); font-size: 14px;
+}
+.empty-sub { margin-top: 10px; font-size: 12px; color: var(--text-dim); }
+
+/* ---- 公告列表 ---- */
+.notice-list { display: grid; gap: 10px; }
+.notice-item {
+  background: var(--card-bg);
+  background-image: var(--wood-texture);
+  border: 2px dashed var(--wood-border);
+  border-radius: var(--radius);
+  padding: 12px;
+  box-shadow: inset 0 0 0 2px var(--wood-light), 3px 3px 0 var(--shadow);
+}
+.notice-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+.notice-head h3 { font-size: 14px; }
+.notice-date { margin-left: auto; font-size: 11px; color: var(--text-dim); }
+.notice-notes { padding-left: 18px; font-size: 12px; color: var(--text-dim); line-height: 1.8; }
+.notice-notes li { list-style: disc; }
+.notice-more {
+  flex: none;
+  padding: 5px 12px;
+  font-size: 12px;
+  background: var(--accent-2);
+  color: var(--text);
+  border: 2px solid var(--tile-border);
+  border-radius: var(--radius);
+  box-shadow: 2px 2px 0 var(--shadow);
+  transition: transform 0.08s, box-shadow 0.08s, filter 0.08s;
+}
+.notice-more:active { transform: translate(2px, 2px); box-shadow: none; filter: brightness(0.9); }
+
+/* ---- 搜索 ---- */
+.search-bar input {
+  width: 100%; padding: 12px 14px; font-size: 15px;
+  background: var(--bg-deep); color: var(--text);
+  border: 3px solid var(--tile-border); border-radius: var(--radius);
+  outline: none;
+}
+.search-bar input:focus { border-color: var(--accent); }
+.search-hit-list { display: grid; gap: 8px; margin-top: 12px; }
+.search-hit {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 10px;
+  background: var(--bg-deep);
+  border: 2px solid var(--wood-border); border-radius: var(--radius);
+  font-size: 14px; color: var(--text);
+}
+.search-hit .tag { margin-left: auto; }
+
+/* ---- 占位页 ---- */
+.module-placeholder { text-align: center; padding: 30px 12px; }
+.module-placeholder h2 { margin: 12px 0 6px; font-size: 18px; }
+.module-placeholder p { color: var(--text-dim); font-size: 13px; }
+.tag {
+  display: inline-block; margin-top: 12px; padding: 3px 10px;
+  font-size: 11px; border-radius: var(--radius);
+  background: var(--accent-2); color: #1F1B16; font-weight: 700;
+}
+
+/* ---- 键盘可访问性：焦点态 ---- */
+.nav-item:focus-visible,
+.tile:focus-visible,
+.btn:focus-visible,
+.chip:focus-visible,
+.check-item:focus-visible,
+.search-hit:focus-visible,
+.account-card:focus-visible,
+.row-btn:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ---- 弹窗（NES 对话框：米白面板 + 粗黑框 + 暖黄内描边 + 硬阴影） ---- */
+.modal-mask {
+  position: fixed; inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 100; padding: 20px;
+}
+.modal {
+  width: 100%; max-width: 360px;
+  background: var(--dialog-bg);
+  border: 4px solid var(--dialog-border);
+  border-radius: var(--radius);
+  padding: 18px;
+  color: var(--dialog-text);
+  box-shadow:
+    inset 0 0 0 3px var(--dialog-light),         /* 暖黄内描边（撞色） */
+    inset 0 -10px 0 var(--bg-deep),              /* 内底部深米立体 */
+    8px 8px 0 var(--shadow);                     /* 纯色硬阴影 */
+}
+.modal-title {
+  font-size: 16px; margin-bottom: 10px;
+  color: var(--accent);
+  padding-bottom: 8px;
+  border-bottom: 2px dashed var(--dialog-border);
+}
+/* 纯文本：默认纵向排版 */
+.modal-body { font-size: 13px; color: var(--dialog-text-dim); line-height: 1.7; }
+.modal-body ul { padding-left: 18px; list-style: disc; }
+/* 右侧头像形态：头像在右、文本在左（对话框双样式能力，业务可选启用） */
+.modal-body.avatar { display: flex; align-items: flex-start; gap: 12px; }
+.modal-body.avatar .modal-avatar {
+  width: 56px; height: 56px; flex: none;
+  border: 3px solid var(--dialog-border);
+  border-radius: var(--radius);
+  background: var(--nes-blue);
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.35), 2px 2px 0 var(--dialog-dark);
+}
+.modal-body.avatar .modal-avatar + div { flex: 1; }
+.modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; }
+
+/* ---- Toast（8bit 提示条：米白面板 + 粗黑框 + 撞色描边） ---- */
+.toast {
+  position: fixed; left: 50%; bottom: 96px;
+  transform: translateX(-50%);
+  background: var(--dialog-bg);
+  border: 3px solid var(--dialog-border);
+  color: var(--dialog-text);
+  padding: 9px 16px; border-radius: var(--radius);
+  font-size: 13px; z-index: 120;
+  box-shadow:
+    inset 0 0 0 2px var(--dialog-light),
+    3px 3px 0 var(--shadow);
+  animation: toastIn 0.18s ease-out;
+  white-space: nowrap;
+}
+@keyframes toastIn { from { opacity: 0; transform: translate(-50%, 6px); } to { opacity: 1; transform: translate(-50%, 0); } }
+
+/* ---- 按压动态反馈（统一：按下凹陷 + 亮度变化；覆盖导航/按钮/勾选/卡片等全部可点元素） ---- */
+.nav-item,
+.chip,
+.check-item,
+.row-btn,
+.home-card,
+.account-card,
+.search-hit {
+  transition: transform 0.08s, box-shadow 0.08s, filter 0.08s;
+}
+.nav-item:active,
+.chip:active,
+.check-item:active,
+.row-btn:active,
+.home-card:active,
+.account-card:active,
+.search-hit:active {
+  transform: translate(2px, 2px);
+  filter: brightness(0.9);
+}
+
+
+
+/* ============================================================
+   8-bit 像素块 UI（.scroll-* 系列）— 纯 CSS 像素块
+   不用图片素材、不用 border-image，全部由 border + 多层 box-shadow 绘制
+   配色：
+     边框主色  #2B2B2B（深灰粗框）
+     内描边    #E6342C（正红撞色）
+     内底部    #EFE4CC（深米立体）
+     外阴影    #2B2B2B（纯色硬阴影）
+     内侧底色  #FFFDF5（米白块）
+   像素感：直角矩形 + 全部 box-shadow blur=0（硬边，无柔和阴影）
+   硬性要求：全局 image-rendering: pixelated
+   ============================================================ */
+
+/* ---- scroll-card：大模块卡片（快捷功能、功能专区等） ---- */
+.scroll-card {
+  border: 6px solid #2B2B2B;                     /* 边框主色：深灰粗框 */
+  background: #FFFDF5;                           /* 内侧米白块 */
+  box-shadow:
+    inset 0 0 0 3px #E6342C,                     /* 内描边：正红撞色 */
+    inset 0 -10px 0 #EFE4CC,                     /* 内底部深米立体 */
+    6px 6px 0 #2B2B2B;                           /* 外硬阴影 */
+  border-radius: 0;                              /* 直角矩形 */
+  padding: 24px;                                 /* 内边距：文字不会压到边框 */
+  margin-bottom: 16px;
+}
+
+/* ---- scroll-btn：小按钮卡片（快捷功能方格等，木框更细） ---- */
+.scroll-btn {
+  border: 4px solid #2B2B2B;                     /* 小按钮边框：深灰粗框 */
+  background: #FFFDF5;                           /* 内侧米白块 */
+  box-shadow:
+    inset 0 0 0 2px #E6342C,                     /* 内描边：正红 */
+    inset 0 -8px 0 #EFE4CC,                      /* 内底部深米立体 */
+    4px 4px 0 #2B2B2B;                           /* 外硬阴影 */
+  border-radius: 0;
+  position: relative;
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: 14px 10px;                            /* 内边距：文字不压框 */
+  color: var(--text);
+  transition: transform 0.08s, box-shadow 0.08s, filter 0.08s;
+}
+.scroll-btn:active {
+  transform: translate(2px, 2px);                /* 点击下压反馈 */
+  box-shadow:
+    inset 0 0 0 2px #E6342C,
+    inset 0 -8px 0 #EFE4CC,
+    2px 2px 0 #2B2B2B;                           /* 按压后阴影收缩 */
+}
+
+/* ---- scroll-modal：全局弹窗，与 scroll-card 样式一致 ---- */
+.scroll-modal {
+  border: 6px solid #2B2B2B;                     /* 与 scroll-card 一致：深灰粗框 */
+  background: #FFFDF5;                           /* 内侧米白块 */
+  box-shadow:
+    inset 0 0 0 3px #E6342C,
+    inset 0 -10px 0 #EFE4CC,
+    6px 6px 0 #2B2B2B;
+  border-radius: 0;
+  padding: 28px 24px;                            /* 弹窗内边距更大 */
+}
