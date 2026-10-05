@@ -180,7 +180,7 @@ test('验收14 检查更新失败不崩溃', async () => {
 
 test('验收15 云端版本更高 → 启动弹出更新提示', async () => {
   Modal.close();
-  globalThis.fetch = async () => ({ ok: true, json: async () => ({ version: '1.0.3', notes: ['一期验收'] }) });
+  globalThis.fetch = async () => ({ ok: true, json: async () => ({ version: '99.99.99', notes: ['一期验收'] }) });
   const r = await Updater.check(false);
   assert.equal(r.updated, true);
   assert.ok(els.get('modal-root').innerHTML.includes('发现新版本'));

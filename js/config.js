@@ -57,6 +57,15 @@ const SDV_CONFIG = {
   /** 软件公告（公告页渲染；新版本发布时向数组头部追加条目） */
   announcements: [
     {
+      version: '1.0.3',
+      date: '2026-10-05',
+      title: '版本检测逻辑优化',
+      notes: [
+        '版本对比统一为语义化分段数字比较（compareVersion），杜绝字符串直接比较',
+        'version.json 与 notice.json 请求均带时间戳绕过浏览器缓存，弹窗更新说明优先读取 notice.json 人工公告',
+      ],
+    },
+    {
       version: '1.0.2',
       date: '2026-10-05',
       title: '更新弹窗统一为像素风格',
