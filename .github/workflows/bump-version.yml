@@ -129,7 +129,8 @@ jobs:
                 ONLY_VERSION_FILES=false ;;
               js/config.js|sw.js) ;;
               tests/*|tests/*/*|tests/*/*/*|.github/*|*.md)
-                # 测试 / 工作流 / 文档改动不算业务代码，不触发版本递增 ;;
+                # 测试 / 工作流 / 文档改动不算业务代码，不触发版本递增
+                ;;
               *) ONLY_VERSION_FILES=false ;;
             esac
           done
