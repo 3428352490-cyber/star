@@ -5,7 +5,7 @@
 /* ---- 卡片（星露谷木质纹理 + 深棕立体木制外框） ---- */
 .card {
   background: var(--wood-bg);
-  border: 3px solid var(--wood-frame);
+  border: 4px solid var(--wood-frame);
   border-radius: var(--radius);
   padding: 14px;
   margin-bottom: 14px;
@@ -30,20 +30,20 @@
   position: relative;
   display: flex; flex-direction: column; align-items: center; gap: 6px;
   padding: 12px 4px 10px;
-  background: var(--bg-deep);
-  border: 3px solid var(--tile-border);
-  border-radius: 10px;
-  box-shadow: inset 3px 3px 0 var(--tile-light), inset -3px -3px 0 var(--tile-dark), 3px 3px 0 var(--shadow);
+  background: var(--wood-bg);
+  border: 4px solid var(--wood-frame);
+  border-radius: 4px;
+  box-shadow: inset 3px 3px 0 var(--wood-light), inset -3px -3px 0 var(--wood-dark), 3px 3px 0 var(--shadow);
   color: var(--text);
   transition: transform 0.08s, box-shadow 0.08s, filter 0.08s;
 }
-.tile:active { transform: translate(2px, 2px); box-shadow: inset 3px 3px 0 var(--tile-light), inset -3px -3px 0 var(--tile-dark), 1px 1px 0 var(--shadow); }
+.tile:active { transform: translate(2px, 2px); box-shadow: inset 3px 3px 0 var(--wood-light), inset -3px -3px 0 var(--wood-dark), 1px 1px 0 var(--shadow); }
 .tile-icon {
   width: 42px; height: 42px;
   display: grid; place-items: center;
-  background: var(--card-bg);
-  border: 2px solid var(--card-border);
-  border-radius: 8px;
+  background: var(--bg-deep);
+  border: 2px solid var(--wood-border);
+  border-radius: 4px;
   overflow: hidden;
 }
 .tile-icon.sm { width: 30px; height: 30px; }
@@ -55,9 +55,9 @@
 .tile-icon.big .tile-fallback { font-size: 26px; }
 .tile-label { font-size: 13px; text-align: center; line-height: 1.2; }
 .tile-empty { border-style: dashed; opacity: 0.45; box-shadow: none; cursor: default; }
-.tile-more { background: var(--accent); border-color: var(--accent-deep); color: #fff; }
-.tile-more .tile-icon { background: rgba(255, 255, 255, 0.25); border-color: rgba(255, 255, 255, 0.4); }
-.tile-more .tile-fallback { color: #fff; font-size: 24px; }
+.tile-more { background: var(--wood-bg); border-color: var(--wood-frame); color: var(--text); }
+.tile-more .tile-icon { background: var(--bg-deep); border-color: var(--wood-border); }
+.tile-more .tile-fallback { color: var(--text); font-size: 24px; }
 
 /* ---- 图鉴分类网格 ---- */
 .codex-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
@@ -71,12 +71,12 @@
 .home-card h3 { font-size: 15px; margin-bottom: 4px; }
 .home-card p { font-size: 12px; color: var(--text-dim); }
 
-/* ---- 按钮 ---- */
+/* ---- 按钮（普通按钮木质化；主操作按钮保留绿色像素按钮） ---- */
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
   padding: 8px 16px; font-size: 13px;
-  background: var(--bg-deep); color: var(--text);
-  border: 2px solid var(--tile-border); border-radius: 8px;
+  background: var(--wood-bg); color: var(--text);
+  border: 3px solid var(--wood-frame); border-radius: 4px;
   box-shadow: 3px 3px 0 var(--shadow);
   transition: transform 0.08s, box-shadow 0.08s, filter 0.08s;
 }
@@ -90,8 +90,8 @@
 .switch .slider {
   position: absolute; inset: 0;
   background: var(--bg-deep);
-  border: 2px solid var(--tile-border);
-  border-radius: 7px;
+  border: 2px solid var(--wood-border);
+  border-radius: 4px;
   transition: background 0.15s;
 }
 .switch .slider::before {
@@ -112,6 +112,9 @@
   background: var(--bg-deep); color: var(--text);
 }
 .chip.active { background: var(--accent); border-color: var(--accent-deep); color: #fff; }
+
+/* 像素手绘文字：标题硬边描影（不改变字号与排版） */
+.card-head h2, .page-header h1 { text-shadow: 1px 1px 0 var(--shadow); }
 
 /* ---- 设置行 ---- */
 .setting-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; }
@@ -177,7 +180,7 @@
 .notice-item {
   background: var(--wood-bg);
   border: 2px dashed var(--wood-border);
-  border-radius: 10px;
+  border-radius: 4px;
   padding: 12px;
   box-shadow: inset 2px 2px 0 var(--wood-light), inset -2px -2px 0 var(--wood-dark);
 }
@@ -252,8 +255,8 @@
   background: var(--dialog-bg);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  border: 3px solid var(--wood-frame);
-  border-radius: 10px;
+  border: 4px solid var(--wood-frame);
+  border-radius: 4px;
   padding: 18px;
   box-shadow:
     0 0 0 1px var(--wood-frame-edge),
@@ -287,9 +290,9 @@
   position: fixed; left: 50%; bottom: 96px;
   transform: translateX(-50%);
   background: var(--dialog-bg);
-  border: 3px solid var(--wood-frame);
+  border: 4px solid var(--wood-frame);
   color: var(--text);
-  padding: 9px 16px; border-radius: 9px;
+  padding: 9px 16px; border-radius: 4px;
   font-size: 13px; z-index: 120;
   box-shadow:
     0 0 0 1px var(--wood-frame-edge),

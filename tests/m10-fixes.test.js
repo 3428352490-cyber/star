@@ -196,6 +196,17 @@ test('UI 星露谷像素木风格：卡片/长条/物品面板/成就条/对话�
   assert.ok(comp.includes('var(--wood-frame-edge)'), '卡片缺少外框外缘高光');
   assert.ok(comp.includes('border-radius: var(--radius)'), '卡片圆角变量丢失');
 
+  // 像素小圆角：无平滑大圆角
+  assert.ok(base.includes('--radius: 4px'), '未使用像素小圆角变量');
+
+  // 中等尺寸木矩形框：快捷功能瓦片/功能专区按钮卡片/「更多」木质按钮
+  assert.ok(comp.includes('.tile {') && comp.includes('var(--wood-bg)'), '快捷功能瓦片未木质化');
+  assert.ok(comp.includes('.tile') && comp.includes('4px solid var(--wood-frame)'), '瓦片缺少粗木边框');
+  assert.ok(comp.includes('.tile-more') && comp.includes('var(--wood-bg)'), '「更多」按钮未改为木质按钮');
+  assert.ok(comp.includes('.tile-more') && comp.includes('var(--wood-frame)'), '「更多」按钮缺少木框');
+  assert.ok(comp.includes('.home-card') && comp.includes('.card'), '功能专区卡片未复用木质卡片');
+  assert.ok(comp.includes('.btn {') && comp.includes('var(--wood-bg)'), '普通按钮未木质化');
+
   // 长条面板/列表：行分隔、公告条、勾选项、搜索结果均为木纹边框
   assert.ok(comp.includes('var(--wood-border)') && comp.includes('1px dashed var(--wood-border)'), '行分隔未木质化');
   assert.ok(comp.includes('.notice-item') && comp.includes('var(--wood-bg)'), '公告长条未木质化');

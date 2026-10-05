@@ -18,7 +18,7 @@
   --tile-border: #7c6a3f;
   --tile-light: rgba(255, 255, 255, 0.35);
   --tile-dark: rgba(0, 0, 0, 0.22);
-  --radius: 10px;
+  --radius: 4px; /* 像素小圆角，保留手绘像素质感 */
 
   /* 星露谷木质卡片（浅色：暖木纹 + 深棕立体木制外框） */
   --wood-bg:
