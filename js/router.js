@@ -9,6 +9,8 @@
  */
 const Router = (() => {
   const TAB_PATHS = ['home', 'codex', 'search', 'news', 'mine'];
+  /** 路由 path → Pages 方法名映射（连字符路径对应驼峰方法） */
+  const PAGE_ALIASES = { 'quick-edit': 'quickEdit' };
 
   function parseHash() {
     const raw = (location.hash || '#/home').replace(/^#\/?/, '');
@@ -32,6 +34,7 @@ const Router = (() => {
     if (path === 'module') html = Pages.modulePage(param);
     else if (path === 'card') html = Pages.cardPage(param);
     else if (typeof Pages[path] === 'function') html = Pages[path]();
+    else if (PAGE_ALIASES[path] && typeof Pages[PAGE_ALIASES[path]] === 'function') html = Pages[PAGE_ALIASES[path]]();
     else html = Pages.notFound();
     container.innerHTML = html;
     setActiveTab(TAB_PATHS.indexOf(path) >= 0 ? path : '');
