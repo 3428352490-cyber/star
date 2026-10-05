@@ -304,6 +304,14 @@
 }
 .modal-body.avatar .modal-avatar + div { flex: 1; }
 .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; }
+/* 弹窗内纯文字次级操作（如更新弹窗「暂不更新」）：无按钮样式、普通灰色文字 */
+.modal-actions .btn-text {
+  background: none; background-image: none;
+  border: 0; box-shadow: none;
+  color: var(--dialog-text-dim);
+  padding: 6px 10px; text-decoration: none;
+}
+.modal-actions .btn-text:active { transform: none; box-shadow: none; }
 
 /* ---- Toast（8bit 提示条：米白面板 + 粗黑框 + 撞色描边） ---- */
 .toast {

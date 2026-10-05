@@ -3,9 +3,12 @@ const { test } = require('node:test');
 const assert = require('node:assert');
 const { readAppFile } = require('./helpers/harness');
 
-test('M14 版本更新提醒：version.json 线上版本与 notice.json 公告文件存在', () => {
+test('M14 版本更新提醒：version.json 线上版本与 config.js 同步、notice.json 公告文件存在', () => {
   const ver = JSON.parse(readAppFile('version.json'));
-  assert.strictEqual(ver.version, '1.0.0', '初始线上版本应为 1.0.0');
+  const cfg = readAppFile('js/config.js');
+  const m = cfg.match(/version:\s*'(\d+\.\d+\.\d+)'/);
+  assert.ok(m, 'config.js 缺少 app.version');
+  assert.strictEqual(ver.version, m[1], 'version.json 应与 js/config.js 的 app.version 同步（Actions 自动递增后保持一致）');
   const notice = JSON.parse(readAppFile('notice.json'));
   assert.ok(notice.title && notice.title.length, '公告缺少标题');
   assert.ok(Array.isArray(notice.items) && notice.items.length > 0, '公告缺少更新内容');
@@ -41,6 +44,22 @@ test('M14 版本更新提醒：index.html 在 </body> 前引入版本检测 JS',
   const bodyEnd = html.lastIndexOf('</body>');
   const scriptPos = html.indexOf('update-notice.js');
   assert.ok(scriptPos >= 0 && scriptPos < bodyEnd, '版本检测 JS 未放在 </body> 之前');
+});
+
+test('M14 版本更新提醒：update.js 更新弹窗底部按钮改造（暂不更新纯文字 + 立即更新红按钮）', () => {
+  const js = readAppFile('js/update.js');
+  assert.ok(!js.includes('知道了'), '不应再保留【知道了】按钮');
+  assert.ok(!js.includes('请稍后重新打开应用获取最新内容'), '未删除过期提示文案');
+  assert.ok(js.includes("label: '暂不更新'"), '缺少【暂不更新】按钮');
+  assert.ok(js.includes("label: '立即更新'"), '缺少【立即更新】按钮');
+  assert.ok(js.includes("cls: 'btn-text'"), '暂不更新缺少纯文字样式类');
+  assert.ok(js.includes("cls: 'btn-primary'"), '立即更新缺少像素红按钮样式类');
+  assert.ok(js.includes('sessionStorage.setItem(SKIP_KEY'), '暂不更新缺少会话跳过逻辑（不改本地版本号）');
+  assert.ok(js.includes('localStorage.setItem(STORAGE_KEY'), '立即更新缺少本地版本写入');
+  assert.ok(js.includes('location.reload()'), '立即更新缺少页面刷新');
+  assert.ok(js.includes('sessionSkipped()'), '缺少会话跳过判断（本次会话不再弹窗）');
+  const css = readAppFile('css/components.css');
+  assert.ok(css.includes('.modal-actions .btn-text'), '缺少 btn-text 纯文字灰色样式');
 });
 
 test('M14 版本更新提醒：GitHub Actions 工作流完整（main 推送触发、补丁递增、防死循环、自动提交）', () => {
