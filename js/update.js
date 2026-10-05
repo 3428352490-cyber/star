@@ -17,16 +17,19 @@ const Updater = (() => {
   const STORAGE_KEY = 'sdv-guide:installed-version';
   const SKIP_KEY = 'sdv-guide:update-skip';
 
-  /** 语义化版本比较：a>b 返回 1；a<b 返回 -1；相等返回 0 */
-  function compareVersions(a, b) {
-    const pa = String(a || '').split('.').map((n) => parseInt(n, 10) || 0);
-    const pb = String(b || '').split('.').map((n) => parseInt(n, 10) || 0);
-    const len = Math.max(pa.length, pb.length);
-    for (let i = 0; i < len; i++) {
-      const x = pa[i] || 0;
-      const y = pb[i] || 0;
-      if (x > y) return 1;
-      if (x < y) return -1;
+  /**
+   * 语义化版本对比（标准实现）：remote > local 返回 1；remote < local 返回 -1；相等返回 0
+   * @param {string} remote 远端/云端版本号
+   * @param {string} local 本地版本号
+   */
+  function compareVersion(remote, local) {
+    const r = remote.split('.').map(Number);
+    const l = local.split('.').map(Number);
+    for (let i = 0; i < Math.max(r.length, l.length); i++) {
+      const rv = r[i] || 0;
+      const lv = l[i] || 0;
+      if (rv > lv) return 1;
+      if (rv < lv) return -1;
     }
     return 0;
   }
@@ -54,7 +57,7 @@ const Updater = (() => {
       const cloudVersion = extractVersion(json);
       if (!cloudVersion) throw new Error('empty-version');
 
-      const cmp = compareVersions(cloudVersion, LOCAL_VERSION);
+      const cmp = compareVersion(cloudVersion, LOCAL_VERSION);
       if (cmp > 0) {
         updated = true;
         notice = '发现新版本 v' + cloudVersion;
@@ -123,5 +126,5 @@ const Updater = (() => {
     });
   }
 
-  return { check, compareVersions, extractVersion };
+  return { check, compareVersion, extractVersion };
 })();

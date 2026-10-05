@@ -18,14 +18,14 @@ function mockFetchError() {
   globalThis.fetch = async () => { throw new Error('network down'); };
 }
 
-test('M6-1 compareVersions 语义化比较', () => {
-  assert.equal(Updater.compareVersions('0.1.0', '0.1.0'), 0);
-  assert.equal(Updater.compareVersions('0.2.0', '0.1.0'), 1);
-  assert.equal(Updater.compareVersions('0.1.0', '0.2.0'), -1);
-  assert.equal(Updater.compareVersions('0.1.10', '0.1.9'), 1);
-  assert.equal(Updater.compareVersions('1.0.0', '0.9.9'), 1);
-  assert.equal(Updater.compareVersions('0.1', '0.1.0'), 0, '缺段应视为 0');
-  assert.equal(Updater.compareVersions('', '0.1.0'), -1, '空版本视为 0');
+test('M6-1 compareVersion 语义化比较（标准实现：remote 在左、local 在右）', () => {
+  assert.equal(Updater.compareVersion('0.1.0', '0.1.0'), 0);
+  assert.equal(Updater.compareVersion('0.2.0', '0.1.0'), 1);
+  assert.equal(Updater.compareVersion('0.1.0', '0.2.0'), -1);
+  assert.equal(Updater.compareVersion('0.1.10', '0.1.9'), 1);
+  assert.equal(Updater.compareVersion('1.0.0', '0.9.9'), 1);
+  assert.equal(Updater.compareVersion('0.1', '0.1.0'), 0, '缺段应视为 0');
+  assert.equal(Updater.compareVersion('', '0.1.0'), -1, '空版本视为 0');
 });
 
 test('M6-2 extractVersion 容错', () => {
