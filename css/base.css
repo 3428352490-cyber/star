@@ -20,16 +20,18 @@
   --tile-dark: rgba(0, 0, 0, 0.22);
   --radius: 4px; /* 像素小圆角，保留手绘像素质感 */
 
-  /* 星露谷木质卡片（浅色：暖木纹 + 深棕立体木制外框） */
+  /* 星露谷木质卡片（浅色：暖木纹 + 木节点 + 深棕立体木制外框） */
   --wood-bg:
-    repeating-linear-gradient(0deg, rgba(122, 90, 51, 0.12) 0 2px, transparent 2px 7px),
-    repeating-linear-gradient(90deg, rgba(122, 90, 51, 0.14) 0 1px, transparent 1px 36px),
-    linear-gradient(135deg, #f8e9c9, #e6cd9a);
-  --wood-frame: #4a2e14;                  /* 木制外框主色（深棕像素框） */
-  --wood-frame-edge: rgba(201, 160, 102, 0.55); /* 外框外缘亮木边 */
+    radial-gradient(circle at 12% 28%, rgba(140, 100, 55, 0.20) 0 5px, transparent 7px),
+    radial-gradient(circle at 82% 62%, rgba(140, 100, 55, 0.16) 0 4px, transparent 6px),
+    repeating-linear-gradient(90deg, rgba(122, 90, 51, 0.18) 0 2px, transparent 2px 16px),
+    repeating-linear-gradient(0deg, rgba(122, 90, 51, 0.10) 0 1px, transparent 1px 4px),
+    linear-gradient(180deg, #f8e9c9, #e2c58c);
+  --wood-frame: #3f2510;                  /* 木制外框主色（深棕像素框） */
+  --wood-frame-edge: rgba(216, 172, 110, 0.65); /* 外框外缘亮木边 */
   --wood-border: #5b3a1a;                 /* 内部木分隔/元素边框 */
-  --wood-light: rgba(255, 255, 255, 0.40);
-  --wood-dark: rgba(0, 0, 0, 0.24);
+  --wood-light: rgba(255, 255, 255, 0.45);
+  --wood-dark: rgba(0, 0, 0, 0.26);
 
   /* 星露谷原版对话框（浅色：暖棕面板 + 深棕外框） */
   --dialog-bg:
@@ -55,16 +57,18 @@
   --shadow: rgba(0, 0, 0, 0.5);
   --tile-border: #4a4d5c;
 
-  /* 星露谷木质卡片（深色：深棕木纹 + 亮棕立体外框） */
+  /* 星露谷木质卡片（深色：深棕木纹 + 木节点 + 亮棕立体外框） */
   --wood-bg:
-    repeating-linear-gradient(0deg, rgba(255, 214, 150, 0.05) 0 2px, transparent 2px 7px),
-    repeating-linear-gradient(90deg, rgba(255, 214, 150, 0.06) 0 1px, transparent 1px 36px),
-    linear-gradient(135deg, #453622, #332714);
+    radial-gradient(circle at 12% 28%, rgba(255, 190, 110, 0.10) 0 5px, transparent 7px),
+    radial-gradient(circle at 82% 62%, rgba(255, 190, 110, 0.08) 0 4px, transparent 6px),
+    repeating-linear-gradient(90deg, rgba(255, 214, 150, 0.08) 0 2px, transparent 2px 16px),
+    repeating-linear-gradient(0deg, rgba(255, 214, 150, 0.05) 0 1px, transparent 1px 4px),
+    linear-gradient(180deg, #473826, #2f2314);
   --wood-frame: #8a6a3f;                  /* 木制外框主色（深色主题亮棕） */
-  --wood-frame-edge: rgba(0, 0, 0, 0.35); /* 外框外缘暗边 */
+  --wood-frame-edge: rgba(0, 0, 0, 0.40); /* 外框外缘暗边 */
   --wood-border: #a07c4c;                 /* 内部木分隔/元素边框 */
-  --wood-light: rgba(255, 255, 255, 0.10);
-  --wood-dark: rgba(0, 0, 0, 0.35);
+  --wood-light: rgba(255, 255, 255, 0.12);
+  --wood-dark: rgba(0, 0, 0, 0.38);
 
   /* 星露谷原版对话框（深色：深棕面板 + 亮棕外框） */
   --dialog-bg:

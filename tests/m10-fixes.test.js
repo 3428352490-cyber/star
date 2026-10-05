@@ -193,8 +193,12 @@ test('UI 星露谷像素木风格：卡片/长条/物品面板/成就条/对话�
   assert.ok(comp.includes('.card {'), '卡片选择器结构被破坏');
   assert.ok(comp.includes('var(--wood-bg)'), '卡片未使用木纹背景');
   assert.ok(comp.includes('var(--wood-frame)'), '卡片未使用深棕木制外框');
+  assert.ok(comp.includes('5px solid var(--wood-frame)'), '大面板外框未加粗');
   assert.ok(comp.includes('var(--wood-frame-edge)'), '卡片缺少外框外缘高光');
   assert.ok(comp.includes('border-radius: var(--radius)'), '卡片圆角变量丢失');
+
+  // 木纹质感：纹理渐变 + 木节点（radial-gradient）强化
+  assert.ok(base.includes('radial-gradient'), '木纹缺少木节点质感');
 
   // 像素小圆角：无平滑大圆角
   assert.ok(base.includes('--radius: 4px'), '未使用像素小圆角变量');

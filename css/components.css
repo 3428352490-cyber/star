@@ -5,7 +5,7 @@
 /* ---- 卡片（星露谷木质纹理 + 深棕立体木制外框） ---- */
 .card {
   background: var(--wood-bg);
-  border: 4px solid var(--wood-frame);
+  border: 5px solid var(--wood-frame);
   border-radius: var(--radius);
   padding: 14px;
   margin-bottom: 14px;
@@ -255,7 +255,7 @@
   background: var(--dialog-bg);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  border: 4px solid var(--wood-frame);
+  border: 5px solid var(--wood-frame);
   border-radius: 4px;
   padding: 18px;
   box-shadow:
@@ -290,7 +290,7 @@
   position: fixed; left: 50%; bottom: 96px;
   transform: translateX(-50%);
   background: var(--dialog-bg);
-  border: 4px solid var(--wood-frame);
+  border: 5px solid var(--wood-frame);
   color: var(--text);
   padding: 9px 16px; border-radius: 4px;
   font-size: 13px; z-index: 120;
