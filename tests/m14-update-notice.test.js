@@ -22,28 +22,32 @@ test('M14 版本更新提醒：白色卡片弹窗 update-notice.js 已停用（i
   assert.throws(() => readAppFile('js/update-notice.js'), /ENOENT|no such file/i, 'js/update-notice.js 文件应已删除');
 });
 
-test('M14 版本更新提醒：update.js 手动触发 + 本地固定版本号 + Mock 开关（版本检测、弹窗、更新跳转独立封装）', () => {
+test('M14 版本更新提醒：update.js 自动检测 + 手动入口共用一套逻辑（本地固定版本号、Mock 开关）', () => {
   const js = readAppFile('js/update.js');
   assert.ok(js.includes("'sdv-guide:installed-version'"), '缺少已确认版本记录键（localStorage，仅立即更新写入）');
-  assert.ok(!js.includes('update-skip'), '不应再有会话跳过标记（每次点击检查更新都应重新检测弹窗）');
+  assert.ok(!js.includes('update-skip'), '不应有永久/会话屏蔽版本标记（暂不更新仅关闭本次弹窗）');
   assert.ok(js.includes('USE_MOCK'), '缺少开发阶段 Mock 开关');
   assert.ok(js.includes('MOCK_VERSION'), '缺少 Mock 数据（模拟 version.json 方便调试弹窗）');
   assert.ok(js.includes('SDV_CONFIG.app.version'), '本地版本应读取 config.js 固定版本号（绝不自动修改）');
   assert.ok(js.includes('compareVersion(remote.version, local)'), '缺少版本分段数字比较调用');
   assert.ok(js.includes('cmp > 0'), '缺少「线上 > 本地固定版本才弹窗」触发规则');
-  assert.ok(js.includes('当前已是最新版本 v\''), '版本一致缺少「当前已是最新版本」提示');
+  assert.ok(js.includes('当前已是最新版本 v\''), '版本一致缺少「当前已是最新版本」提示（手动入口）');
+  assert.ok(js.includes('manual'), '缺少自动/手动模式区分参数');
+  assert.ok(js.includes('版本检查失败，请稍后重试'), '手动入口网络失败缺少提示');
+  assert.ok(js.includes('静默处理，不弹出任何提示'), '自动检测网络失败缺少静默处理');
+  assert.ok(js.includes('下次打开页面依然会自动检测并弹窗'), '暂不更新缺少「不永久屏蔽、下次仍自动检测」语义');
   assert.ok(js.includes('cache: \'no-store\''), '缺少禁用缓存请求');
   assert.ok(js.includes("cloudVersionUrl + '?t=' + ts"), 'version.json 请求缺少 Date.now() 时间戳防缓存');
   assert.ok(js.includes("'notice.json?t=' + ts"), 'notice.json 请求缺少 Date.now() 时间戳防缓存');
   assert.ok(js.includes('noticeRes') && js.includes('noticeRes.ok'), '缺少 notice.json 公告读取与容错');
-  assert.ok(js.includes('console.error'), '缺少异常控制台打印（页面不崩溃、不弹报错弹窗）');
+  assert.ok(js.includes('console.error'), '缺少异常控制台打印（页面不崩溃）');
   assert.ok(js.includes('location.reload()'), '缺少立即更新刷新逻辑（用户手动选择后才加载新版本）');
   assert.ok(js.includes('setMockEnabled'), '缺少 Mock 开关切换能力（测试/调试可切到 fetch 分支）');
   assert.ok(js.includes('USE_MOCK 置 false 即启用 fetch'), '缺少上线切换说明（注释 Mock 启用 fetch，弹窗交互不用改动）');
-  // 禁止页面打开自动检测：app.js 不再调用 Updater.check
+  // 页面打开自动检测 + 【检查更新】备用手动入口：共用 Updater.check
   const app = readAppFile('js/app.js');
-  assert.ok(!/Updater\.check\(\);\s*\n\s*registerSW/.test(app) && !app.includes("Updater.check(false)"), '页面加载不应自动执行版本检测');
-  assert.ok(app.includes('Updater.check()'), '应保留「检查更新」按钮手动触发');
+  assert.ok(app.includes("Updater.check(false)"), '页面打开缺少自动版本检测');
+  assert.ok(app.includes("Updater.check(true)"), '【检查更新】按钮缺少备用手动入口');
 });
 
 test('M14 版本更新提醒：update.js 更新弹窗底部按钮改造（暂不更新纯文字 + 立即更新红按钮）', () => {
@@ -59,8 +63,8 @@ test('M14 版本更新提醒：update.js 更新弹窗底部按钮改造（暂不
   assert.ok(js.includes('location.reload()'), '立即更新缺少页面刷新');
   assert.ok(js.includes('检测到新版本'), '弹窗缺少新版本号内容');
   assert.ok(js.includes('更新内容详见发布说明'), '弹窗缺少更新简介回退文案');
-  assert.ok(js.includes('不发起任何资源下载请求'), '暂不更新缺少「禁止下载资源」语义');
-  assert.ok(js.includes('下次点击【检查更新】仍会再次检测'), '暂不更新缺少「下次仍会弹窗」语义');
+  assert.ok(js.includes('不下载任何新版资源'), '暂不更新缺少「禁止下载资源」语义');
+  assert.ok(js.includes('下次打开页面依然会自动检测并弹窗'), '暂不更新缺少「不永久屏蔽、下次仍自动检测」语义');
   const css = readAppFile('css/components.css');
   assert.ok(css.includes('.modal-actions .btn-text'), '缺少 btn-text 纯文字灰色样式');
 });

@@ -35,11 +35,11 @@ test('M6-2 extractVersion 容错', () => {
   assert.equal(Updater.extractVersion(null), '');
 });
 
-test('M6-3 发现新版本：弹窗（云端 > 本地固定版本才弹），不额外弹 Toast', async () => {
+test('M6-3 发现新版本：自动/手动均弹窗（云端 > 本地固定版本），不额外弹 Toast', async () => {
   // 本地版本 = config.js 固定版本号（SDV_CONFIG.app.version），云端 9.9.9 更高 → 弹窗
   Updater.setMockEnabled(false); // 关闭 Mock，走 fetch 分支（等价上线状态）
   mockFetch({ version: '9.9.9', notes: ['新增图鉴', '修复问题'] });
-  const r = await Updater.check();
+  const r = await Updater.check(false);
   assert.equal(r.updated, true);
   assert.ok(r.notice.includes('发现新版本 v9.9.9'), 'notice 错误: ' + r.notice);
   assert.ok(els.get('modal-root').innerHTML.includes('发现新版本'), '未弹更新弹窗');
@@ -48,52 +48,69 @@ test('M6-3 发现新版本：弹窗（云端 > 本地固定版本才弹），不
   assert.equal(toastEl ? toastEl.textContent : '', '', '更新弹窗本身即提示，不应额外弹 Toast');
 });
 
-test('M6-4 已是最新版本：不弹窗，Toast 提示', async () => {
+test('M6-4 已是最新版本：自动检测静默不提示；手动入口 Toast 提示', async () => {
   Modal.close();
   Updater.setMockEnabled(false);
   mockFetch({ version: CONFIG.app.version, notes: [] });
-  const r = await Updater.check();
+  // 自动检测（false）：静默，不弹窗不 Toast
+  const rAuto = await Updater.check(false);
+  assert.equal(rAuto.updated, false);
+  assert.equal(els.get('modal-root').innerHTML, '', '自动检测不应弹出更新弹窗');
+  const toastAuto = els.get('created:div');
+  assert.equal(toastAuto ? toastAuto.textContent : '', '', '自动检测版本一致应静默');
+  // 手动入口（true）：Toast「当前已是最新版本」
+  const r = await Updater.check(true);
   assert.equal(r.updated, false);
   assert.ok(r.notice.includes('已是最新版本'), 'notice 错误: ' + r.notice);
   assert.equal(els.get('modal-root').innerHTML, '', '不应弹出更新弹窗');
   assert.equal(els.get('created:div').textContent, '当前已是最新版本 v' + CONFIG.app.version);
 });
 
-test('M6-5 本地版本高于云端：提示不回退', async () => {
+test('M6-5 本地版本高于云端：自动静默，手动提示不回退', async () => {
   Modal.close();
   Updater.setMockEnabled(false);
   mockFetch({ version: '0.0.1' });
-  const r = await Updater.check();
+  const rAuto = await Updater.check(false);
+  assert.equal(rAuto.updated, false);
+  const r = await Updater.check(true);
   assert.equal(r.updated, false);
   assert.ok(r.notice.includes('本地版本高于云端'), 'notice 错误: ' + r.notice);
   assert.equal(els.get('modal-root').innerHTML, '', '不应弹出更新弹窗');
 });
 
-test('M6-6 网络失败：提示检查更新失败，不弹窗', async () => {
+test('M6-6 网络失败：自动检测静默不提示；手动入口提示「版本检查失败，请稍后重试」', async () => {
   Modal.close();
   Updater.setMockEnabled(false);
   mockFetchError();
-  const r = await Updater.check();
+  // 自动检测：静默（无 Toast、无弹窗、无报错）
+  const rAuto = await Updater.check(false);
+  assert.equal(rAuto.updated, false);
+  assert.equal(rAuto.notice, '', '自动检测网络失败应静默');
+  assert.equal(els.get('modal-root').innerHTML, '', '自动检测网络失败不应弹窗');
+  // 手动入口：Toast 提示
+  const r = await Updater.check(true);
   assert.equal(r.updated, false);
-  assert.ok(r.notice.includes('检查更新失败'), 'notice 错误: ' + r.notice);
-  assert.equal(els.get('modal-root').innerHTML, '', '网络失败不应弹窗');
+  assert.ok(r.notice.includes('版本检查失败，请稍后重试'), 'notice 错误: ' + r.notice);
+  assert.equal(els.get('modal-root').innerHTML, '', '手动检查网络失败不应弹窗');
 });
 
-test('M6-7 云端版本为空：提示清单格式错误', async () => {
+test('M6-7 云端版本为空：自动静默；手动入口提示检查失败', async () => {
   Modal.close();
   Updater.setMockEnabled(false);
   mockFetch({ notes: [] });
-  const r = await Updater.check();
+  const rAuto = await Updater.check(false);
+  assert.equal(rAuto.updated, false);
+  const r = await Updater.check(true);
   assert.equal(r.updated, false);
-  assert.ok(r.notice.includes('云端版本清单格式错误'), 'notice 错误: ' + r.notice);
+  assert.ok(r.notice.includes('版本检查失败'), 'notice 错误: ' + r.notice);
 });
 
-test('M6-8 发现新版本仅弹窗提示：不额外弹 Toast（手动点击一次只给一个反馈）', async () => {
+test('M6-8 发现新版本仅弹窗提示：不额外弹 Toast（弹窗与手动/自动一致）', async () => {
   Updater.setMockEnabled(false);
   const prev = els.get('created:div');
   if (prev) prev.textContent = ''; // 清空前置用例残留 Toast
   mockFetch({ version: '9.9.9' });
-  const r = await Updater.check();
+  const r = await Updater.check(false);
   assert.equal(r.updated, true);
   const toastEl = els.get('created:div');
   assert.equal(toastEl ? toastEl.textContent : '', '', '弹窗即反馈，不应再弹 Toast');
