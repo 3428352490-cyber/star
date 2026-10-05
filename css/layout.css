@@ -2,7 +2,27 @@
    布局：应用外壳 / 顶部标题栏 / 底部导航 / 双端自适应
    复古 8-bit 红白机风格：直角纯色像素块 + 粗像素边框
    ============================================================ */
-#app { max-width: 1080px; margin: 0 auto; padding: 14px 14px 104px; min-height: 100vh; }
+#app { max-width: 1080px; margin: 0 auto; padding: 14px 14px 104px; min-height: 100vh; position: relative; }
+
+/* ===== 顶部背景衬底：星露谷标题画面（置于所有卡片组件下方，低透明度不遮挡内容） ===== */
+.app-bg {
+  position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+  z-index: 0;                                  /* 位于页面内容（z-index:1）与卡片之下 */
+  background-image: url("../assets/stardew-title-bg.png");
+  background-size: cover;                      /* 等比缩放铺满，不拉伸变形 */
+  background-position: top center;             /* 顶部对齐：夜空与标题区落在页面顶部 */
+  background-repeat: no-repeat;
+  opacity: 0.5;                                /* 降低透明度，保证卡片内文字/按钮清晰可读 */
+  pointer-events: none;                        /* 不拦截任何点击，功能不受影响 */
+}
+#page-container { position: relative; z-index: 1; }
+
+/* 删除首页最顶部「星露谷攻略」标题整块板块（仅首页：其后紧跟 .home-grid；其他页面标题与返回按钮保留） */
+.page-header:has(+ .home-grid) { display: none; }
+
+@media (max-width: 420px) {
+  .app-bg { background-size: cover; background-position: top center; opacity: 0.4; }
+}
 
 .page-container { animation: pageIn 0.18s ease-out; }
 @keyframes pageIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
