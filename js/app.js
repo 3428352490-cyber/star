@@ -25,7 +25,9 @@ const App = (() => {
     if (!nav) return;
     nav.innerHTML = SDV_CONFIG.tabs.map((t) =>
       '<button class="nav-item' + (t.key === 'search' ? ' search' : '') + '" data-tab="' + t.key + '" data-route="#/' + t.key + '">' +
-        '<span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="miter">' + (NAV_SVG[t.key] || '') + '</svg></span>' +
+        '<span class="nav-icon">' + (t.key === 'home'
+          ? '<img src="assets/nav-home.png" alt="" style="width:100%;height:100%;object-fit:contain">'
+          : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="miter">' + (NAV_SVG[t.key] || '') + '</svg>') + '</span>' +
         '<span class="nav-label">' + esc(t.label) + '</span>' +
       '</button>'
     ).join('');
