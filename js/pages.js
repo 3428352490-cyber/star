@@ -91,9 +91,7 @@ const Pages = (() => {
       (list.length
         ? '<div class="notice-list">' + items + '</div>'
         : emptyState('暂无公告', '运营通知与版本更新公告将在此展示')) +
-      '</section>' +
-      '<section class="card"><div class="card-head"><h2>当前版本</h2></div>' +
-      '<p class="row-text">v' + esc(SDV_CONFIG.app.version) + '</p></section>';
+      '</section>';
   }
 
   /** 我的：账号 + 主题设置 + 编辑入口 + 本地存档说明 + 关于 */

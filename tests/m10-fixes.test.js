@@ -113,11 +113,11 @@ test('修复3 云端更新入口仅保留「我的」页', () => {
   const home = Pages.home();
   assert.ok(!home.includes('云端更新'), '首页不应有云端更新卡片');
   assert.ok(!home.includes('check-update'), '首页不应有更新按钮');
-  // 公告页：无更新入口，保留版本信息
+  // 公告页：无更新入口、无当前版本卡片（版本信息由公告徽标承载）
   const news = Pages.news();
   assert.ok(!news.includes('check-update'), '公告页不应有更新按钮');
   assert.ok(!news.includes('检查更新'), '公告页不应有检查更新文案');
-  assert.ok(news.includes('当前版本'), '公告页版本信息应保留');
+  assert.ok(!news.includes('当前版本'), '公告页不应有当前版本卡片');
   // 我的页：保留唯一更新入口
   const mine = Pages.mine();
   assert.equal(count(mine, 'check-update'), 1, '我的页应保留唯一云端更新入口');
@@ -165,6 +165,7 @@ test('公告 本次更新内容写入公告页（数组驱动，最新在前）'
   assert.ok(html.includes('notice-item'), '公告页未渲染公告条目');
   assert.ok(html.includes('v' + latest.version), '公告页未渲染最新版本徽标');
   assert.ok(html.includes(latest.title), '公告页未渲染最新公告标题');
+  assert.ok(!html.includes('当前版本'), '公告页不应有当前版本卡片（版本信息由公告徽标承载）');
   for (const kw of ['更多', '快捷键编辑', '按压动态反馈']) {
     assert.ok(html.includes(kw), '公告页缺少本次更新要点: ' + kw);
   }
