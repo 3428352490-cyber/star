@@ -71,7 +71,7 @@ test('M4-4 首页：四大卡片与信息卡占位', () => {
     assert.ok(html.includes('data-route="#/card/' + key + '"'), '卡片路由缺失: ' + key);
   }
   assert.ok(!html.includes('本地存档'), 'APP 不应展示本地存档表现');
-  assert.ok(html.includes('云端更新'), '缺少云端更新信息卡');
+  assert.ok(!html.includes('云端更新'), '首页不应有云端更新入口');
 });
 
 test('M4-5 图鉴：38 分类网格复用模块数组', () => {
@@ -88,11 +88,11 @@ test('M4-6 搜索页：搜索框与结果区框架', () => {
   assert.ok(html.includes('输入关键词，检索全部词条'), '缺少空态提示');
 });
 
-test('M4-7 公告页：空态 + 当前版本 + 检查更新', () => {
+test('M4-7 公告页：空态 + 当前版本（无更新入口）', () => {
   const html = Pages.news();
   assert.ok(html.includes('暂无公告'), '缺少公告空态');
   assert.ok(html.includes('v' + CONFIG.app.version), '版本号未渲染');
-  assert.ok(html.includes('data-action="check-update"'), '缺少检查更新入口');
+  assert.ok(!html.includes('check-update'), '公告页不应有云端更新入口');
 });
 
 test('M4-8 我的页：账号卡 + 主题开关 + 编辑入口 + 版本', () => {

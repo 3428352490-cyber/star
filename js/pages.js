@@ -53,8 +53,6 @@ const Pages = (() => {
         '<div>' +
           '<section class="card"><div class="card-head"><h2>功能专区</h2></div>' +
           '<div class="home-cards">' + cards + '</div></section>' +
-          '<section class="card info-card"><div class="card-head"><h2>云端更新</h2></div>' +
-          '<p>自动检测云端新版本；云端源码更新后，电脑、手机两端同步更新。</p></section>' +
         '</div>' +
       '</section>';
   }
@@ -81,8 +79,7 @@ const Pages = (() => {
       '<section class="card"><div class="card-head"><h2>运营通知 · 版本更新</h2></div>' +
       emptyState('暂无公告', '运营通知与版本更新公告将在此展示') + '</section>' +
       '<section class="card"><div class="card-head"><h2>当前版本</h2></div>' +
-      '<p class="row-text">v' + esc(SDV_CONFIG.app.version) + '</p>' +
-      '<div class="btn-group"><button class="btn btn-primary" data-action="check-update">检查更新</button></div></section>';
+      '<p class="row-text">v' + esc(SDV_CONFIG.app.version) + '</p></section>';
   }
 
   /** 我的：账号 + 主题设置 + 编辑入口 + 本地存档说明 + 关于 */

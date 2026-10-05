@@ -53,3 +53,20 @@ test('修复2 APP 不展示本地存档功能表现（持久化仍为系统功�
   assert.deepEqual(Store.getSelectedNav(), ['fish', 'crops'], '本地存档功能失效');
   resetNav();
 });
+
+test('修复3 云端更新入口仅保留「我的」页', () => {
+  resetNav();
+  // 首页：无云端更新入口
+  const home = Pages.home();
+  assert.ok(!home.includes('云端更新'), '首页不应有云端更新卡片');
+  assert.ok(!home.includes('check-update'), '首页不应有更新按钮');
+  // 公告页：无更新入口，保留版本信息
+  const news = Pages.news();
+  assert.ok(!news.includes('check-update'), '公告页不应有更新按钮');
+  assert.ok(!news.includes('检查更新'), '公告页不应有检查更新文案');
+  assert.ok(news.includes('当前版本'), '公告页版本信息应保留');
+  // 我的页：保留唯一更新入口
+  const mine = Pages.mine();
+  assert.equal(count(mine, 'check-update'), 1, '我的页应保留唯一云端更新入口');
+  assert.ok(mine.includes('data-action="check-update"'), '我的页缺少检查更新按钮');
+});
