@@ -26,6 +26,9 @@ test('M14 版本更新提醒：版本提醒逻辑统一收敛到 update.js（存
   assert.ok(js.includes("'sdv-guide:installed-version'"), '缺少本地已安装版本键（localStorage）');
   assert.ok(js.includes("'sdv-guide:update-skip'"), '缺少会话跳过标记键（sessionStorage）');
   assert.ok(js.includes("cache: 'no-store'"), '缺少禁用缓存请求');
+  assert.ok(js.includes("cloudVersionUrl + '?t=' + ts"), 'version.json 请求缺少 Date.now() 时间戳防缓存');
+  assert.ok(js.includes("'notice.json?t=' + ts"), 'notice.json 请求缺少 Date.now() 时间戳防缓存');
+  assert.ok(js.includes('noticeRes') && js.includes('noticeRes.ok'), '缺少 notice.json 公告读取与容错');
   assert.ok(js.includes('sessionSkipped()'), '缺少会话跳过判断（本次会话不再弹窗）');
   assert.ok(js.includes('location.reload()'), '缺少立即更新刷新逻辑');
 });
