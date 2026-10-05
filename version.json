@@ -1,5 +1,5 @@
 {
-  "latestVersion": "2.0.3",
-  "updateDesc": "更新更省心：发现新版本自动生效；手动检查更新保留弹窗确认",
+  "latestVersion": "2.0.4",
+  "updateDesc": "底部导航焕新：去掉边框底色更清爽；点击图标有放大反馈；当前页面图标高亮显示",
   "downloadUrl": "./index.html"
 }

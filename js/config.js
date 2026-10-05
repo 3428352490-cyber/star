@@ -10,7 +10,7 @@
 const SDV_CONFIG = {
   app: {
     name: '星露谷攻略',
-    version: '2.0.3',
+    version: '2.0.4',
     /**
      * 云端版本清单地址（GitHub Pages 部署后替换为实际地址）：
      * 例如 'https://你的用户名.github.io/仓库名/version.json'
@@ -56,6 +56,16 @@ const SDV_CONFIG = {
 
   /** 软件公告（公告页渲染；新版本发布时向数组头部追加条目） */
   announcements: [
+    {
+      version: '2.0.4',
+      date: '2026-10-06',
+      title: '底部导航焕新',
+      notes: [
+        '底部导航去掉边框和底色，页面更干净清爽',
+        '点击图标有轻微放大反馈，按起来更跟手',
+        '当前所在页面用颜色高亮图标，一眼认出位置',
+      ],
+    },
     {
       version: '2.0.3',
       date: '2026-10-06',
