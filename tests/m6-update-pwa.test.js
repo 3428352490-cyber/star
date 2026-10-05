@@ -114,3 +114,13 @@ test('M6-11 index.html 挂载 manifest 与 PWA 基础 meta', () => {
   assert.ok(html.includes('theme-color'), '缺少 theme-color');
   assert.ok(html.includes('viewport-fit=cover'), '缺少安全区 viewport 配置');
 });
+
+test('M6-12 缓存策略为网络优先：更新即时生效，离线回退缓存', () => {
+  const sw = readAppFile('sw.js');
+  const fetchIdx = sw.indexOf('fetch(e.request)');
+  const cacheMatchIdx = sw.indexOf('caches.match(e.request)');
+  assert.ok(fetchIdx >= 0, '缺少网络请求分支');
+  assert.ok(cacheMatchIdx >= 0, '缺少缓存回退分支');
+  assert.ok(fetchIdx < cacheMatchIdx, '应先走网络、失败后再回退缓存（网络优先）');
+  assert.ok(sw.includes("hit || caches.match('./index.html')"), '缺少离线兜底首页');
+});

@@ -2,7 +2,7 @@
 /* 星露谷攻略 · Service Worker
    一期：核心资源缓存（离线可用）+ 新版本发布后自动替换缓存。
    版本号必须与 js/config.js 中 SDV_CONFIG.app.version、version.json 三处同步。 */
-const CACHE_NAME = 'sdv-guide-v0.2.0';
+const CACHE_NAME = 'sdv-guide-v0.3.0';
 const CORE_ASSETS = [
   './',
   './index.html',
@@ -42,14 +42,16 @@ self.addEventListener('activate', (e) => {
 
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
+  // 网络优先：代码更新后立即生效；网络失败时回退缓存（PWA 离线可用）
   e.respondWith(
-    caches.match(e.request).then((hit) => {
-      if (hit) return hit;
-      return fetch(e.request).then((res) => {
+    fetch(e.request).then((res) => {
+      if (res && res.status === 200) {
         const copy = res.clone();
         caches.open(CACHE_NAME).then((cache) => cache.put(e.request, copy)).catch(() => {});
-        return res;
-      }).catch(() => caches.match('./index.html'));
-    })
+      }
+      return res;
+    }).catch(() =>
+      caches.match(e.request).then((hit) => hit || caches.match('./index.html'))
+    )
   );
 });
