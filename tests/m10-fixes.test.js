@@ -200,6 +200,11 @@ test('UI 星露谷像素木风格：卡片/长条/物品面板/成就条/对话�
   // 木纹质感：纹理渐变 + 木节点（radial-gradient）强化
   assert.ok(base.includes('radial-gradient'), '木纹缺少木节点质感');
 
+  // 页面背景：像素网格纹理（纸张复古质感），深浅主题各有网格线变量
+  assert.ok(base.includes('--grid-line:'), '缺少页面网格线变量');
+  assert.ok(base.includes('background-size: var(--grid-size) var(--grid-size)'), '页面缺少像素网格铺排');
+  assert.ok(base.includes('var(--grid-line) 1px'), '网格线未应用');
+
   // 像素小圆角：无平滑大圆角
   assert.ok(base.includes('--radius: 4px'), '未使用像素小圆角变量');
 
