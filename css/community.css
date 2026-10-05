@@ -1,0 +1,154 @@
+/* ============================================================
+ * 社区模块样式（v2.0.0 老乡有话说）
+ * 沿用现有像素卡片风格：直角卡片 / 粗像素边框 / 高饱和复古配色
+ * ============================================================ */
+
+/* ---------- 首页【老乡有话说】板块 ---------- */
+.community-block { margin-top: 14px; }
+.community-head { display: flex; align-items: center; gap: 8px; }
+.community-head h2 { flex: 1; font-size: 15px; }
+
+.pixel-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 32px; height: 32px; padding: 0 8px;
+  background: #e8c14a; color: #3a2a1a;
+  border: 3px solid #3a2a1a; box-shadow: 3px 3px 0 rgba(58, 42, 26, 0.35);
+  image-rendering: pixelated;
+  cursor: pointer; font-family: inherit;
+}
+.pixel-btn:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 rgba(58, 42, 26, 0.35); }
+.pixel-btn.danger { background: #d65a3a; }
+.refresh-btn { font-size: 18px; }
+
+/* ---------- 帖子卡片 ---------- */
+.post-grid {
+  display: grid; grid-template-columns: 1fr; gap: 12px;
+  margin-top: 10px;
+}
+.post-card {
+  display: flex; flex-direction: column; overflow: hidden;
+  background: #fdf6e3; color: #3a2a1a;
+  border: 3px solid #3a2a1a; box-shadow: 4px 4px 0 rgba(58, 42, 26, 0.3);
+  cursor: pointer; text-align: left; font-family: inherit;
+}
+.post-card:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 rgba(58, 42, 26, 0.3); }
+.post-card-cover .post-cover { width: 100%; aspect-ratio: 16 / 9; display: flex; align-items: center; justify-content: center; }
+.post-cover { display: flex; align-items: center; justify-content: center; }
+.post-cover span { font-size: 34px; image-rendering: pixelated; }
+.post-cover-empty { background: #b8a88a; }
+.post-cover-empty span { font-size: 28px; opacity: 0.8; }
+.post-card-body { padding: 8px 10px 10px; }
+.post-card-head { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+.post-nick { font-size: 12px; color: #5a4a2a; font-weight: 700; }
+.post-time { font-size: 10px; color: #8a7a5a; }
+.post-title {
+  font-size: 14px; line-height: 1.4; margin: 4px 0 6px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; /* 长标题省略，防撑破卡片 */
+}
+.post-stats { display: flex; gap: 10px; font-size: 12px; }
+.stat { display: inline-flex; align-items: center; gap: 3px; color: #4a3a1a; }
+.see-more-btn { width: 100%; margin-top: 12px; }
+
+/* ---------- 头像 ---------- */
+.px-avatar {
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 2px solid #3a2a1a; image-rendering: pixelated;
+  flex: none; overflow: hidden;
+}
+.px-avatar[data-size="sm"] { width: 26px; height: 26px; font-size: 14px; }
+.px-avatar[data-size="md"] { width: 34px; height: 34px; font-size: 18px; }
+.px-avatar[data-size="lg"] { width: 44px; height: 44px; font-size: 24px; }
+
+/* ---------- 帖子详情 ---------- */
+.post-detail { margin-bottom: 12px; }
+.post-detail-author { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.post-detail-author .tag { margin-left: auto; }
+.post-detail-title { font-size: 17px; margin: 4px 0 10px; }
+.post-detail-cover { aspect-ratio: 16 / 9; width: 100%; margin-bottom: 10px; }
+.post-detail-cover .post-cover { width: 100%; height: 100%; }
+.post-detail-body { font-size: 13px; line-height: 1.8; color: #3a2a1a; margin: 0 0 10px; }
+.post-images { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 10px 0; }
+.post-img { aspect-ratio: 1 / 1; display: flex; align-items: center; justify-content: center; border: 2px solid #3a2a1a; }
+.post-img span { font-size: 26px; }
+.post-detail-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+.act-btn { font-size: 13px; }
+
+/* ---------- 评论区 ---------- */
+.comment-section { margin-bottom: 12px; }
+.comment-list { margin-top: 8px; }
+.comment-item { display: flex; gap: 8px; padding: 8px 0; border-top: 2px dashed rgba(58, 42, 26, 0.25); }
+.comment-main { flex: 1; }
+.comment-head { display: flex; align-items: baseline; gap: 8px; }
+.comment-main p { font-size: 13px; line-height: 1.6; margin: 2px 0 0; }
+.comment-input-row { display: flex; gap: 8px; margin-top: 12px; }
+.comment-input-row input { flex: 1; }
+
+/* ---------- 发帖弹窗 ---------- */
+.post-form { display: flex; flex-direction: column; gap: 8px; }
+.form-label { font-size: 12px; color: #5a4a2a; }
+.post-form input[type="text"], .post-form textarea {
+  width: 100%; box-sizing: border-box;
+  background: #fff8e6; border: 2px solid #3a2a1a; color: #3a2a1a;
+  padding: 6px 8px; font-family: inherit; font-size: 13px;
+}
+.post-img-picker { display: flex; gap: 8px; align-items: flex-start; }
+.post-img-preview { display: flex; flex-wrap: wrap; gap: 6px; flex: 1; }
+.post-img-preview-item {
+  width: 56px; height: 56px; overflow: hidden;
+  border: 2px solid #3a2a1a; display: flex; align-items: center; justify-content: center;
+}
+.post-img-preview-item img { width: 100%; height: 100%; object-fit: cover; image-rendering: pixelated; }
+.vis-radio { display: flex; gap: 8px; }
+.vis-option {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 4px 8px; border: 2px solid #3a2a1a; background: #fdf6e3;
+  cursor: pointer; font-size: 12px;
+}
+.vis-option.on { background: #e8c14a; }
+.vis-option input { position: absolute; opacity: 0; pointer-events: none; }
+.partial-picker { margin-top: 2px; }
+.villager-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.vg-tag {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 6px; border: 2px solid #3a2a1a; background: #fdf6e3;
+  cursor: pointer; font-size: 12px;
+}
+.vg-tag.on { background: #e8c14a; }
+.vg-tag input { position: absolute; opacity: 0; pointer-events: none; }
+
+/* ---------- 消息页 ---------- */
+.message-list { margin-top: 6px; }
+.message-item {
+  display: flex; align-items: center; gap: 8px; padding: 10px 0;
+  border-top: 2px dashed rgba(58, 42, 26, 0.25); cursor: pointer;
+}
+.message-item.unread { background: rgba(232, 193, 74, 0.18); }
+.message-main { flex: 1; }
+.message-text { font-size: 13px; color: #3a2a1a; }
+.msg-dot { width: 10px; height: 10px; background: #d65a3a; border: 2px solid #3a2a1a; flex: none; }
+
+/* ---------- 我的帖子 ---------- */
+.my-post-list { margin-top: 6px; }
+.my-post-item {
+  display: flex; align-items: center; gap: 8px; padding: 8px 0;
+  border-top: 2px dashed rgba(58, 42, 26, 0.25);
+}
+.my-post-info { flex: 1; cursor: pointer; min-width: 0; }
+.my-post-info .post-title { margin: 4px 0; }
+.my-post-ops { display: flex; gap: 6px; }
+
+/* ---------- 首页左上角公告广告牌入口 ---------- */
+.billboard-btn {
+  position: absolute; top: 8px; left: 10px; z-index: 5;
+  width: 34px; height: 34px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: #e8c14a; border: 3px solid #3a2a1a;
+  box-shadow: 3px 3px 0 rgba(58, 42, 26, 0.35);
+  cursor: pointer; font-size: 17px; image-rendering: pixelated;
+}
+.billboard-btn:active { transform: translate(2px, 2px); }
+
+/* ---------- 宽屏双列（帖子网格） ---------- */
+@media (min-width: 1024px) {
+  .post-grid { grid-template-columns: 1fr 1fr; gap: 14px; }
+}

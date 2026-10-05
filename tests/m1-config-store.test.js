@@ -44,8 +44,8 @@ test('M1-2 快捷导航：默认 4 个有效模块、上限 7、2行4格', () =>
   assert.deepEqual(qn.defaultSelected, ['villagers', 'calendar', 'calculator', 'filter']);
 });
 
-test('M1-3 底部导航 5 Tab 顺序正确；四大卡片 key 正确', () => {
-  assert.deepEqual(CONFIG.tabs.map((t) => t.key), ['home', 'codex', 'search', 'news', 'mine']);
+test('M1-3 底部导航 5 Tab 顺序正确（v2.0.0：公告→消息）；四大卡片 key 正确', () => {
+  assert.deepEqual(CONFIG.tabs.map((t) => t.key), ['home', 'codex', 'search', 'messages', 'mine']);
   for (const t of CONFIG.tabs) assert.ok(t.label.length > 0);
   assert.deepEqual(CONFIG.homeCards.map((c) => c.key), ['map', 'guide', 'calculator', 'mods']);
   for (const c of CONFIG.homeCards) assert.ok(c.title.length > 0);

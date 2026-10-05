@@ -13,7 +13,7 @@ const vm = require('vm');
 const ROOT = path.resolve(__dirname, '..', '..');
 const APP_FILES = [
   'js/util.js', 'js/config.js', 'js/store.js', 'js/theme.js', 'js/ui.js',
-  'js/pages.js', 'js/router.js', 'js/update.js', 'js/app.js',
+  'js/pages.js', 'js/api.js', 'js/community.js', 'js/router.js', 'js/update.js', 'js/app.js',
 ];
 
 function fakeEl(id) {

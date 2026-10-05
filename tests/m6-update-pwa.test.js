@@ -66,14 +66,14 @@ test('M6-2b 版本解析转数字数组 + 更新类型自动识别（主/次/修
 });
 
 test('M6-2c 弹窗标题按更新类型变化：次版本/修订号升级', async () => {
-  // 次版本升级：1.1.0 vs 1.0.10 → 功能更新
-  mockFetch({ latestVersion: '1.1.0', updateDesc: '新增功能与内容', downloadUrl: './index.html' });
+  // 次版本升级：2.1.0 vs 2.0.0 → 功能更新
+  mockFetch({ latestVersion: '2.1.0', updateDesc: '新增功能与内容', downloadUrl: './index.html' });
   await Updater.checkUpdate(false);
   assert.ok(els.get('modal-root').innerHTML.includes('功能更新'), '次版本升级标题应为「功能更新」');
   assert.ok(els.get('modal-root').innerHTML.includes('新增功能与内容'), '缺少次版本升级小字提示');
-  // 修订号升级：1.0.11 vs 1.0.10 → 补丁更新
+  // 修订号升级：2.0.1 vs 2.0.0 → 补丁更新
   Modal.close();
-  mockFetch({ latestVersion: '1.0.11', updateDesc: '问题修复与细节优化', downloadUrl: './index.html' });
+  mockFetch({ latestVersion: '2.0.1', updateDesc: '问题修复与细节优化', downloadUrl: './index.html' });
   await Updater.checkUpdate(false);
   assert.ok(els.get('modal-root').innerHTML.includes('补丁更新'), '修订号升级标题应为「补丁更新」');
   assert.ok(els.get('modal-root').innerHTML.includes('问题修复与细节优化'), '缺少修订号升级小字提示');

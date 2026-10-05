@@ -37,7 +37,7 @@ const Pages = (() => {
       '<span class="tile-label">' + esc(m.label) + '</span></button>';
   }
 
-  /** 首页：快捷导航 8 格（7 自定义 + 第 8 格「更多」）+ 四大卡片 + 信息卡 */
+  /** 首页：左上角公告入口 + 快捷导航 8 格 + 功能专区（缩小卡片）+ 老乡有话说社区板块 */
   function home() {
     const selected = Store.getSelectedNav();
     const totalCells = SDV_CONFIG.quickNav.rows * SDV_CONFIG.quickNav.cols - 1; // 7
@@ -52,11 +52,12 @@ const Pages = (() => {
       '<span class="tile-label">更多</span></button>');
 
     const cards = SDV_CONFIG.homeCards.map((c) =>
-      '<button class="card home-card" data-route="#/card/' + c.key + '">' +
+      '<button class="card home-card home-card-sm" data-route="#/card/' + c.key + '">' +
         '<h3>' + esc(c.title) + '</h3><p>' + esc(c.desc) + '</p></button>'
     ).join('');
 
     return pageHeader(SDV_CONFIG.app.name, false) +
+      '<button class="billboard-btn" data-route="#/news" title="公告">📢</button>' +
       '<section class="home-grid">' +
         '<div>' +
           '<section class="card"><div class="card-head"><h2>快捷功能</h2><span class="card-sub">' + selected.length + '/' + SDV_CONFIG.quickNav.maxSelected + '</span></div>' +
@@ -64,9 +65,10 @@ const Pages = (() => {
         '</div>' +
         '<div>' +
           '<section class="card"><div class="card-head"><h2>功能专区</h2></div>' +
-          '<div class="home-cards">' + cards + '</div></section>' +
+          '<div class="home-cards home-cards-sm">' + cards + '</div></section>' +
         '</div>' +
-      '</section>';
+      '</section>' +
+      (typeof Community !== 'undefined' ? Community.renderHomeBlock() : '');
   }
 
   /** 图鉴：38 分类网格（复用模块数组，单一数据源） */
@@ -85,18 +87,25 @@ const Pages = (() => {
       '<div id="search-result" class="search-result">' + emptyState('输入关键词，检索全部词条', '一期为基础检索框架，全量词条二期接入') + '</div></section>';
   }
 
-  /** 公告主页：只展示最新一条公告；右上角「更多」进入历史公告页 */
+  /** 公告主页：默认只展示最近 3 条；右上角「更多」展开全部 / 再次点击收起 */
   function news() {
     const list = SDV_CONFIG.announcements || [];
-    const latest = list.length ? list[0] : null;
-    return pageHeader('公告', false) +
-      '<section class="card"><div class="card-head"><h2>运营通知 · 版本更新</h2>' +
-      (list.length > 1 ? '<button class="notice-more" data-route="#/news-history">更多 ›</button>' : '') +
+    const expanded = newsExpanded();
+    const shown = expanded ? list : list.slice(0, 3);
+    return pageHeader('公告', true, '#/home') +
+      '<section class="card"><div class="card-head"><h2>版本更新</h2>' +
+      (list.length > 3 ? '<button class="notice-more" data-action="news-toggle-more">' + (expanded ? '收起 ›' : '更多 ›') + '</button>' : '') +
       '</div>' +
-      (latest ? '<div class="notice-list">' + noticeItem(latest) + '</div>'
+      (shown.length ? '<div class="notice-list">' + shown.map(noticeItem).join('') + '</div>'
               : emptyState('暂无公告', '运营通知与版本更新公告将在此展示')) +
       '</section>';
   }
+
+  /** 公告页「更多/收起」展开状态（内存态，刷新回到默认 3 条） */
+  let _newsExpanded = false;
+  function newsExpanded() { return _newsExpanded; }
+  function newsToggleMore() { _newsExpanded = !_newsExpanded; return _newsExpanded; }
+  function newsResetExpand() { _newsExpanded = false; }
 
   /** 历史公告页：展示全部往期公告；左上角返回公告主页 */
   function newsHistory() {
@@ -109,15 +118,22 @@ const Pages = (() => {
       '</section>';
   }
 
-  /** 我的：账号 + 主题设置 + 编辑入口 + 本地存档说明 + 关于 */
+  /** 我的：游客资料卡 + 主题设置 + 我的社区数据 + 管理员预留 + 关于 */
   function mine() {
     const t = Store.getTheme();
+    const me = (typeof CommunityAPI !== 'undefined') ? CommunityAPI.getProfile() : null;
     return pageHeader('我的', false) +
-      '<button class="card account-card" data-action="account">' +
-        '<span class="avatar"></span>' +
-        '<span class="account-text">未登录</span>' +
+      '<button class="card account-card" data-action="open-profile-modal">' +
+        '<span class="avatar px-avatar" data-size="md" style="background:' + esc(me ? me.color : '#6a8a5a') + '">' + esc(me ? me.avatar : '🧑‍🌾') + '</span>' +
+        '<span class="account-text">' + esc(me ? me.nick : '星露谷村民') + '</span>' +
         '<span class="account-arrow">›</span>' +
       '</button>' +
+
+      '<section class="card"><div class="card-head"><h2>我的社区</h2></div>' +
+        '<button class="row-btn" data-route="#/mine-posts"><span>我的帖子</span><span>›</span></button>' +
+        '<button class="row-btn" data-route="#/mine-likes"><span>我的点赞</span><span>›</span></button>' +
+        '<button class="row-btn" data-route="#/mine-favorites"><span>我的收藏</span><span>›</span></button>' +
+      '</section>' +
 
       '<section class="card"><div class="card-head"><h2>主题设置</h2></div>' +
         '<div class="setting-row">' +
@@ -136,6 +152,7 @@ const Pages = (() => {
       '<section class="card"><div class="card-head"><h2>关于</h2></div>' +
         '<div class="setting-row"><div class="setting-title">版本</div><div>v' + esc(SDV_CONFIG.app.version) + '</div></div>' +
         '<button class="row-btn" data-action="check-update"><span>检查更新</span><span>›</span></button>' +
+        '<button class="row-btn" data-action="open-admin"><span>管理后台（预留）</span><span>›</span></button>' +
       '</section>';
   }
 
@@ -188,6 +205,26 @@ const Pages = (() => {
       '<section class="card">' + emptyState('未找到该页面', '请从底部导航返回') + '</section>';
   }
 
+  /* ---------- v2.0.0 社区页面（渲染全部委托 Community 模块，数据走 CommunityAPI） ---------- */
+  function community() {
+    return (typeof Community !== 'undefined') ? Community.renderCommunityList() : notFound();
+  }
+  function postDetail(param) {
+    return (typeof Community !== 'undefined') ? Community.renderPostDetail(param) : notFound();
+  }
+  function messages() {
+    return (typeof Community !== 'undefined') ? Community.renderMessages() : notFound();
+  }
+  function minePosts() {
+    return (typeof Community !== 'undefined') ? Community.renderMinePosts() : notFound();
+  }
+  function mineLikes() {
+    return (typeof Community !== 'undefined') ? Community.renderMineLikes() : notFound();
+  }
+  function mineFavorites() {
+    return (typeof Community !== 'undefined') ? Community.renderMineFavorites() : notFound();
+  }
+
   /** 搜索过滤（基础框架）：按 label/key 模糊匹配 */
   function filterModules(query) {
     const q = String(query || '').trim().toLowerCase();
@@ -197,5 +234,9 @@ const Pages = (() => {
     );
   }
 
-  return { home, codex, search, news, newsHistory, mine, quickEdit, modulePage, cardPage, notFound, emptyState, filterModules };
+  return {
+    home, codex, search, news, newsHistory, mine, quickEdit, modulePage, cardPage,
+    community, postDetail, messages, minePosts, mineLikes, mineFavorites,
+    notFound, emptyState, filterModules, newsToggleMore, newsResetExpand,
+  };
 })();

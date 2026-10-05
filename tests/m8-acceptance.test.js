@@ -159,12 +159,13 @@ test('验收12 重启后主题选择保持', () => {
   assert.equal(Store.getTheme().followSystem, false);
 });
 
-test('验收13 我的页账号弹窗可打开可关闭', () => {
+test('验收13 我的页游客资料区块存在，弹窗可打开可关闭', () => {
   resetStore();
   const html = Pages.mine();
-  assert.ok(html.includes('未登录'), '账号区块缺失');
-  Modal.show({ title: '敬请期待', body: '<p>x</p>', actions: [{ label: '知道了', cls: 'btn-primary' }] });
-  assert.ok(els.get('modal-root').innerHTML.includes('敬请期待'));
+  assert.ok(html.includes('account-card'), '游客资料卡缺失');
+  assert.ok(html.includes('open-profile-modal'), '资料卡应打开个人资料弹窗');
+  Modal.show({ title: '个人资料', body: '<p>x</p>', actions: [{ label: '知道了', cls: 'btn-primary' }] });
+  assert.ok(els.get('modal-root').innerHTML.includes('个人资料'));
   Modal.close();
   assert.equal(els.get('modal-root').innerHTML, '');
 });

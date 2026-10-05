@@ -48,11 +48,11 @@ test('M5-2 手动主题按钮：自动关闭跟随并写入 manual', () => {
   assert.equal(globalThis.document.documentElement.dataset.theme, 'dark', '界面未应用');
 });
 
-test('M5-3 账号卡点击：弹出「敬请期待」', () => {
+test('M5-3 游客资料卡点击：弹出「个人资料」弹窗（v2.0.0 社区身份）', () => {
   __fireDoc('click', {
-    target: clickTarget({ '[data-action]': { dataset: { action: 'account' } } }),
+    target: clickTarget({ '[data-action]': { dataset: { action: 'open-profile-modal' } } }),
   });
-  assert.ok(els.get('modal-root').innerHTML.includes('敬请期待'), '未弹出敬请期待弹窗');
+  assert.ok(els.get('modal-root').innerHTML.includes('个人资料'), '未弹出个人资料弹窗');
 });
 
 test('M5-4 跟随系统开关 change：同步 Theme', () => {

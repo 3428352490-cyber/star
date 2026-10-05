@@ -141,43 +141,43 @@ test('修复3b 刷新首页不可见云端更新卡片，版本检测底层逻�
   globalThis.fetch = async () => { throw new Error('fetch 未在测试中 stub'); };
 });
 
-test('公告页改版：主页展示最新公告，更多进入历史页，返回回主页', () => {
+test('公告页改版：主页默认 3 条 + 「更多/收起」同页展开全部（v2.0.0）', () => {
   resetNav();
   const list = CONFIG.announcements;
   assert.ok(Array.isArray(list) && list.length >= 2, '应至少有一条最新与一条往期公告');
   const latest = list[0];
   assert.equal(latest.version, CONFIG.app.version, '最新公告版本应等于当前版本');
 
-  // 主页：仅最新一条；含「更多」入口；不含往期版本徽标
+  // 主页：默认仅 3 条；含「更多/收起」按钮；不含往期（第 4 条起）版本徽标
+  Pages.newsResetExpand();
   const home = Pages.news();
-  assert.equal(count(home, 'notice-item'), 1, '主页应只展示最新一条');
+  assert.equal(count(home, 'notice-item'), Math.min(3, list.length), '主页应默认只展示最近 3 条');
   assert.ok(home.includes('v' + latest.version), '主页未渲染最新版本徽标');
   assert.ok(home.includes(latest.title), '主页未渲染最新公告标题');
-  assert.ok(home.includes('data-route="#/news-history"'), '主页缺少「更多」入口');
-  assert.ok(!home.includes(list[1].version), '主页不应展示往期公告');
+  assert.ok(home.includes('data-action="news-toggle-more"'), '主页缺少「更多/收起」按钮动作');
   assert.ok(!home.includes('data-action="check-update"'), '主页不应有云端更新入口');
+  if (list.length > 3) assert.ok(!home.includes(list[3].version), '主页不应展示第 4 条起往期公告');
 
-  // 点击「更多」→ hash 变更 → 历史页渲染全部公告
+  // 点击「更多」→ 展开全部（同页渲染，无需跳转历史页）
+  Pages.newsToggleMore();
+  const expanded = Pages.news();
+  assert.equal(count(expanded, 'notice-item'), list.length, '展开后应展示全部公告');
+  assert.ok(expanded.includes('收起'), '展开后按钮应变为「收起」');
+  // 再次点击 → 收起回 3 条
+  Pages.newsToggleMore();
+  const collapsed = Pages.news();
+  assert.equal(count(collapsed, 'notice-item'), Math.min(3, list.length), '收起后应回到最近 3 条');
+  Pages.newsResetExpand();
+
+  // 历史公告页仍可用（展示全部 + 返回公告主页）
   globalThis.location.hash = '#/news';
   Router.handle();
-  globalThis.__fireDoc('click', {
-    target: { closest: (sel) => (sel === '[data-route]' ? { dataset: { route: '#/news-history' } } : null) },
-  });
-  assert.equal(globalThis.location.hash, '#/news-history', '点更多未跳转历史页');
+  globalThis.location.hash = '#/news-history';
   Router.handle();
   const hist = els.get('page-container');
   assert.equal(count(hist.innerHTML, 'notice-item'), list.length, '历史页应展示全部公告');
   assert.ok(hist.innerHTML.includes(list[1].version), '历史页缺少往期公告');
-
-  // 历史页左上角返回按钮 → 回到公告主页
   assert.ok(hist.innerHTML.includes('data-route="#/news"'), '历史页缺少返回公告主页按钮');
-  globalThis.__fireDoc('click', {
-    target: { closest: (sel) => (sel === '[data-route]' ? { dataset: { route: '#/news' } } : null) },
-  });
-  assert.equal(globalThis.location.hash, '#/news', '返回未回到公告主页');
-  Router.handle();
-  const back = els.get('page-container');
-  assert.equal(count(back.innerHTML, 'notice-item'), 1, '返回后主页应只展示最新一条');
 
   // 还原 hash
   globalThis.location.hash = '#/home';

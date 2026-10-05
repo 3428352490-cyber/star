@@ -8,9 +8,16 @@
  * ============================================================
  */
 const Router = (() => {
-  const TAB_PATHS = ['home', 'codex', 'search', 'news', 'mine'];
+  const TAB_PATHS = ['home', 'codex', 'search', 'messages', 'mine'];
   /** 路由 path → Pages 方法名映射（连字符路径对应驼峰方法） */
-  const PAGE_ALIASES = { 'quick-edit': 'quickEdit', 'news-history': 'newsHistory' };
+  const PAGE_ALIASES = {
+    'quick-edit': 'quickEdit',
+    'news-history': 'newsHistory',
+    'post-detail': 'postDetail',
+    'mine-posts': 'minePosts',
+    'mine-likes': 'mineLikes',
+    'mine-favorites': 'mineFavorites',
+  };
 
   function parseHash() {
     const raw = (location.hash || '#/home').replace(/^#\/?/, '');
@@ -33,6 +40,7 @@ const Router = (() => {
     let html;
     if (path === 'module') html = Pages.modulePage(param);
     else if (path === 'card') html = Pages.cardPage(param);
+    else if (path === 'post') html = Pages.postDetail(param);
     else if (typeof Pages[path] === 'function') html = Pages[path]();
     else if (PAGE_ALIASES[path] && typeof Pages[PAGE_ALIASES[path]] === 'function') html = Pages[PAGE_ALIASES[path]]();
     else html = Pages.notFound();

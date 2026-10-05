@@ -15,7 +15,7 @@ const App = (() => {
     home: '<path d="M4 11 L12 3 L20 11 V20 H14 V14 H10 V20 H4 Z"/>',
     codex: '<rect x="4" y="4" width="7" height="7"/><rect x="13" y="4" width="7" height="7"/><rect x="4" y="13" width="7" height="7"/><rect x="13" y="13" width="7" height="7"/>',
     search: '<circle cx="10" cy="10" r="6"/><path d="M14.5 14.5 L20 20"/>',
-    news: '<rect x="4" y="4" width="16" height="16"/><path d="M8 9 H16 M8 13 H16 M8 17 H13"/>',
+    messages: '<path d="M4 6 H20 V16 H12 L8 20 V16 H4 Z"/><circle cx="8" cy="11" r="1"/><circle cx="12" cy="11" r="1"/><circle cx="16" cy="11" r="1"/>',
     mine: '<circle cx="12" cy="8" r="4"/><path d="M5.5 20 C5.5 15.5 8 13.5 12 13.5 C16 13.5 18.5 15.5 18.5 20"/>',
   };
 
@@ -78,7 +78,7 @@ const App = (() => {
       return;
     }
     const actionEl = t.closest('[data-action]');
-    if (actionEl) handleAction(actionEl.dataset.action);
+    if (actionEl) handleAction(actionEl.dataset.action, t);
 
     /* 快捷键上限：点击已达上限而被禁用的未勾选项 → 弹出提示弹窗（仅提示，不执行新增动作） */
     const navItem = t.closest('.check-item');
@@ -115,10 +115,83 @@ const App = (() => {
   });
 
   /* ---------- 动作分发 ---------- */
-  function handleAction(action) {
+  function handleAction(action, target) {
+    const container = $('#page-container');
     switch (action) {
-      case 'account':
-        Modal.show({ title: '敬请期待', body: '<p>云端账号登录功能建设中，敬请期待。</p>' });
+      case 'open-profile-modal':
+        openProfileModal();
+        break;
+      case 'open-admin':
+        Modal.show({
+          title: '管理后台（预留）',
+          body: '<p>管理员后台用于查看全部帖子（含私密帖）与内容审核。</p><p class="setting-desc">当前为 Mock 阶段预留入口，后续对接后端后开放。</p>',
+          actions: [{ label: '知道了', cls: 'btn-primary' }],
+        });
+        break;
+      case 'refresh-posts':
+        if (typeof Community !== 'undefined') Community.refreshBlock(container ? container.querySelector('.post-grid') : null);
+        break;
+      case 'open-post-modal':
+        if (typeof Community !== 'undefined') Community.openPostModal(null);
+        break;
+      case 'edit-post': {
+        const post = CommunityAPI.fetchPostDetail($(target).closest('[data-post]').dataset.post);
+        if (post) Community.openPostModal(post);
+        else Toast.show('帖子不存在或无权编辑');
+        break;
+      }
+      case 'delete-post': {
+        const id = $(target).closest('[data-post]').dataset.post;
+        Modal.show({
+          title: '删除帖子',
+          body: '<p>确定删除这篇帖子吗？删除后不可恢复。</p>',
+          actions: [
+            { label: '取消', cls: 'btn-text', onClick: () => {} },
+            { label: '删除', cls: 'btn-primary', onClick: () => {
+              CommunityAPI.deletePost(id);
+              Toast.show('已删除');
+              Modal.close();
+              render();
+            } },
+          ],
+        });
+        break;
+      }
+      case 'post-like': {
+        const id = $(target).closest('[data-post]').dataset.post;
+        const r = CommunityAPI.toggleLike(id);
+        if (r && r.ok) updatePostCounts(id);
+        else Toast.show('帖子不存在或无权查看');
+        break;
+      }
+      case 'post-fav': {
+        const id = $(target).closest('[data-post]').dataset.post;
+        const r = CommunityAPI.toggleFavorite(id);
+        if (r && r.ok) updatePostCounts(id);
+        else Toast.show('帖子不存在或无权查看');
+        break;
+      }
+      case 'post-comment': {
+        const id = $(target).closest('[data-post]').dataset.post;
+        const input = $('#comment-input');
+        const text = input ? input.value : '';
+        const c = CommunityAPI.addComment(id, text);
+        if (c) { Toast.show('评论已发布'); render(); }
+        else Toast.show('请输入评论内容');
+        break;
+      }
+      case 'post-comment-scroll': {
+        const input = $('#comment-input');
+        if (input) input.focus();
+        break;
+      }
+      case 'mark-all-read':
+        CommunityAPI.markAllRead();
+        Toast.show('已全部标记为已读');
+        render();
+        break;
+      case 'news-toggle-more':
+        if (typeof Pages !== 'undefined' && Pages.newsToggleMore) { Pages.newsToggleMore(); render(); }
         break;
       case 'check-update':
         // 【检查更新】备用手动入口：点击执行完整云端版本比对（自动检测同样调用 checkUpdate）
@@ -135,6 +208,54 @@ const App = (() => {
       default:
         break;
     }
+  }
+
+  /** 点赞/收藏后原地刷新计数（不整页重载，保留阅读位置） */
+  function updatePostCounts(id) {
+    const post = CommunityAPI.fetchPostDetail(id);
+    if (!post) return;
+    const like = document.querySelector('[data-action="post-like"] [data-like-count]');
+    const fav = document.querySelector('[data-action="post-fav"] [data-fav-count]');
+    if (like) like.textContent = post.likes || 0;
+    if (fav) fav.textContent = post.favorites || 0;
+  }
+
+  /** 我的页：游客资料弹窗（昵称 / 像素头像） */
+  function openProfileModal() {
+    const me = CommunityAPI.getProfile();
+    const emojis = ['🧑‍🌾', '👩‍🌾', '🧔', '👩‍🎨', '🧑‍🎤'];
+    const body =
+      '<div class="post-form">' +
+        '<label class="form-label">昵称</label>' +
+        '<input id="profile-nick" type="text" maxlength="12" value="' + esc(me.nick) + '">' +
+        '<label class="form-label">像素头像</label>' +
+        '<div class="avatar-picker">' + emojis.map((e) =>
+          '<button class="px-avatar" data-size="md" data-avatar="' + e + '" style="background:' + esc(me.color) + '">' + e + '</button>'
+        ).join('') + '</div>' +
+      '</div>';
+    Modal.show({
+      title: '个人资料',
+      body,
+      actions: [
+        { label: '取消', cls: 'btn-text', onClick: () => {} },
+        { label: '保存', cls: 'btn-primary', onClick: () => {
+          const nick = ($('#profile-nick') || {}).value || '';
+          const picked = document.querySelector('.avatar-picker .px-avatar[data-selected]');
+          CommunityAPI.setProfile({ nick: String(nick).trim() || me.nick, avatar: picked ? picked.dataset.avatar : me.avatar });
+          Toast.show('资料已保存');
+          Modal.close();
+          render();
+        } },
+      ],
+    });
+    // 头像选择态
+    $$('.avatar-picker .px-avatar').forEach((el) => {
+      if (el.dataset.avatar === me.avatar) el.setAttribute('data-selected', '');
+      el.addEventListener('click', () => {
+        $$('.avatar-picker .px-avatar').forEach((x) => x.removeAttribute('data-selected'));
+        el.setAttribute('data-selected', '');
+      });
+    });
   }
 
   /* ---------- 快捷键编辑 ---------- */

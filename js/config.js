@@ -10,7 +10,7 @@
 const SDV_CONFIG = {
   app: {
     name: '星露谷攻略',
-    version: '1.0.11',
+    version: '2.0.0',
     /**
      * 云端版本清单地址（GitHub Pages 部署后替换为实际地址）：
      * 例如 'https://你的用户名.github.io/仓库名/version.json'
@@ -37,13 +37,13 @@ const SDV_CONFIG = {
     moreKey: '__more__',           // 第8格固定「更多」按钮标识（不属于功能模块数组）
   },
 
-  /** 底部固定导航（5 个分页，均分屏幕宽度；搜索居中为视觉核心） */
+  /** 底部固定导航（5 个分页，均分屏幕宽度；搜索居中为视觉核心；公告入口移至首页左上角广告牌） */
   tabs: [
-    { key: 'home',   label: '首页' },
-    { key: 'codex',  label: '图鉴' },
-    { key: 'search', label: '搜索' },
-    { key: 'news',   label: '公告' },
-    { key: 'mine',   label: '我的' },
+    { key: 'home',     label: '首页' },
+    { key: 'codex',    label: '图鉴' },
+    { key: 'search',   label: '搜索' },
+    { key: 'messages', label: '消息' },
+    { key: 'mine',     label: '我的' },
   ],
 
   /** 首页四大卡片功能模块（仅占位框架，二期填充） */
@@ -56,6 +56,17 @@ const SDV_CONFIG = {
 
   /** 软件公告（公告页渲染；新版本发布时向数组头部追加条目） */
   announcements: [
+    {
+      version: '2.0.0',
+      date: '2026-10-05',
+      title: '老乡有话说 上线',
+      notes: [
+        '新增社区板块「老乡有话说」：村民发帖、点赞收藏、评论互动',
+        '新增消息中心：村民互动第一时间提醒，支持一键全部已读',
+        '我的页面新增我的帖子、我的点赞、我的收藏',
+        '公告入口移至首页左上角，底部导航新增「消息」',
+      ],
+    },
     {
       version: '1.0.11',
       date: '2026-10-05',

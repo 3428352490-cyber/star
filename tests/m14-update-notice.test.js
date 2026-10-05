@@ -78,7 +78,7 @@ test('M14 版本更新提醒：GitHub Actions 工作流完整（main 推送触�
   assert.ok(wf.includes('name: Bump Version'), '工作流缺失');
   assert.ok(wf.includes('branches: [ main ]'), '未监听 main 分支推送');
   assert.ok(wf.includes('actions/checkout@v4'), '缺少 checkout');
-  assert.ok(wf.includes('fetch-depth: 2'), '缺少深度 2 用于防循环对比');
+  assert.ok(wf.includes('fetch-depth: 0'), '应使用 fetch-depth: 0 全量历史，保证多提交推送时能对比 before/after');
   assert.ok(wf.includes('version.json|notice.json|js/config.js|sw.js'), '防死循环文件集合不完整');
   assert.ok(wf.includes('only_version_files'), '缺少防死循环判定');
   assert.ok(wf.includes('github.event.before') && wf.includes('github.event.after'), '递增检测未覆盖本次 push 全部提交（多提交推送会漏检业务改动）');

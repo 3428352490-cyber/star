@@ -88,14 +88,20 @@ test('M4-6 搜索页：搜索框与结果区框架', () => {
   assert.ok(html.includes('输入关键词，检索全部词条'), '缺少空态提示');
 });
 
-test('M4-7 公告主页：只展示最新一条公告 + 右上角「更多」入口（无当前版本卡片、无更新入口）', () => {
+test('M4-7 公告主页：默认展示最近 3 条公告 + 「更多/收起」切换（无当前版本卡片、无更新入口）', () => {
   const html = Pages.news();
-  assert.ok(html.includes('运营通知'), '缺少公告标题');
-  assert.equal(count(html, 'notice-item'), 1, '主页应只展示最新一条公告');
+  assert.ok(html.includes('版本更新'), '缺少公告标题');
+  assert.equal(count(html, 'notice-item'), 3, '主页应默认只展示最近 3 条公告');
   assert.ok(html.includes('v' + CONFIG.app.version), '缺少最新版本徽标');
-  assert.ok(html.includes('data-route="#/news-history"'), '缺少「更多」按钮路由');
+  assert.ok(html.includes('data-action="news-toggle-more"'), '缺少「更多/收起」按钮动作');
   assert.ok(html.includes('更多'), '缺少「更多」按钮');
   assert.ok(!html.includes('data-action="check-update"'), '公告页不应有云端更新入口');
+  // 展开后展示全部公告；重置展开态防止污染后续断言
+  Pages.newsResetExpand();
+  Pages.newsToggleMore();
+  const expanded = Pages.news();
+  assert.equal(count(expanded, 'notice-item'), CONFIG.announcements.length, '展开后应展示全部公告');
+  Pages.newsResetExpand();
 });
 
 test('M4-7b 历史公告页：展示全部公告 + 左上角返回公告主页', () => {
@@ -110,15 +116,18 @@ test('M4-7b 历史公告页：展示全部公告 + 左上角返回公告主页',
   }
 });
 
-test('M4-8 我的页：账号卡 + 主题开关 + 版本（无快捷键编辑条目）', () => {
+test('M4-8 我的页：游客资料卡 + 我的社区 + 主题开关 + 版本（无快捷键编辑条目）', () => {
   Store.load();
   const html = Pages.mine();
-  assert.ok(html.includes('未登录'), '缺少账号文案');
+  assert.ok(html.includes('星露谷村民') || html.includes('account-text'), '缺少游客资料文案');
   assert.ok(html.includes('account-card'), '缺少账号卡片');
+  assert.ok(html.includes('data-action="open-profile-modal"'), '账号卡应打开个人资料弹窗');
+  assert.ok(html.includes('我的帖子') && html.includes('我的点赞') && html.includes('我的收藏'), '缺少我的社区入口');
   assert.ok(html.includes('data-theme-follow'), '缺少跟随系统开关');
   assert.ok(html.includes('data-theme-manual="light"') && html.includes('data-theme-manual="dark"'), '缺少手动主题按钮');
   assert.ok(!html.includes('data-route="#/quick-edit"'), '我的页不应有快捷键编辑入口');
   assert.ok(html.includes('v' + CONFIG.app.version), '关于区缺少版本号');
+  assert.ok(html.includes('data-action="open-admin"'), '缺少管理后台预留入口');
 });
 
 test('M4-9 快捷键编辑页：38 项勾选、计数、保存/恢复', () => {
