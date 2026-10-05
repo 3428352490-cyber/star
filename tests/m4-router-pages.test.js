@@ -96,14 +96,14 @@ test('M4-7 公告页：渲染公告列表 + 当前版本（无更新入口）', 
   assert.ok(!html.includes('check-update'), '公告页不应有云端更新入口');
 });
 
-test('M4-8 我的页：账号卡 + 主题开关 + 编辑入口 + 版本', () => {
+test('M4-8 我的页：账号卡 + 主题开关 + 版本（无快捷键编辑条目）', () => {
   Store.load();
   const html = Pages.mine();
   assert.ok(html.includes('未登录'), '缺少账号文案');
   assert.ok(html.includes('account-card'), '缺少账号卡片');
   assert.ok(html.includes('data-theme-follow'), '缺少跟随系统开关');
   assert.ok(html.includes('data-theme-manual="light"') && html.includes('data-theme-manual="dark"'), '缺少手动主题按钮');
-  assert.ok(html.includes('data-route="#/quick-edit"'), '缺少快捷键编辑入口');
+  assert.ok(!html.includes('data-route="#/quick-edit"'), '我的页不应有快捷键编辑入口');
   assert.ok(html.includes('v' + CONFIG.app.version), '关于区缺少版本号');
 });
 

@@ -120,10 +120,6 @@ const Pages = (() => {
         '</div>' +
       '</section>' +
 
-      '<section class="card"><div class="card-head"><h2>快捷功能</h2></div>' +
-        '<button class="row-btn" data-route="#/quick-edit"><span>快捷键编辑</span><span>›</span></button>' +
-      '</section>' +
-
       '<section class="card"><div class="card-head"><h2>关于</h2></div>' +
         '<div class="setting-row"><div class="setting-title">版本</div><div>v' + esc(SDV_CONFIG.app.version) + '</div></div>' +
         '<button class="row-btn" data-action="check-update"><span>检查更新</span><span>›</span></button>' +

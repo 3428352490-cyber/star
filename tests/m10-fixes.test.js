@@ -174,6 +174,26 @@ test('公告 本次更新内容写入公告页（数组驱动，最新在前）'
   }
 });
 
+test('移除我的页快捷键编辑条目：入口收敛至首页「更多」，编辑页仍可达', () => {
+  resetNav();
+  // 我的页：无「快捷功能/快捷键编辑」条目
+  const mine = Pages.mine();
+  assert.ok(!mine.includes('快捷键编辑'), '我的页不应有快捷键编辑条目');
+  assert.ok(!mine.includes('data-route="#/quick-edit"'), '我的页不应有编辑页路由');
+  assert.ok(!mine.includes('快捷功能'), '我的页不应有快捷功能卡片');
+
+  // 首页「更多」入口保留，仍可进入编辑页
+  const home = Pages.home();
+  assert.ok(home.includes('data-route="#/quick-edit"'), '首页「更多」按钮入口丢失');
+  globalThis.location.hash = '#/quick-edit';
+  Router.handle();
+  const edit = els.get('page-container');
+  assert.ok(edit.innerHTML.includes('快捷键编辑'), '编辑页无法访问');
+  assert.ok(!edit.innerHTML.includes('未找到该页面'), '编辑页回退 404');
+  globalThis.location.hash = '#/home';
+  Router.handle();
+});
+
 test('修复4 按钮按压动态反馈：全部可点元素含 :active 与过渡动画', () => {
   const css = readAppFile('css/components.css');
   // 覆盖快捷键瓦片、底部导航、按钮、chip、勾选项、行按钮、首页卡片、账号卡、搜索结果
