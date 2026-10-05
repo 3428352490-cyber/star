@@ -21,7 +21,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 2   # 需要上一个提交以对比改动文件（防死循环）
+          fetch-depth: 0   # 全量历史：确保 BEFORE(github.event.before) 提交存在于本地，
+                           # 否则 git diff BEFORE AFTER 失败会误判为「仅版本改动」而不递增
 
       # ---------------------------------------------------------------
       # 版本一致性校验（每次构建前强制）：
