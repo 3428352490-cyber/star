@@ -42,15 +42,62 @@ node --test "tests/**/*.test.js"
 
 当前一期（M0–M8）共 91 项自动化测试全部通过，覆盖：工程结构、配置与写透持久化、深浅主题、UI 组件、路由页面、交互、PWA 更新检测、双端适配，以及 PRD §9 十八条验收标准。
 
-## 部署到 GitHub Pages
+## 上传 GitHub / 开启 GitHub Pages
 
-> 注意：本机未安装 git 与 gh，无法自动推送。请手动完成：
-> 1. 安装 Git（https://git-scm.com），或直接使用 GitHub 网页上传
-> 2. 在 GitHub 新建仓库，推送/上传本项目全部文件（含 `manifest.webmanifest`、`sw.js`、`version.json`、`assets/`）
-> 3. 仓库 Settings → Pages → Source: Deploy from a branch → main / root → Save
-> 4. 访问 `https://<用户名>.github.io/<仓库名>/`
-> 5. 更新版本时三处同步：`js/config.js` 的 `app.version`、`sw.js` 的 `CACHE_NAME`、`version.json`（均有测试守护）
-> 6. `js/config.js` 的 `cloudVersionUrl` 当前为相对路径 `version.json`，部署到仓库根目录可直接使用；如项目在子路径，改为完整 URL `https://<用户名>.github.io/<仓库名>/version.json`
+> 本机已安装 Git（2.55+），项目本地 git 仓库已初始化并完成多次提交（main 分支）。
+
+### 1. 在 GitHub 网页新建仓库
+
+1. 登录 https://github.com → 右上角「+」→ **New repository**
+2. 仓库名建议全小写英文，如 `stardew-guide`（不要用中文/空格/大写）
+3. 可见性按需选 Public / Private
+4. **不要勾选**「Add a README file」「Add .gitignore」「Choose a license」（本地已有，勾选会制造推送冲突）
+5. 点击 **Create repository**
+
+### 2. 本地关联远程并推送
+
+```powershell
+# ① 关联远程（origin 不存在时）
+git remote add origin https://github.com/<用户名>/<仓库名>.git
+
+# ② 验证关联
+git remote -v
+
+# ③ 推送 main 分支（-u 记住后续 push 只需 git push）
+git push -u origin main
+```
+
+### 3. 开启 GitHub Pages
+
+1. 仓库页面 → **Settings** → 左侧 **Pages**
+2. **Source** 选 `Deploy from a branch` → Branch 选 `main` → `/ (root)` → **Save**
+3. 等待 1–2 分钟构建，访问 `https://<用户名>.github.io/<仓库名>/`
+4. PWA（sw.js 注册）要求 HTTPS，GitHub Pages 自带 HTTPS，无需额外配置
+
+### 4. 常见报错与解决方案
+
+| 报错信息 | 原因 | 解决方案 |
+|---|---|---|
+| `remote origin already exists` | origin 已关联过 | `git remote set-url origin https://github.com/<用户名>/<仓库名>.git` |
+| `! [rejected] ... (fetch first)` | 远端有本地没有的提交（如建仓时勾选了 README） | `git pull origin main --rebase` 后重新 `git push` |
+| `src refspec main does not match any` | 本地没有 main 分支 | `git branch -M main` 后重试 push |
+| `Permission denied (publickey)` | 用了 SSH 地址但未配密钥 | 改用 HTTPS 地址，或执行 `gh auth login` 后用 `gh repo push` |
+| `failed to push some refs` | 远端领先本地 | `git pull origin main --rebase` 解决后再推（不要轻易 force） |
+| 页面 404 | Pages 未开启 / 还在构建 / 路径不对 | 检查 Settings→Pages 状态；确认访问 URL 为仓库名全小写 |
+| 图片 404（首次部署最常见） | 路径大小写不一致 | 见下方第 5 条 |
+
+### 5. 图片路径大小写提醒（重要）
+
+- GitHub Pages 服务器**区分大小写**：`assets/Stardew.png` 与 `assets/stardew.png` 是两个文件
+- 本项目素材引用均为小写且与实际文件一致，已核对：`assets/stardew-wood-frame.png`、`assets/icons/icon-192.png` 等
+- 今后新增素材/替换文件：**文件名必须与 CSS/HTML 中的引用逐字一致**（含扩展名大小写），否则线上 404
+- 推送前可自查：`git status --short` 确认没有"改了个名字但引用没同步"的文件
+
+### 6. 云端更新版本 URL
+
+- 项目部署在仓库根目录时，`js/config.js` 的 `cloudVersionUrl: 'version.json'` 可直接使用
+- 若部署在子路径或自定义域名，改为完整地址：`https://<用户名>.github.io/<仓库名>/version.json`
+- 更新版本时三处同步：`js/config.js` 的 `app.version`、`sw.js` 的 `CACHE_NAME`、`version.json`（有测试守护）
 
 ## 版本更新流程（云端源码更新后双端同步）
 
