@@ -1,5 +1,5 @@
 {
-  "latestVersion": "2.0.4",
-  "updateDesc": "底部导航焕新：去掉边框底色更清爽；点击图标有放大反馈；当前页面图标高亮显示",
+  "latestVersion": "2.0.5",
+  "updateDesc": "导航选中更醒目：去掉红色高亮更干净；当前页面图标放大显示",
   "downloadUrl": "./index.html"
 }

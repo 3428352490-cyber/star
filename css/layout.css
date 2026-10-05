@@ -60,7 +60,7 @@
 }
 .btn-back:active { transform: translate(2px, 2px); box-shadow: inset 0 0 0 2px var(--wood-light), 1px 1px 0 var(--shadow); }
 
-/* ===== 底部固定导航：纯图标简约栏（微信/QQ 风格）——无外框、无背景色块、无圆角容器；选中仅图标变色 ===== */
+/* ===== 底部固定导航：纯图标简约栏——无外框、无背景色块、无圆角容器；选中图标永久放大 1.5 倍 ===== */
 .stardew-nav,
 .bottom-nav {
   position: fixed; left: 0; right: 0; bottom: 0;
@@ -81,26 +81,17 @@
   position: relative;
   width: 26px; height: 26px;
   display: grid; place-items: center;
-  transition: transform 0.15s ease-out; /* 柔和 0.15s，无抖动 */
+  transition: transform 0.15s ease-out; /* 选中缩放动画 0.15s，无抖动 */
   will-change: transform;
 }
 .nav-item .nav-icon svg { width: 100%; height: 100%; }
-/* 点击交互：图标轻微放大 1.1 倍，松开恢复原大小 */
+/* 点击按压反馈：按住时轻微放大 1.1 倍（优先于选中态生效前的一瞬反馈） */
 .nav-item:active { opacity: 0.7; }
 .nav-item:active .nav-icon { transform: scale(1.1); }
-/* 选中态：仅图标变色标识当前页面（无方框、无高亮底板）；文字保持原样 */
-.nav-item.active { color: var(--text-dim); font-weight: 400; }
-.nav-item.active .nav-icon { color: var(--accent); }
-[data-theme="dark"] .nav-item.active .nav-icon { color: var(--accent); }
-/* 首页为彩色像素图：选中态用 accent 单色剪影变色（mask 染色），与 SVG 图标变色统一 */
-.nav-item.active .nav-icon img { visibility: hidden; }
-.nav-item.active .nav-icon::after {
-  content: '';
-  position: absolute; inset: 0;
-  background: var(--accent);
-  -webkit-mask: url('../assets/nav-home.png') center / contain no-repeat;
-          mask: url('../assets/nav-home.png') center / contain no-repeat;
-}
+/* 选中态：图标永久放大 1.5 倍标识当前页面（无变色、无方框、无高亮底板）；
+   点击切换时 router 移除旧项 .active、添加新项 .active，旧图标经 0.15s 过渡
+   恢复默认尺寸，新图标保持放大；未选中图标保持默认尺寸 */
+.nav-item.active .nav-icon { transform: scale(1.5); }
 @media (prefers-reduced-motion: reduce) {
   .nav-item .nav-icon { transition: none; }
 }
