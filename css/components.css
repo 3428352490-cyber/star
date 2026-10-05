@@ -338,53 +338,67 @@
 }
 
 
+
 /* ============================================================
-   星露谷卷轴 UI（.scroll-* 系列）— border-image 方案
-   素材 assets/scroll-frame.png（128×128 像素，星露谷卷轴九宫格图）
-   border-image-slice: 32 → 上下左右四边各裁 32px 作为边框，中间部分丢弃
-   border-image-repeat: round → 整数次平铺，禁止拉伸变形
-   硬性要求：像素渲染（全局 image-rendering: pixelated）/ 不要圆角 / 无毛玻璃
+   星露谷卷轴木框 UI（.scroll-* 系列）— 纯 CSS 像素木框
+   不用图片素材、不用 border-image，全部由 border + 多层 box-shadow 绘制
+   配色：
+     边框主色  #8b572a（深木棕）
+     边缘提亮  #c48b4b（浅木色高光，内外缘）
+     明暗暗部  #6d441f（内底部暗线）/ #5b3a1a（外底部暗影）
+     内侧底色  #f8f0d9（浅米）
+   像素感：border-radius 0 + 全部 box-shadow blur=0（硬边，无柔和阴影）
+   硬性要求：全局 image-rendering: pixelated
    ============================================================ */
 
 /* ---- scroll-card：大模块卡片（快捷功能、功能专区等） ---- */
 .scroll-card {
-  border: 32px solid transparent;                 /* 上下左右边框宽度 32px（占位，图像绘于此） */
-  border-image-source: url("../assets/scroll-frame.png"); /* 卷轴九宫格素材 */
-  border-image-slice: 32;                         /* 四边各裁 32px 作为边框，中间部分丢弃 */
-  border-image-repeat: round;                     /* round 模式：整数次平铺，禁止拉伸变形 */
-  background: #f8f0d9;                           /* 星露谷原版浅米黄中心底 */
-  border-radius: 0;                               /* 不要圆角 */
-  padding: 36px 32px;                             /* 内边距 ≥ 边框宽：内容不会压到边框 */
+  border: 6px solid #8b572a;                     /* 边框主色：深木棕 */
+  background: #f8f0d9;                           /* 内侧浅米底色 */
+  box-shadow:
+    inset 0 0 0 2px #c48b4b,                     /* 内缘提亮：浅木色高光（明） */
+    inset 0 -2px 0 0 #6d441f,                    /* 内底部暗线（暗）：木框立体感 */
+    0 0 0 1px #c48b4b,                           /* 外缘提亮：浅木色描边 */
+    0 1px 0 1px #5b3a1a;                         /* 外底部暗影：细微明暗 */
+  border-radius: 0;                              /* 像素硬角 */
+  padding: 24px;                                 /* 内边距：文字不会压到边框 */
   margin-bottom: 16px;
-  box-shadow: 4px 4px 0 var(--shadow);            /* 硬像素投影 */
 }
 
-/* ---- scroll-btn：小按钮卡片（快捷功能方格等） ---- */
+/* ---- scroll-btn：小按钮卡片（快捷功能方格等，木框更细） ---- */
 .scroll-btn {
-  border: 16px solid transparent;                 /* 小按钮 border-width 缩小到 16px */
-  border-image-source: url("../assets/scroll-frame.png");
-  border-image-slice: 32;                         /* slice 保持不变（32px 图边） */
-  border-image-repeat: round;                     /* round 模式：整数次平铺，禁止拉伸变形 */
+  border: 4px solid #8b572a;                     /* 小按钮边框主色：深木棕（细框） */
+  background: #f8f0d9;                           /* 内侧浅米底色 */
+  box-shadow:
+    inset 0 0 0 1px #c48b4b,                     /* 内缘提亮：浅木色高光 */
+    inset 0 -2px 0 0 #6d441f,                    /* 内底部暗线：立体感 */
+    0 0 0 1px #c48b4b,                           /* 外缘提亮描边 */
+    0 1px 0 1px #5b3a1a;                         /* 外底部暗影 */
+  border-radius: 0;
   position: relative;
   display: flex; flex-direction: column; align-items: center; gap: 6px;
-  padding: 20px 12px;                             /* ≥ 边框宽：内容不压框 */
-  background: #f8f0d9;
-  border-radius: 0;
-  box-shadow: inset 2px 2px 0 #e8c886,            /* 内凹像素阴影（浅米高光） */
-              inset -2px -2px 0 #a86f2e,          /* 内凹暗部（橙棕） */
-              3px 3px 0 var(--shadow);
+  padding: 14px 10px;                            /* 内边距：文字不压框 */
   color: var(--text);
-  transition: transform 0.08s, box-shadow 0.08s;
+  transition: transform 0.08s, box-shadow 0.08s, filter 0.08s;
 }
-.scroll-btn:active { transform: translate(2px, 2px); box-shadow: inset 2px 2px 0 #e8c886, inset -2px -2px 0 #a86f2e, 1px 1px 0 var(--shadow); } /* 点击下压反馈 */
+.scroll-btn:active {
+  transform: translate(2px, 2px);                /* 点击下压反馈 */
+  box-shadow:
+    inset 0 0 0 1px #c48b4b,
+    inset 0 -2px 0 0 #6d441f,
+    0 0 0 1px #c48b4b,
+    0 0 0 1px #5b3a1a;                           /* 按压后外阴影收缩 */
+}
 
 /* ---- scroll-modal：全局弹窗，与 scroll-card 样式一致 ---- */
 .scroll-modal {
-  border: 32px solid transparent;                 /* 与 scroll-card 一致：32px 边框 */
-  border-image-source: url("../assets/scroll-frame.png");
-  border-image-slice: 32;
-  border-image-repeat: round;                     /* round 模式：整数次平铺，禁止拉伸变形 */
-  background: #f8f0d9;                           /* 浅米黄中心底 */
+  border: 6px solid #8b572a;                     /* 与 scroll-card 一致：深木棕主色框 */
+  background: #f8f0d9;                           /* 内侧浅米底色 */
+  box-shadow:
+    inset 0 0 0 2px #c48b4b,
+    inset 0 -2px 0 0 #6d441f,
+    0 0 0 1px #c48b4b,
+    0 1px 0 1px #5b3a1a;
   border-radius: 0;
-  padding: 40px 36px;                             /* 弹窗内边距更大，文字不压框 */
+  padding: 28px 24px;                            /* 弹窗内边距更大 */
 }
