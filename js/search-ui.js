@@ -93,21 +93,26 @@ const SearchUI = (() => {
   /* ================= 搜索面板（UI 与交互） ================= */
   let input = null;      // #search-input
   let panel = null;      // #search-panel
+  let carousel = null;   // #search-carousel（占位文字轮播层）
   let recs = [];         // 当前推荐词
   let visible = false;   // 面板展开态
   let expanded = false;  // 历史展开态（>5 条时）
   let carouselTimer = null;
+  let carouselFocused = false; // 搜索框聚焦标记（聚焦时暂停轮播）
   let bound = false;
 
   /** 挂载：绑定输入框与面板、渲染并启动轮播（每次进入搜索页调用） */
   function mount() {
     const el = document.getElementById('search-input');
     const p = document.getElementById('search-panel');
+    const c = document.getElementById('search-carousel');
     input = el;
     panel = p;
+    carousel = c;
     if (!el || !p) return;
     visible = false;
     expanded = false;
+    carouselFocused = false;
     if (!bound) bind();
     refreshRecommendations();
     refresh();
@@ -122,16 +127,25 @@ const SearchUI = (() => {
       panel.addEventListener('click', onPanelClick);
     }
     if (input.addEventListener) {
-      input.addEventListener('focus', () => { stopCarousel(); show(); });
-      input.addEventListener('blur', () => { startCarousel(); });
+      input.addEventListener('focus', () => {
+        carouselFocused = true;      // 聚焦：暂停轮播并隐藏轮播层（原生占位已空，输入区干净）
+        stopCarousel();
+        if (carousel) carousel.style.display = 'none';
+        show();
+      });
+      input.addEventListener('blur', () => {
+        carouselFocused = false;
+        syncCarousel();              // 失焦且无输入：恢复轮播层
+      });
       input.addEventListener('keydown', (e) => {
         if ((e.key === 'Enter' || e.keyCode === 13) && input.value.trim()) {
           submitSearch(input.value);
         }
       });
       input.addEventListener('input', () => {
-        if (input.value.trim()) hide(); // 开始输入：隐藏历史与推荐，切换为搜索结果
-        else show();                     // 清空输入：恢复面板
+        syncCarousel();              // 开始输入：隐藏轮播层与历史推荐；清空输入：恢复
+        if (input.value.trim()) hide();
+        else show();
       });
     }
     // 点击页面空白处收起面板
@@ -237,6 +251,7 @@ const SearchUI = (() => {
     SearchHistory.add(w);
     if (input) input.value = w;
     hide();
+    syncCarousel(); // 有输入内容时隐藏轮播层
     if (input && typeof input.dispatchEvent === 'function') {
       const ev = new Event('input', { bubbles: true });
       input.dispatchEvent(ev);
@@ -252,17 +267,47 @@ const SearchUI = (() => {
     }).catch(() => { /* 推荐失败静默，不影响搜索 */ });
   }
 
-  /** 占位文字轮播：3 秒切换推荐词；聚焦/输入时停止 */
+  /** 轮播层可见性同步：输入有内容或搜索框聚焦时隐藏并暂停，否则显示并轮播 */
+  function syncCarousel() {
+    if (!carousel) return;
+    const busy = !!input.value.trim();
+    carousel.style.display = busy ? 'none' : '';
+    if (busy || carouselFocused) stopCarousel();
+    else startCarousel();
+  }
+
+  /** 占位文字轮播：3 秒向上滑动切换推荐词；聚焦/输入时暂停 */
   function startCarousel() {
     stopCarousel();
-    if (!input || !recs.length) return;
+    if (!input || !carousel || !recs.length) return;
+    if (carouselFocused || input.value.trim()) return; // 聚焦/输入中不轮播
+    carousel.innerHTML = '';
     let i = 0;
-    input.placeholder = '搜索：' + recs[i];
+    renderCarouselItem(i, true); // 首条直接就位（无滑动）
     carouselTimer = setInterval(() => {
-      if (!input) { stopCarousel(); return; }
+      if (!carousel) { stopCarousel(); return; }
       i = (i + 1) % recs.length;
-      input.placeholder = '搜索：' + recs[i];
+      renderCarouselItem(i, false); // 后续条：向上滑动进入
     }, CAROUSEL_MS);
+  }
+
+  /** 渲染单条轮播词条：旧条向上滑出（carousel-out），新条自下方滑入（carousel-in） */
+  function renderCarouselItem(i, initial) {
+    if (!carousel) return;
+    const w = recs[i % recs.length];
+    const cur = carousel.querySelector('.search-carousel-item');
+    const item = document.createElement('span');
+    item.className = 'search-carousel-item';
+    item.textContent = '搜索：' + w;
+    carousel.appendChild(item);
+    if (initial) {
+      item.classList.add('carousel-in-place'); // 首条直接就位（无滑动）
+      return;
+    }
+    if (cur) cur.classList.add('carousel-out'); // 旧条向上滑出
+    if (item.offsetHeight !== undefined) void item.offsetHeight; // 强制 reflow 后启动过渡（兼容无 rAF 环境）
+    item.classList.add('carousel-in'); // 新条自下方滑入
+    if (cur) setTimeout(() => { if (cur.parentNode) cur.parentNode.removeChild(cur); }, 340);
   }
 
   function stopCarousel() {

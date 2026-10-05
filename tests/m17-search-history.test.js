@@ -137,11 +137,20 @@ test('M17-8 交互：点击搜索框展开面板、输入时隐藏、点击空�
   assert.equal(panel.style.display, 'none', '点击页面空白处应收起面板');
 });
 
-test('M17-9 占位轮播：挂载后占位切为推荐词，3 秒间隔', () => {
-  assert.ok(input.placeholder.startsWith('搜索：'), '占位文字应轮播推荐词');
+test('M17-9 占位轮播：向上滑动层渲染推荐词，3 秒间隔', () => {
+  const carousel = document.getElementById('search-carousel');
+  assert.ok(carousel, '轮播层应存在');
+  assert.ok(carousel.children.length > 0, '轮播层应渲染推荐词条');
+  assert.ok((carousel.children[0].textContent || '').startsWith('搜索：'), '轮播词条应为占位文案');
   assert.equal(SearchUI.CAROUSEL_MS, 3000, '轮播间隔应为 3 秒');
   assert.equal(SearchUI.HISTORY_MAX, 10, '历史上限应为 10');
   assert.equal(SearchUI.HISTORY_SHOW, 5, '默认展示 5 条');
+  const pageHtml = readAppFile('js/pages.js');
+  assert.ok(pageHtml.includes('id="search-carousel"'), '页面应含轮播层容器');
+  const css = readAppFile('css/components.css');
+  assert.ok(css.includes('.search-carousel-item') && css.includes('top: 150%'), '轮播词条应有向上滑动动画');
+  assert.ok(css.includes('top: -50%'), '旧词条应向上滑出');
+  assert.ok(css.includes('pointer-events: none'), '轮播层不应挡输入');
 });
 
 test('M17-10 面板结构：search-area 包裹搜索区，组件含像素卡片类名', () => {

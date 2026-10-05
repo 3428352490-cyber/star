@@ -225,6 +225,7 @@
 .notice-more:active { transform: translate(2px, 2px); box-shadow: none; filter: brightness(0.9); }
 
 /* ---- 搜索 ---- */
+.search-bar { position: relative; }
 .search-bar input {
   width: 100%; padding: 12px 14px; font-size: 15px;
   background: var(--bg-deep); color: var(--text);
@@ -232,6 +233,26 @@
   outline: none;
 }
 .search-bar input:focus { border-color: var(--accent); }
+/* 占位文字轮播层：覆盖输入框内部、向上滑动切换推荐词 */
+.search-carousel {
+  position: absolute; left: 17px; right: 17px; top: 0; bottom: 0;
+  z-index: 2;                  /* 确保绘制在输入框文字之上 */
+  overflow: hidden;
+  pointer-events: none;      /* 不挡输入框点击与输入 */
+  font-size: 15px;
+  color: var(--text);        /* 不透明正文色：完全覆盖原生占位，避免叠影 */
+}
+.search-carousel-item {
+  position: absolute; left: 0; right: 0;
+  top: 150%;                   /* 新条初始在下方（层高 100% 之外） */
+  height: 20px; line-height: 20px;
+  margin-top: -10px;           /* 垂直居中 */
+  white-space: nowrap;
+  transition: top 0.3s ease-out; /* 向上滑动，柔和无抖动 */
+}
+.search-carousel-item.carousel-in-place,
+.search-carousel-item.carousel-in { top: 50%; }
+.search-carousel-item.carousel-out { top: -50%; }
 .search-hit-list { display: grid; gap: 8px; margin-top: 12px; }
 .search-hit {
   display: flex; align-items: center; gap: 10px;
