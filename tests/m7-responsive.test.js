@@ -50,7 +50,7 @@ test('M7-6 像素美术风格：图片抗锯齿关闭 + 九宫格木板卡片（
   const base = readAppFile('css/base.css');
   assert.ok(base.includes('image-rendering: pixelated'), '缺少像素渲染');
   const comp = readAppFile('css/components.css');
-  assert.ok(comp.includes('border-image'), '卡片缺少九宫格木板边框');
+  assert.ok(comp.includes('background-image') && comp.includes('url("../assets/stardew-wood-frame.png")'), '卡片缺少九宫格木板背景');
   const all = base + comp + readAppFile('css/layout.css');
   assert.ok(!all.includes('backdrop-filter'), '禁止毛玻璃：仍存在 backdrop-filter');
 });
