@@ -89,17 +89,21 @@ test('M16-5 安全防护：爬虫 UA 识别 + 请求限流', () => {
   assert.equal(SecurityGuard.allowRequest('other-key'), true, '不同类型请求互不影响');
 });
 
-test('M16-6 发布规则：工作流两轨版本（代码版本自动 bump、发布版本手动推送）', () => {
+test('M16-6 发布规则：工作流双轨版本（代码版本自动 bump、发布版本手动管理）+ 同步发版支持', () => {
   const wf = readAppFile('.github/workflows/bump-version.yml');
   // 代码版本自动递增（config.js + sw.js）
   assert.ok(wf.includes('js/config.js 的 app.version'), 'bump 应同步 config.js');
   assert.ok(wf.includes('sw.js 的 CACHE_NAME'), 'bump 应同步 sw.js');
-  // 发布版本不动
+  // 发布版本不动（工作流绝不自动改动）
   assert.ok(wf.includes('version.json / notice.json 保持不动'), 'bump 不应改动发布版本文件');
   assert.ok(!wf.includes('git add version.json'), '自动提交不应包含 version.json');
-  // 发布顺序：先推代码（LOCAL_VERSION 更新、version.json 旧版）→ 再单独推 version.json
-  assert.ok(wf.includes('先推送升级后的网页代码'), '缺少发布顺序说明');
-  assert.ok(wf.includes('再单独修改 version.json 的 latestVersion'), '缺少 version.json 单独发布说明');
+  // 双轨模式：只推业务代码 → 自动 bump 代码版本；后单独推 version.json 触发弹窗
+  assert.ok(wf.includes('只推送业务代码'), '缺少发布顺序说明（先代码后发布版本）');
+  assert.ok(wf.includes('再单独修改 version.json'), '缺少 version.json 单独发布说明');
+  // 同步发版模式：手动改动发布版本文件 → 跳过自动 bump，两轨保持一致
+  assert.ok(wf.includes('release_changed'), '缺少发布版本文件改动检测（同步发版支持）');
+  assert.ok(wf.includes('同步发版'), '缺少同步发版模式说明');
+  assert.ok(wf.includes("steps.detect.outputs.release_changed == 'false'"), 'bump 条件未排除同步发版提交');
   // 两对独立校验
   assert.ok(wf.includes('代码版本') && wf.includes('发布版本'), '缺少两轨版本校验');
   assert.ok(wf.includes('发布版本不匹配'), '缺少公告/发布版本一致性校验');

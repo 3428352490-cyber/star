@@ -80,7 +80,8 @@ test('M14 版本更新提醒：GitHub Actions 工作流完整（main 推送触�
   assert.ok(wf.includes('branches: [ main ]'), '未监听 main 分支推送');
   assert.ok(wf.includes('actions/checkout@v4'), '缺少 checkout');
   assert.ok(wf.includes('fetch-depth: 0'), '应使用 fetch-depth: 0 全量历史，保证多提交推送时能对比 before/after');
-  assert.ok(wf.includes('version.json|notice.json|js/config.js|sw.js'), '防死循环文件集合不完整');
+  assert.ok(wf.includes('version.json|notice.json'), '防死循环判定缺少发布版本文件（version.json/notice.json）');
+  assert.ok(wf.includes('js/config.js|sw.js'), '防死循环判定缺少代码版本文件（config.js/sw.js）');
   assert.ok(wf.includes('only_version_files'), '缺少防死循环判定');
   assert.ok(wf.includes('github.event.before') && wf.includes('github.event.after'), '递增检测未覆盖本次 push 全部提交（多提交推送会漏检业务改动）');
   assert.ok(wf.includes('v[2] = (v[2] || 0) + 1'), '缺少补丁号 +1 递增');
@@ -95,5 +96,5 @@ test('M14 版本更新提醒：GitHub Actions 工作流完整（main 推送触�
   assert.ok(!wf.includes('n.version = ver'), 'bump 不应再自动同步 notice.json（发布版本由开发者单独推送）');
   assert.ok(wf.includes('git add js/config.js sw.js'), '自动提交应只包含代码版本文件');
   assert.ok(wf.includes('version.json/notice.json 保持不动'), 'bump 应明确不动发布版本文件');
-  assert.ok(wf.includes('先推送升级后的网页代码'), '缺少发布顺序说明（先代码后发布版本）');
+  assert.ok(wf.includes('只推送业务代码'), '缺少发布顺序说明（先代码后发布版本）');
 });

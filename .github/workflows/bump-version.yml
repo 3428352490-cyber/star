@@ -4,14 +4,16 @@ name: Bump Version
 # 版本递增规则（重要，v2.0.x 发布流程）：
 #   - 版本号分两轨：
 #     ① 代码版本（js/config.js 的 app.version + sw.js 的 CACHE_NAME）：
-#        仅当本次提交包含业务代码/功能改动时，自动递增补丁号（+0.0.1）；
+#        仅当本次提交包含业务代码/功能改动且未手动改动发布版本时，自动递增补丁号（+0.0.1）；
 #     ② 发布版本（version.json 的 latestVersion + notice.json 的 version）：
-#        「更新弹窗触发器」——由开发者手动修改并单独推送，工作流绝不自动改动。
-#   - 发布顺序（GitHub 发布规则）：
-#     1) 先推送升级后的网页代码（LOCAL_VERSION 随 config.js 自动 +0.0.1），
-#        version.json 维持旧版 → 用户打开页面使用新代码但不弹更新提示；
-#     2) 需要向用户宣布更新时，再单独修改 version.json 的 latestVersion
-#        （同时维护 notice.json 公告文字）并推送 → 用户打开页面弹更新弹窗。
+#        「更新弹窗触发器」——由开发者手动修改推送；工作流绝不自动改动。
+#   - 两种发布模式：
+#     A) 同步发版（两版本号同步）：开发者手动把四文件（config.js / sw.js /
+#        version.json / notice.json）统一升到新版本一起推送 → 检测到发布版本文件
+#        有改动，跳过自动 bump，远端两轨版本保持一致；
+#     B) 双轨发版：只推送业务代码（config.js/sw.js 不手动改）→ 自动 bump 代码版本，
+#        version.json 维持旧版 → 用户使用新代码但不弹更新提示；需要宣布更新时
+#        再单独修改 version.json（同步 notice.json）推送，触发更新弹窗。
 #   - 防死循环：本次提交仅修改版本/公告相关文件
 #     （version.json / notice.json / js/config.js / sw.js）→ 不递增、不自动提交；
 #     手动单独推送 version.json/notice.json 属于公告发布，不会触发版本递增。
@@ -78,10 +80,15 @@ jobs:
       # ---------------------------------------------------------------
       # 防死循环 + 递增判定：
       # 对比本次 push 的 before/after 全部提交改动（避免多提交推送时只检查最后
-      # 一个 commit 而漏检业务改动）；改动仅含版本/公告相关文件
-      # （version.json / notice.json / js/config.js / sw.js）→ 判定为「当前版本内
-      # 修正 / 版本提交 / 公告发布」，不递增版本号、不自动提交；包含任何业务
-      # 代码/功能改动 → 触发补丁递增（仅代码版本 config.js + sw.js）。
+      # 一个 commit 而漏检业务改动）；输出两个标记：
+      #   · only_version_files=true：改动仅含版本/公告相关文件
+      #     （version.json / notice.json / js/config.js / sw.js）→ 版本提交 / 公告
+      #     发布 / 自动 bump 回写，不再次递增、不自动提交（防死循环）；
+      #   · release_changed=true：本次改动包含发布版本文件（version.json 或
+      #     notice.json）→ 视为开发者手动「同步发版」，版本已由开发者统一管理，
+      #     跳过自动 bump（避免 Actions 再把代码版本 +1 导致两轨不同步）。
+      # 仅当「包含业务代码改动」且「未手动改动发布版本」时，才触发补丁递增
+      # （只改代码版本 config.js + sw.js）。
       # ---------------------------------------------------------------
       - name: Detect version-only changes
         id: detect
@@ -94,22 +101,27 @@ jobs:
             CHANGED=$(git diff --name-only "$BEFORE" "$AFTER" || true)
           fi
           ONLY_VERSION_FILES=true
+          RELEASE_CHANGED=false
           for f in $CHANGED; do
             case "$f" in
-              version.json|notice.json|js/config.js|sw.js) ;;
+              version.json|notice.json)
+                RELEASE_CHANGED=true
+                ONLY_VERSION_FILES=false ;;
+              js/config.js|sw.js) ;;
               *) ONLY_VERSION_FILES=false ;;
             esac
           done
           echo "only_version_files=$ONLY_VERSION_FILES" >> "$GITHUB_OUTPUT"
+          echo "release_changed=$RELEASE_CHANGED" >> "$GITHUB_OUTPUT"
           echo "changed_files=$CHANGED"
 
       # ---------------------------------------------------------------
-      # 代码版本递增（仅业务代码/功能改动触发）：
+      # 代码版本递增（仅「业务代码改动」且「未手动同步发版」触发）：
       # 只同步代码版本两处——js/config.js 的 app.version、sw.js 的 CACHE_NAME；
-      # version.json / notice.json 保持不动（发布版本由开发者单独推送，触发弹窗）。
+      # version.json / notice.json 保持不动（发布版本由开发者管理，触发弹窗）。
       # ---------------------------------------------------------------
       - name: Bump patch version
-        if: steps.detect.outputs.only_version_files == 'false'
+        if: steps.detect.outputs.only_version_files == 'false' && steps.detect.outputs.release_changed == 'false'
         run: |
           node - <<'EOF'
           const fs = require('fs');
@@ -130,10 +142,10 @@ jobs:
 
       # ---------------------------------------------------------------
       # 自动提交修改后的版本文件回仓库（仅代码版本递增时执行；
-      # version.json / notice.json 不参与自动提交，由开发者单独推送）
+      # version.json / notice.json 不参与自动提交，由开发者管理）
       # ---------------------------------------------------------------
       - name: Commit and push
-        if: steps.detect.outputs.only_version_files == 'false'
+        if: steps.detect.outputs.only_version_files == 'false' && steps.detect.outputs.release_changed == 'false'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
