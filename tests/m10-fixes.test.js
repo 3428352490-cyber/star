@@ -124,6 +124,24 @@ test('修复3 云端更新入口仅保留「我的」页', () => {
   assert.ok(mine.includes('data-action="check-update"'), '我的页缺少检查更新按钮');
 });
 
+test('修复3b 刷新首页不可见云端更新卡片，版本检测底层逻辑保留', async () => {
+  resetNav();
+  // 连续两次“刷新”（重新渲染首页），云端更新卡片始终不可见
+  for (let i = 0; i < 2; i++) {
+    const home = Pages.home();
+    assert.ok(!home.includes('云端更新'), '刷新后首页仍不应有云端更新卡片');
+    assert.ok(!home.includes('check-update'), '刷新后首页不应有更新按钮');
+  }
+  // 版本检测底层逻辑保留：云端更高版本 → 仍能检出更新
+  const Updater = ref('Updater');
+  globalThis.fetch = async () => ({ ok: true, json: async () => ({ version: '9.9.9', notes: ['云端检测验证'] }) });
+  const r = await Updater.check(false);
+  assert.equal(r.updated, true, '版本检测底层逻辑失效');
+  assert.ok(r.notice.includes('发现新版本'), '未检出新版本');
+  // 恢复 harness 默认 fetch（未 stub 时抛错），避免影响其他用例
+  globalThis.fetch = async () => { throw new Error('fetch 未在测试中 stub'); };
+});
+
 test('修复4 按钮按压动态反馈：全部可点元素含 :active 与过渡动画', () => {
   const css = readAppFile('css/components.css');
   // 覆盖快捷键瓦片、底部导航、按钮、chip、勾选项、行按钮、首页卡片、账号卡、搜索结果
