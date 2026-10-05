@@ -73,11 +73,25 @@ const Pages = (() => {
       '<div id="search-result" class="search-result">' + emptyState('输入关键词，检索全部词条', '一期为基础检索框架，全量词条二期接入') + '</div></section>';
   }
 
-  /** 公告：空态 + 当前版本卡片 */
+  /** 公告：运营通知与版本更新公告列表（数组驱动，最新在前；空数组回退空态） */
   function news() {
+    const list = SDV_CONFIG.announcements || [];
+    const items = list.map((a) =>
+      '<article class="notice-item">' +
+        '<div class="notice-head">' +
+          '<span class="tag">v' + esc(a.version) + '</span>' +
+          '<h3>' + esc(a.title) + '</h3>' +
+          '<span class="notice-date">' + esc(a.date || '') + '</span>' +
+        '</div>' +
+        '<ul class="notice-notes">' + (a.notes || []).map((n) => '<li>' + esc(n) + '</li>').join('') + '</ul>' +
+      '</article>'
+    ).join('');
     return pageHeader('公告', false) +
       '<section class="card"><div class="card-head"><h2>运营通知 · 版本更新</h2></div>' +
-      emptyState('暂无公告', '运营通知与版本更新公告将在此展示') + '</section>' +
+      (list.length
+        ? '<div class="notice-list">' + items + '</div>'
+        : emptyState('暂无公告', '运营通知与版本更新公告将在此展示')) +
+      '</section>' +
       '<section class="card"><div class="card-head"><h2>当前版本</h2></div>' +
       '<p class="row-text">v' + esc(SDV_CONFIG.app.version) + '</p></section>';
   }

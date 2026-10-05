@@ -168,6 +168,20 @@
 }
 .empty-sub { margin-top: 10px; font-size: 12px; color: var(--text-dim); }
 
+/* ---- 公告列表 ---- */
+.notice-list { display: grid; gap: 10px; }
+.notice-item {
+  background: var(--bg-deep);
+  border: 2px dashed var(--card-border);
+  border-radius: 10px;
+  padding: 12px;
+}
+.notice-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+.notice-head h3 { font-size: 14px; }
+.notice-date { margin-left: auto; font-size: 11px; color: var(--text-dim); }
+.notice-notes { padding-left: 18px; font-size: 12px; color: var(--text-dim); line-height: 1.8; }
+.notice-notes li { list-style: disc; }
+
 /* ---- 搜索 ---- */
 .search-bar input {
   width: 100%; padding: 12px 14px; font-size: 15px;

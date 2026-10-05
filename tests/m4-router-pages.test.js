@@ -88,9 +88,10 @@ test('M4-6 搜索页：搜索框与结果区框架', () => {
   assert.ok(html.includes('输入关键词，检索全部词条'), '缺少空态提示');
 });
 
-test('M4-7 公告页：空态 + 当前版本（无更新入口）', () => {
+test('M4-7 公告页：渲染公告列表 + 当前版本（无更新入口）', () => {
   const html = Pages.news();
-  assert.ok(html.includes('暂无公告'), '缺少公告空态');
+  assert.ok(html.includes('运营通知'), '缺少公告标题');
+  assert.ok(html.includes('notice-item'), '缺少公告条目');
   assert.ok(html.includes('v' + CONFIG.app.version), '版本号未渲染');
   assert.ok(!html.includes('check-update'), '公告页不应有云端更新入口');
 });

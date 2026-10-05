@@ -142,6 +142,38 @@ test('修复3b 刷新首页不可见云端更新卡片，版本检测底层逻�
   globalThis.fetch = async () => { throw new Error('fetch 未在测试中 stub'); };
 });
 
+test('公告 本次更新内容写入公告页（数组驱动，最新在前）', () => {
+  resetNav();
+  const list = CONFIG.announcements;
+  assert.ok(Array.isArray(list) && list.length >= 1, '公告数组缺失或为空');
+
+  // 最新公告版本应与当前版本一致，且包含本次更新内容
+  const latest = list[0];
+  assert.equal(latest.version, CONFIG.app.version, '最新公告版本应等于当前版本');
+  assert.ok(latest.title, '最新公告缺标题');
+  assert.ok(latest.date, '最新公告缺日期');
+  assert.ok(Array.isArray(latest.notes) && latest.notes.length > 0, '最新公告缺内容');
+
+  // 每条公告结构完整
+  for (const a of list) {
+    assert.ok(a.title && a.date, '公告缺标题/日期: ' + a.version);
+    assert.ok(Array.isArray(a.notes) && a.notes.length > 0, '公告缺内容: ' + a.version);
+  }
+
+  // 公告页渲染本次更新要点
+  const html = Pages.news();
+  assert.ok(html.includes('notice-item'), '公告页未渲染公告条目');
+  assert.ok(html.includes('v' + latest.version), '公告页未渲染最新版本徽标');
+  assert.ok(html.includes(latest.title), '公告页未渲染最新公告标题');
+  for (const kw of ['更多', '快捷键编辑', '按压动态反馈']) {
+    assert.ok(html.includes(kw), '公告页缺少本次更新要点: ' + kw);
+  }
+  // 旧版本公告也应保留（历史可追溯）
+  if (list.length >= 2) {
+    assert.ok(html.includes(list[1].version), '公告页缺少历史版本公告');
+  }
+});
+
 test('修复4 按钮按压动态反馈：全部可点元素含 :active 与过渡动画', () => {
   const css = readAppFile('css/components.css');
   // 覆盖快捷键瓦片、底部导航、按钮、chip、勾选项、行按钮、首页卡片、账号卡、搜索结果
