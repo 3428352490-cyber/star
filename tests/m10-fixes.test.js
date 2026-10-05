@@ -89,6 +89,24 @@ test('修复2 APP 不展示本地存档功能表现（持久化仍为系统功�
   resetNav();
 });
 
+test('修复2b 刷新首页不可见本地存档卡片，本地存储功能正常', () => {
+  resetNav();
+  // 连续两次“刷新”（重新渲染首页），卡片始终不可见
+  for (let i = 0; i < 2; i++) {
+    const home = Pages.home();
+    assert.ok(!home.includes('本地存档'), '刷新后首页仍不应有本地存档卡片');
+    assert.ok(!home.includes('info-card'), '刷新后首页不应有信息卡残留');
+  }
+  // 底层本地存储功能正常：写入 → 模拟重启（清空并重载）→ 保持
+  Store.setTheme({ followSystem: false, manual: 'dark' });
+  const raw = localStorage.getItem('sdv-guide:config');
+  localStorage.clear();
+  localStorage.setItem('sdv-guide:config', raw);
+  Store.load();
+  assert.equal(Store.getTheme().manual, 'dark', '本地存储功能异常');
+  resetNav();
+});
+
 test('修复3 云端更新入口仅保留「我的」页', () => {
   resetNav();
   // 首页：无云端更新入口
