@@ -39,6 +39,41 @@ test('修复1 首页「更多」按钮进入快捷键编辑页（quick-edit 路�
   Router.handle();
 });
 
+test('修复1b 端到端：点击「更多」成功打开编辑页，并可返回首页', () => {
+  resetNav();
+  globalThis.location.hash = '#/home';
+  Router.handle();
+
+  // 模拟点击首页「更多」按钮（data-route="#/quick-edit"）
+  globalThis.__fireDoc('click', {
+    target: { closest: (sel) => (sel === '[data-route]' ? { dataset: { route: '#/quick-edit' } } : null) },
+  });
+  assert.equal(globalThis.location.hash, '#/quick-edit', '点击更多未跳转');
+  Router.handle();
+  const edit = els.get('page-container');
+  assert.ok(edit.innerHTML.includes('快捷键编辑'), '编辑页未打开');
+  assert.ok(edit.innerHTML.includes('data-route="#/home"'), '编辑页缺少返回首页按钮');
+  assert.ok(!edit.innerHTML.includes('未找到该页面'), '不应提示页面不存在');
+
+  // 模拟点击编辑页返回按钮（data-route="#/home"）
+  globalThis.__fireDoc('click', {
+    target: { closest: (sel) => (sel === '[data-route]' ? { dataset: { route: '#/home' } } : null) },
+  });
+  assert.equal(globalThis.location.hash, '#/home', '返回未跳回首页');
+  Router.handle();
+  const home = els.get('page-container');
+  assert.ok(home.innerHTML.includes('快捷功能'), '返回后未渲染首页');
+});
+
+test('修复1c 版本三处同步（config / sw.js / version.json），升级触发 SW 缓存更新', () => {
+  const v = CONFIG.app.version;
+  assert.ok(v !== '0.1.0', '版本应已升级（触发缓存失效，使修复生效）');
+  const sw = readAppFile('sw.js');
+  assert.ok(sw.includes("CACHE_NAME = 'sdv-guide-v" + v + "'"), 'sw.js 缓存名与版本不同步');
+  const vj = JSON.parse(readAppFile('version.json'));
+  assert.equal(vj.version, v, 'version.json 与版本不同步');
+});
+
 test('修复2 APP 不展示本地存档功能表现（持久化仍为系统功能）', () => {
   resetNav();
   assert.ok(!Pages.home().includes('本地存档'), '首页不应展示本地存档说明');
