@@ -22,18 +22,23 @@ test('M3-1 layout.css 含底部导航与双端断点结构', () => {
   assert.ok(css.includes('flex: 1'), '底部导航未均分宽度');
 });
 
-test('M3-1b 底部导航激活缩放动画：选中项图标/文字放大、transition 平滑过渡、未选中保持原尺寸', () => {
+test('M3-1b 底部导航简约风格：无外框/背景/容器；选中仅图标变色；点击 1.1 倍放大动画', () => {
   const css = readAppFile('css/layout.css');
-  assert.ok(css.includes('.nav-item.active .nav-icon'), '缺少激活图标放大规则');
-  assert.ok(css.includes('.nav-item.active .nav-label'), '缺少激活文字放大规则');
-  assert.ok(css.includes('transform: scale('), '缺少 transform 缩放');
-  assert.ok(css.includes('transition: transform'), '缺少平滑过渡动画 transition');
+  // 无外框、无背景色块、无圆角容器（.stardew-nav 与 .bottom-nav 共用规则块）
+  const navBlock = css.slice(css.indexOf('.stardew-nav'), css.indexOf('.nav-item {'));
+  assert.ok(navBlock.includes('background: transparent'), '底部导航应无背景色块');
+  assert.ok(navBlock.includes('border-top: none'), '底部导航应无外框');
+  // 选中态：仅图标变色（SVG color + 首页 mask 剪影），无方框、无高亮底板
+  assert.ok(css.includes('.nav-item.active .nav-icon { color: var(--accent); }'), '选中态应仅图标变色');
+  assert.ok(css.includes('.nav-item.active .nav-icon::after'), '首页图标应使用 mask 单色剪影变色');
+  assert.ok(!css.includes('.nav-item.active { color: #fff; background: var(--accent); font-weight: 700; }'), '选中态不应有高亮底板');
+  assert.ok(!css.includes('.nav-item.active .nav-icon { transform: scale(1.28); }'), '选中态不应常驻放大（仅点击放大）');
+  // 点击交互：1.1 倍缩放 + 0.15s 柔和过渡，松开恢复
+  assert.ok(css.includes('.nav-item:active .nav-icon { transform: scale(1.1); }'), '点击应放大 1.1 倍');
+  assert.ok(css.includes('transition: transform 0.15s ease-out'), '过渡应为 0.15s 柔和');
   assert.ok(css.includes('prefers-reduced-motion'), '缺少减弱动效适配');
-  // 缩放只作用于激活项：默认态无 scale 覆盖（保持原始尺寸）
-  const navBlock = css.slice(css.indexOf('.nav-item .nav-icon'), css.indexOf('.nav-item.search .nav-icon'));
-  assert.ok(!navBlock.includes('.nav-item .nav-icon { width: 26px; height: 26px; display: grid; place-items: center; transform:'), '默认图标不应被强制缩放');
-  // 激活项保留红块背景（不修改导航背景/配色）
-  assert.ok(css.includes('.nav-item.active { color: #fff; background: var(--accent); font-weight: 700; }'), '激活项背景样式被改动');
+  // 搜索图标与其余一致：无色块、无边框、无上浮
+  assert.ok(css.includes('.nav-item.search .nav-icon') && css.includes('margin-top: 0'), '搜索图标应去除色块/上浮');
 });
 
 test('M3-2 components.css 含核心组件选择器', () => {

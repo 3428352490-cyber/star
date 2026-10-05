@@ -60,13 +60,13 @@
 }
 .btn-back:active { transform: translate(2px, 2px); box-shadow: inset 0 0 0 2px var(--wood-light), 1px 1px 0 var(--shadow); }
 
-/* ===== 底部固定导航：纯色像素菜单栏，5 Tab 等宽；激活项红块白字 ===== */
+/* ===== 底部固定导航：纯图标简约栏（微信/QQ 风格）——无外框、无背景色块、无圆角容器；选中仅图标变色 ===== */
 .stardew-nav,
 .bottom-nav {
   position: fixed; left: 0; right: 0; bottom: 0;
   display: flex;
-  background: var(--nav-bg);
-  border-top: 4px solid var(--wood-frame);     /* 粗像素上边框 */
+  background: transparent;              /* 无背景色块 */
+  border-top: none;                     /* 无外框 */
   z-index: 50;
   padding-bottom: env(safe-area-inset-bottom); /* 底部安全区 */
 }
@@ -74,38 +74,45 @@
   flex: 1; min-width: 0;
   display: flex; flex-direction: column; align-items: center; gap: 3px;
   padding: 8px 0 6px;
-  background: none; border: none;
+  background: none; border: none;       /* 无圆角容器、无底色 */
   color: var(--text-dim); font-size: 12px;
 }
-.nav-item .nav-icon { width: 26px; height: 26px; display: grid; place-items: center; }
-.nav-item .nav-icon svg { width: 100%; height: 100%; }
-.nav-item.active { color: #fff; background: var(--accent); font-weight: 700; }
-[data-theme="dark"] .nav-item.active { color: #fff; background: var(--accent); }
-.nav-item:active { opacity: 0.7; }
-/* ===== 底部导航激活缩放动画：选中项图标放大 + 文字轻微放大，切换平滑过渡；
-     仅缩放图标与文字，不改导航背景/布局/配色/主题；未选中项保持原始尺寸 ===== */
-.nav-item .nav-icon,
-.nav-item .nav-label {
-  transition: transform 0.22s ease-out;
+.nav-item .nav-icon {
+  position: relative;
+  width: 26px; height: 26px;
+  display: grid; place-items: center;
+  transition: transform 0.15s ease-out; /* 柔和 0.15s，无抖动 */
   will-change: transform;
-  transform-origin: center bottom;
 }
-.nav-item.active .nav-icon { transform: scale(1.28); }
-.nav-item.active .nav-label { transform: scale(1.1); }
-/* 搜索核心按钮上浮布局特殊：放大时锚定中心，避免偏移抖动 */
-.nav-item.search.active .nav-icon { transform-origin: center center; transform: scale(1.2); }
+.nav-item .nav-icon svg { width: 100%; height: 100%; }
+/* 点击交互：图标轻微放大 1.1 倍，松开恢复原大小 */
+.nav-item:active { opacity: 0.7; }
+.nav-item:active .nav-icon { transform: scale(1.1); }
+/* 选中态：仅图标变色标识当前页面（无方框、无高亮底板）；文字保持原样 */
+.nav-item.active { color: var(--text-dim); font-weight: 400; }
+.nav-item.active .nav-icon { color: var(--accent); }
+[data-theme="dark"] .nav-item.active .nav-icon { color: var(--accent); }
+/* 首页为彩色像素图：选中态用 accent 单色剪影变色（mask 染色），与 SVG 图标变色统一 */
+.nav-item.active .nav-icon img { visibility: hidden; }
+.nav-item.active .nav-icon::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: var(--accent);
+  -webkit-mask: url('../assets/nav-home.png') center / contain no-repeat;
+          mask: url('../assets/nav-home.png') center / contain no-repeat;
+}
 @media (prefers-reduced-motion: reduce) {
-  .nav-item .nav-icon,
-  .nav-item .nav-label { transition: none; }
+  .nav-item .nav-icon { transition: none; }
 }
+/* 搜索图标与其余一致：无色块、无边框、无上浮，干净简约 */
 .nav-item.search .nav-icon {
-  width: 36px; height: 36px; margin-top: -18px;
-  border-radius: 0;                            /* 直角：8-bit */
-  background: var(--accent-2);                 /* 撞色：暖黄搜索核心 */
-  border: 3px solid var(--wood-frame);
-  box-shadow: 0 3px 0 var(--shadow);
+  width: 26px; height: 26px; margin-top: 0;
+  border-radius: 0;
+  background: none;
+  border: none;
+  box-shadow: none;
 }
-.nav-item.search .nav-icon svg { stroke: var(--wood-frame); }
+.nav-item.search .nav-icon svg { stroke: currentColor; }
 
 /* ===== 双端自适应：手机竖屏单列；电脑宽屏双栏 ===== */
 .home-grid { display: block; }

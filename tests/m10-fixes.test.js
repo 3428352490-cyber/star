@@ -238,9 +238,9 @@ test('UI 复古 8-bit 红白机像素风格：高饱和撞色+直角纯色粗像
   // 标题栏：顶部 8bit 像素牌匾
   assert.ok(layout.includes('.page-header') && layout.includes('var(--wood-frame)'), '标题栏缺少像素牌匾');
 
-  // 底部导航：纯色像素菜单栏（.stardew-nav）+ 5 等宽像素按钮
+  // 底部导航：简约纯图标栏（微信/QQ 风格）——无背景色块、无外框、无圆角容器
   assert.ok(layout.includes('.stardew-nav,') && layout.includes('.bottom-nav {'), '底部导航选择器结构被破坏');
-  assert.ok(layout.includes('var(--nav-bg)') && layout.includes('border-top: 4px solid var(--wood-frame)'), '底部导航未用纯色像素菜单栏');
+  assert.ok(layout.includes('background: transparent') && layout.includes('border-top: none'), '底部导航应无背景色块与上边框');
   assert.ok(layout.includes('.nav-item {') && layout.includes('flex: 1'), '导航按钮非等宽');
 
   // 深浅主题：两套像素纹理与对话框变量

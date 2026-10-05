@@ -31,14 +31,15 @@ function resetStore() {
   Store.setSelectedNav(CONFIG.quickNav.defaultSelected.slice());
 }
 
-test('验收1 启动可见 5 Tab、宽度均分、搜索图标居中突出', () => {
+test('验收1 启动可见 5 Tab、宽度均分、搜索图标居中', () => {
   App.renderTabs();
   const html = els.get('#bottom-nav').innerHTML;
   assert.equal(count(html, 'class="nav-item'), 5);
   assert.equal(count(html, 'nav-item search'), 1);
   const css = readAppFile('css/layout.css');
   assert.ok(css.includes('.nav-item {') && css.includes('flex: 1'), 'Tab 未均分');
-  assert.ok(css.includes('.nav-item.search .nav-icon') && css.includes('margin-top: -18px'), '搜索未居中突出');
+  // 简约导航：搜索图标与其余一致（无上浮色块，居中位置由等宽均分保证）
+  assert.ok(css.includes('.nav-item.search .nav-icon') && css.includes('margin-top: 0'), '搜索图标未与其余对齐');
 });
 
 test('验收2 首页默认 4 瓦片 + 第 8 格「更多」+ 空位', () => {
