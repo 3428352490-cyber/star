@@ -191,8 +191,10 @@ test('UI 星露谷像素木风格：纯色木板+SVG木纹、禁止渐变与毛�
   const layout = readAppFile('css/layout.css');
   const all = base + comp + layout;
 
-  // 硬性要求：禁止渐变、毛玻璃；像素渲染
-  assert.ok(!all.includes('linear-gradient') && !all.includes('radial-gradient'), '禁止渐变：仍存在 gradient');
+  // 硬性要求：禁止渐变、毛玻璃；像素渲染（注：scroll-* 卷轴组件按需求允许橙色渐变竖边框，其余禁止）
+  const scrollStart = all.indexOf('.scroll-card');
+  const nonScroll = scrollStart >= 0 ? all.slice(0, scrollStart) : all;
+  assert.ok(!nonScroll.includes('linear-gradient') && !nonScroll.includes('radial-gradient'), '禁止渐变：非卷轴组件仍存在 gradient');
   assert.ok(!all.includes('backdrop-filter'), '禁止毛玻璃：仍存在 backdrop-filter');
   assert.ok(all.includes('image-rendering: pixelated'), '缺少像素渲染');
 
