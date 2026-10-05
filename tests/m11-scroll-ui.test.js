@@ -21,7 +21,8 @@ test('M11 卷轴UI：border-image 九宫格三要素（source / slice:32 / stret
   const comp = readAppFile('css/components.css');
   assert.ok(comp.includes('border-image-source: url("../assets/scroll-frame.png")'), '缺少 border-image-source');
   assert.ok(comp.includes('border-image-slice: 32'), '缺少 border-image-slice: 32（四边裁32px，中间丢弃）');
-  assert.ok(comp.includes('border-image-repeat: stretch'), '缺少 border-image-repeat: stretch');
+  assert.ok(comp.includes('border-image-repeat: round'), '缺少 border-image-repeat: round（防拉伸变形）');
+  assert.ok(!comp.includes('.scroll-card { border-image-repeat: stretch') && !comp.includes('border-image-repeat: stretch;'), 'scroll 组件仍使用 stretch（应禁用）');
 });
 
 test('M11 卷轴UI：边框宽度 card/modal 32px、btn 16px（缩小）', () => {

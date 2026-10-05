@@ -342,7 +342,7 @@
    星露谷卷轴 UI（.scroll-* 系列）— border-image 方案
    素材 assets/scroll-frame.png（128×128 像素，星露谷卷轴九宫格图）
    border-image-slice: 32 → 上下左右四边各裁 32px 作为边框，中间部分丢弃
-   border-image-repeat: stretch → 四边拉伸填充，无重复木纹
+   border-image-repeat: round → 整数次平铺，禁止拉伸变形
    硬性要求：像素渲染（全局 image-rendering: pixelated）/ 不要圆角 / 无毛玻璃
    ============================================================ */
 
@@ -351,7 +351,7 @@
   border: 32px solid transparent;                 /* 上下左右边框宽度 32px（占位，图像绘于此） */
   border-image-source: url("../assets/scroll-frame.png"); /* 卷轴九宫格素材 */
   border-image-slice: 32;                         /* 四边各裁 32px 作为边框，中间部分丢弃 */
-  border-image-repeat: stretch;                   /* 四边拉伸填充，无重复条纹 */
+  border-image-repeat: round;                     /* round 模式：整数次平铺，禁止拉伸变形 */
   background: #f8f0d9;                           /* 星露谷原版浅米黄中心底 */
   border-radius: 0;                               /* 不要圆角 */
   padding: 36px 32px;                             /* 内边距 ≥ 边框宽：内容不会压到边框 */
@@ -364,7 +364,7 @@
   border: 16px solid transparent;                 /* 小按钮 border-width 缩小到 16px */
   border-image-source: url("../assets/scroll-frame.png");
   border-image-slice: 32;                         /* slice 保持不变（32px 图边） */
-  border-image-repeat: stretch;
+  border-image-repeat: round;                     /* round 模式：整数次平铺，禁止拉伸变形 */
   position: relative;
   display: flex; flex-direction: column; align-items: center; gap: 6px;
   padding: 20px 12px;                             /* ≥ 边框宽：内容不压框 */
@@ -383,7 +383,7 @@
   border: 32px solid transparent;                 /* 与 scroll-card 一致：32px 边框 */
   border-image-source: url("../assets/scroll-frame.png");
   border-image-slice: 32;
-  border-image-repeat: stretch;
+  border-image-repeat: round;                     /* round 模式：整数次平铺，禁止拉伸变形 */
   background: #f8f0d9;                           /* 浅米黄中心底 */
   border-radius: 0;
   padding: 40px 36px;                             /* 弹窗内边距更大，文字不压框 */
