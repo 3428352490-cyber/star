@@ -131,11 +131,11 @@ test('修复3b 刷新首页不可见云端更新卡片，版本检测底层逻�
     assert.ok(!home.includes('云端更新'), '刷新后首页仍不应有云端更新卡片');
     assert.ok(!home.includes('check-update'), '刷新后首页不应有更新按钮');
   }
-  // 版本检测底层逻辑保留：云端更高版本（> localStorage 已确认版本）→ 仍能检出更新
+  // 版本检测底层逻辑保留：云端更高版本（> 本地固定版本）→ 仍能检出更新
   const Updater = ref('Updater');
-  localStorage.setItem('sdv-guide:installed-version', '0.1.0');
+  Updater.setMockEnabled(false);
   globalThis.fetch = async () => ({ ok: true, json: async () => ({ version: '9.9.9', notes: ['云端检测验证'] }) });
-  const r = await Updater.check(false);
+  const r = await Updater.check();
   assert.equal(r.updated, true, '版本检测底层逻辑失效');
   assert.ok(r.notice.includes('发现新版本'), '未检出新版本');
   // 恢复 harness 默认 fetch（未 stub 时抛错），避免影响其他用例

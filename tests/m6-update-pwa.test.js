@@ -35,22 +35,24 @@ test('M6-2 extractVersion 容错', () => {
   assert.equal(Updater.extractVersion(null), '');
 });
 
-test('M6-3 发现新版本：弹窗 + 手动检查 Toast（云端 > localStorage 已确认版本才弹）', async () => {
-  localStorage.setItem('sdv-guide:installed-version', '0.1.0'); // 已确认版本低于云端
+test('M6-3 发现新版本：弹窗（云端 > 本地固定版本才弹），不额外弹 Toast', async () => {
+  // 本地版本 = config.js 固定版本号（SDV_CONFIG.app.version），云端 9.9.9 更高 → 弹窗
+  Updater.setMockEnabled(false); // 关闭 Mock，走 fetch 分支（等价上线状态）
   mockFetch({ version: '9.9.9', notes: ['新增图鉴', '修复问题'] });
-  const r = await Updater.check(true);
+  const r = await Updater.check();
   assert.equal(r.updated, true);
   assert.ok(r.notice.includes('发现新版本 v9.9.9'), 'notice 错误: ' + r.notice);
   assert.ok(els.get('modal-root').innerHTML.includes('发现新版本'), '未弹更新弹窗');
   assert.ok(els.get('modal-root').innerHTML.includes('9.9.9'), '弹窗未含新版本号');
-  assert.equal(els.get('created:div').textContent, '发现新版本 v9.9.9，新增图鉴；修复问题', 'Toast 未联动');
+  const toastEl = els.get('created:div');
+  assert.equal(toastEl ? toastEl.textContent : '', '', '更新弹窗本身即提示，不应额外弹 Toast');
 });
 
-test('M6-4 已是最新版本：不弹窗，手动 Toast', async () => {
+test('M6-4 已是最新版本：不弹窗，Toast 提示', async () => {
   Modal.close();
-  localStorage.setItem('sdv-guide:installed-version', CONFIG.app.version); // 已确认版本 == 云端
+  Updater.setMockEnabled(false);
   mockFetch({ version: CONFIG.app.version, notes: [] });
-  const r = await Updater.check(true);
+  const r = await Updater.check();
   assert.equal(r.updated, false);
   assert.ok(r.notice.includes('已是最新版本'), 'notice 错误: ' + r.notice);
   assert.equal(els.get('modal-root').innerHTML, '', '不应弹出更新弹窗');
@@ -59,9 +61,9 @@ test('M6-4 已是最新版本：不弹窗，手动 Toast', async () => {
 
 test('M6-5 本地版本高于云端：提示不回退', async () => {
   Modal.close();
-  localStorage.setItem('sdv-guide:installed-version', '9.9.9'); // 已确认版本高于云端
+  Updater.setMockEnabled(false);
   mockFetch({ version: '0.0.1' });
-  const r = await Updater.check(true);
+  const r = await Updater.check();
   assert.equal(r.updated, false);
   assert.ok(r.notice.includes('本地版本高于云端'), 'notice 错误: ' + r.notice);
   assert.equal(els.get('modal-root').innerHTML, '', '不应弹出更新弹窗');
@@ -69,8 +71,9 @@ test('M6-5 本地版本高于云端：提示不回退', async () => {
 
 test('M6-6 网络失败：提示检查更新失败，不弹窗', async () => {
   Modal.close();
+  Updater.setMockEnabled(false);
   mockFetchError();
-  const r = await Updater.check(true);
+  const r = await Updater.check();
   assert.equal(r.updated, false);
   assert.ok(r.notice.includes('检查更新失败'), 'notice 错误: ' + r.notice);
   assert.equal(els.get('modal-root').innerHTML, '', '网络失败不应弹窗');
@@ -78,19 +81,22 @@ test('M6-6 网络失败：提示检查更新失败，不弹窗', async () => {
 
 test('M6-7 云端版本为空：提示清单格式错误', async () => {
   Modal.close();
+  Updater.setMockEnabled(false);
   mockFetch({ notes: [] });
-  const r = await Updater.check(true);
+  const r = await Updater.check();
   assert.equal(r.updated, false);
   assert.ok(r.notice.includes('云端版本清单格式错误'), 'notice 错误: ' + r.notice);
 });
 
-test('M6-8 静默检查（manual=false）：不弹 Toast', async () => {
-  localStorage.setItem('sdv-guide:installed-version', '0.1.0');
+test('M6-8 发现新版本仅弹窗提示：不额外弹 Toast（手动点击一次只给一个反馈）', async () => {
+  Updater.setMockEnabled(false);
+  const prev = els.get('created:div');
+  if (prev) prev.textContent = ''; // 清空前置用例残留 Toast
   mockFetch({ version: '9.9.9' });
-  els.get('created:div').textContent = '';
-  const r = await Updater.check(false);
+  const r = await Updater.check();
   assert.equal(r.updated, true);
-  assert.equal(els.get('created:div').textContent, '', '静默检查不应出现 Toast');
+  const toastEl = els.get('created:div');
+  assert.equal(toastEl ? toastEl.textContent : '', '', '弹窗即反馈，不应再弹 Toast');
 });
 
 test('M6-9 manifest.webmanifest 结构完整', () => {

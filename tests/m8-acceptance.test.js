@@ -171,18 +171,19 @@ test('验收13 我的页账号弹窗可打开可关闭', () => {
 
 test('验收14 检查更新失败不崩溃', async () => {
   Modal.close();
+  Updater.setMockEnabled(false);
   globalThis.fetch = async () => { throw new Error('offline'); };
-  const r = await Updater.check(false);
+  const r = await Updater.check();
   assert.equal(r.updated, false);
   assert.ok(r.notice.includes('检查更新失败'));
   assert.equal(els.get('modal-root').innerHTML, '');
 });
 
-test('验收15 云端版本更高 → 启动弹出更新提示', async () => {
+test('验收15 云端版本更高 → 手动检查弹出更新提示', async () => {
   Modal.close();
-  localStorage.setItem('sdv-guide:installed-version', '0.0.1'); // 已确认版本低于云端
+  Updater.setMockEnabled(false);
   globalThis.fetch = async () => ({ ok: true, json: async () => ({ version: '99.99.99', notes: ['一期验收'] }) });
-  const r = await Updater.check(false);
+  const r = await Updater.check();
   assert.equal(r.updated, true);
   assert.ok(els.get('modal-root').innerHTML.includes('发现新版本'));
 });

@@ -121,7 +121,8 @@ const App = (() => {
         Modal.show({ title: '敬请期待', body: '<p>云端账号登录功能建设中，敬请期待。</p>' });
         break;
       case 'check-update':
-        if (typeof Updater !== 'undefined' && Updater.check) Updater.check(true);
+        // 仅用户手动点击【检查更新】才执行版本检测，禁止页面自动检测
+        if (typeof Updater !== 'undefined' && Updater.check) Updater.check();
         break;
       case 'nav-save':
         saveQuickNav();
@@ -194,7 +195,8 @@ const App = (() => {
     Theme.apply();
     renderTabs();
     render();
-    if (typeof Updater !== 'undefined' && Updater.check) Updater.check(false);
+    // 注意：不在此处调用 Updater.check()——版本检测仅由「我的」页【检查更新】按钮手动触发，
+    // 禁止页面打开自动检测更新
     registerSW();
   }
 
