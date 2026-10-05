@@ -4,15 +4,18 @@
    ============================================================ */
 #app { max-width: 1080px; margin: 0 auto; padding: 14px 14px 104px; min-height: 100vh; position: relative; }
 
-/* ===== 顶部背景衬底：星露谷标题画面（置于所有卡片组件下方，低透明度不遮挡内容） ===== */
+/* ===== 顶部背景大图：星露谷农场原画（置于所有卡片下方，靠近卡片上边缘向下渐变淡出，平滑过渡到下方格子背景） ===== */
 .app-bg {
-  position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+  position: absolute; top: 0; left: 0; right: 0;
+  height: 280px;                               /* 顶部背景区域高度，板块整体下移让出的空间 */
   z-index: 0;                                  /* 位于页面内容（z-index:1）与卡片之下 */
   background-image: url("../assets/stardew-title-bg.png");
   background-size: cover;                      /* 等比缩放铺满，不拉伸变形 */
   background-position: top center;             /* 顶部对齐：夜空与标题区落在页面顶部 */
   background-repeat: no-repeat;
-  opacity: 0.5;                                /* 降低透明度，保证卡片内文字/按钮清晰可读 */
+  opacity: 0.85;                               /* 顶部图片清晰（略透格子底，柔和融入） */
+  -webkit-mask-image: linear-gradient(to bottom, #000 62%, rgba(0, 0, 0, 0) 100%);
+  mask-image: linear-gradient(to bottom, #000 62%, rgba(0, 0, 0, 0) 100%); /* 向下渐变透明：图片慢慢淡出 */
   pointer-events: none;                        /* 不拦截任何点击，功能不受影响 */
 }
 #page-container { position: relative; z-index: 1; }
@@ -20,8 +23,12 @@
 /* 删除首页最顶部「星露谷攻略」标题整块板块（仅首页：其后紧跟 .home-grid；其他页面标题与返回按钮保留） */
 .page-header:has(+ .home-grid) { display: none; }
 
+/* 首页布局：将【快捷功能】与【功能专区】板块整体下移，让出顶部空间放置背景大图（其他页面布局不受影响） */
+#page-container:has(> .home-grid) { padding-top: 266px; }
+
 @media (max-width: 420px) {
-  .app-bg { background-size: cover; background-position: top center; opacity: 0.4; }
+  .app-bg { height: 210px; background-size: cover; background-position: top center; }
+  #page-container:has(> .home-grid) { padding-top: 196px; }
 }
 
 .page-container { animation: pageIn 0.18s ease-out; }
