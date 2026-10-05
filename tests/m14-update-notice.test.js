@@ -14,36 +14,20 @@ test('M14 版本更新提醒：version.json 线上版本与 config.js 同步、n
   assert.ok(Array.isArray(notice.items) && notice.items.length > 0, '公告缺少更新内容');
 });
 
-test('M14 版本更新提醒：版本检测 JS 逻辑完整（时间戳防缓存、localStorage/sessionStorage、立即/暂不更新）', () => {
-  const js = readAppFile('js/update-notice.js');
+test('M14 版本更新提醒：白色卡片弹窗 update-notice.js 已停用（index.html 不引用、文件已删除）', () => {
+  const html = readAppFile('index.html');
+  assert.ok(!html.includes('update-notice.js'), 'index.html 不应再引用 update-notice.js（统一使用像素弹窗）');
+  // 文件已从仓库删除：readAppFile 应抛错
+  assert.throws(() => readAppFile('js/update-notice.js'), /ENOENT|no such file/i, 'js/update-notice.js 文件应已删除');
+});
+
+test('M14 版本更新提醒：版本提醒逻辑统一收敛到 update.js（存储键、会话跳过、立即更新、防缓存请求）', () => {
+  const js = readAppFile('js/update.js');
   assert.ok(js.includes("'sdv-guide:installed-version'"), '缺少本地已安装版本键（localStorage）');
   assert.ok(js.includes("'sdv-guide:update-skip'"), '缺少会话跳过标记键（sessionStorage）');
-  assert.ok(js.includes('?t='), '缺少时间戳参数绕过浏览器缓存');
-  assert.ok(js.includes('cache: \'no-store\''), '缺少禁用缓存请求');
+  assert.ok(js.includes("cache: 'no-store'"), '缺少禁用缓存请求');
+  assert.ok(js.includes('sessionSkipped()'), '缺少会话跳过判断（本次会话不再弹窗）');
   assert.ok(js.includes('location.reload()'), '缺少立即更新刷新逻辑');
-  assert.ok(js.includes('sessionStorage.setItem(SKIP_KEY'), '缺少暂不更新会话跳过逻辑');
-  assert.ok(js.includes('首次使用'), '缺少首次使用不弹窗逻辑');
-  assert.ok(js.includes('不弹窗、不刷新'), '缺少线上等于本地时不弹窗逻辑');
-  assert.ok(js.includes('立即更新') && js.includes('暂不更新'), '弹窗缺少主次按钮');
-});
-
-test('M14 版本更新提醒：弹窗为独立遮罩+白色圆角卡片，移动端适配，不影响项目 UI', () => {
-  const js = readAppFile('js/update-notice.js');
-  assert.ok(js.includes('upd-mask'), '缺少全屏遮罩');
-  assert.ok(js.includes('rgba(0,0,0,.55)'), '遮罩非半透明黑色');
-  assert.ok(js.includes('upd-card') && js.includes('border-radius:14px') && js.includes('background:#fff'), '缺少居中白色圆角卡片');
-  assert.ok(js.includes('max-width:360px'), '卡片未做移动端宽度适配');
-  assert.ok(js.includes('upd-primary') && js.includes('upd-secondary'), '缺少主次按钮样式');
-  assert.ok(js.includes('z-index:9999'), '遮罩层级不足');
-  // 独立 class，不复用/不污染项目原有样式
-  assert.ok(!js.includes('.modal-mask'), '不得复用项目原有弹窗结构');
-});
-
-test('M14 版本更新提醒：index.html 在 </body> 前引入版本检测 JS', () => {
-  const html = readAppFile('index.html');
-  const bodyEnd = html.lastIndexOf('</body>');
-  const scriptPos = html.indexOf('update-notice.js');
-  assert.ok(scriptPos >= 0 && scriptPos < bodyEnd, '版本检测 JS 未放在 </body> 之前');
 });
 
 test('M14 版本更新提醒：update.js 更新弹窗底部按钮改造（暂不更新纯文字 + 立即更新红按钮）', () => {
