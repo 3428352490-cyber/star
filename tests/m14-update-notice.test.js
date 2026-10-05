@@ -29,8 +29,11 @@ test('M14 版本更新提醒：版本提醒逻辑统一收敛到 update.js（存
   assert.ok(js.includes("cloudVersionUrl + '?t=' + ts"), 'version.json 请求缺少 Date.now() 时间戳防缓存');
   assert.ok(js.includes("'notice.json?t=' + ts"), 'notice.json 请求缺少 Date.now() 时间戳防缓存');
   assert.ok(js.includes('noticeRes') && js.includes('noticeRes.ok'), '缺少 notice.json 公告读取与容错');
-  assert.ok(js.includes('sessionSkipped()'), '缺少会话跳过判断（本次会话不再弹窗）');
-  assert.ok(js.includes('location.reload()'), '缺少立即更新刷新逻辑');
+  assert.ok(js.includes('getInstalledVersion()') && js.includes('compareVersion(cloudVersion, installed) > 0'), '缺少「云端 > localStorage 已确认版本才弹窗」触发规则');
+  assert.ok(js.includes('首次使用'), '缺少首次使用记录不弹窗逻辑');
+  assert.ok(js.includes('console.error'), '缺少异常控制台打印（页面不崩溃、不弹报错弹窗）');
+  assert.ok(js.includes('sessionSkipped()'), '缺少会话跳过判断（仅当前网页会话不再弹窗）');
+  assert.ok(js.includes('location.reload()'), '缺少立即更新刷新逻辑（用户手动选择后才加载新版本）');
 });
 
 test('M14 版本更新提醒：update.js 更新弹窗底部按钮改造（暂不更新纯文字 + 立即更新红按钮）', () => {

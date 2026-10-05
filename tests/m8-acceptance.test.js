@@ -180,6 +180,7 @@ test('验收14 检查更新失败不崩溃', async () => {
 
 test('验收15 云端版本更高 → 启动弹出更新提示', async () => {
   Modal.close();
+  localStorage.setItem('sdv-guide:installed-version', '0.0.1'); // 已确认版本低于云端
   globalThis.fetch = async () => ({ ok: true, json: async () => ({ version: '99.99.99', notes: ['一期验收'] }) });
   const r = await Updater.check(false);
   assert.equal(r.updated, true);

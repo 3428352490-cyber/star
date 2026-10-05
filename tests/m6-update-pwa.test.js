@@ -35,7 +35,8 @@ test('M6-2 extractVersion 容错', () => {
   assert.equal(Updater.extractVersion(null), '');
 });
 
-test('M6-3 发现新版本：弹窗 + 手动检查 Toast', async () => {
+test('M6-3 发现新版本：弹窗 + 手动检查 Toast（云端 > localStorage 已确认版本才弹）', async () => {
+  localStorage.setItem('sdv-guide:installed-version', '0.1.0'); // 已确认版本低于云端
   mockFetch({ version: '9.9.9', notes: ['新增图鉴', '修复问题'] });
   const r = await Updater.check(true);
   assert.equal(r.updated, true);
@@ -47,6 +48,7 @@ test('M6-3 发现新版本：弹窗 + 手动检查 Toast', async () => {
 
 test('M6-4 已是最新版本：不弹窗，手动 Toast', async () => {
   Modal.close();
+  localStorage.setItem('sdv-guide:installed-version', CONFIG.app.version); // 已确认版本 == 云端
   mockFetch({ version: CONFIG.app.version, notes: [] });
   const r = await Updater.check(true);
   assert.equal(r.updated, false);
@@ -57,6 +59,7 @@ test('M6-4 已是最新版本：不弹窗，手动 Toast', async () => {
 
 test('M6-5 本地版本高于云端：提示不回退', async () => {
   Modal.close();
+  localStorage.setItem('sdv-guide:installed-version', '9.9.9'); // 已确认版本高于云端
   mockFetch({ version: '0.0.1' });
   const r = await Updater.check(true);
   assert.equal(r.updated, false);
@@ -82,6 +85,7 @@ test('M6-7 云端版本为空：提示清单格式错误', async () => {
 });
 
 test('M6-8 静默检查（manual=false）：不弹 Toast', async () => {
+  localStorage.setItem('sdv-guide:installed-version', '0.1.0');
   mockFetch({ version: '9.9.9' });
   els.get('created:div').textContent = '';
   const r = await Updater.check(false);
