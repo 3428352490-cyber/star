@@ -12,6 +12,7 @@ test('M14 版本更新提醒：version.json 线上版本与 config.js 同步、n
   const notice = JSON.parse(readAppFile('notice.json'));
   assert.ok(notice.title && notice.title.length, '公告缺少标题');
   assert.ok(Array.isArray(notice.items) && notice.items.length > 0, '公告缺少更新内容');
+  assert.strictEqual(notice.version, ver.version, 'notice.json 的 version 字段必须与 version.json 完全一致（公告与版本号一起打包）');
 });
 
 test('M14 版本更新提醒：白色卡片弹窗 update-notice.js 已停用（index.html 不引用、文件已删除）', () => {
@@ -62,4 +63,10 @@ test('M14 版本更新提醒：GitHub Actions 工作流完整（main 推送触�
   assert.ok(wf.includes('only_version_files'), '缺少防死循环判定');
   assert.ok(wf.includes('v[2] = (v[2] || 0) + 1'), '缺少补丁号 +1 递增');
   assert.ok(wf.includes('git commit') && wf.includes('git push origin main'), '缺少自动提交推送');
+  // 版本与公告同步规则
+  assert.ok(wf.includes('Validate version consistency'), '缺少版本一致性校验步骤');
+  assert.ok(wf.includes('版本不匹配'), '校验失败缺少版本不匹配提示');
+  assert.ok(wf.includes('process.exit(1)'), '校验失败未阻断构建');
+  assert.ok(wf.includes("notice.json'") && wf.includes('n.version = ver'), 'bump 未同步 notice.json 的 version 字段（公告与版本号一起打包）');
+  assert.ok(wf.includes('git add version.json notice.json js/config.js sw.js'), '自动提交未包含 notice.json');
 });
