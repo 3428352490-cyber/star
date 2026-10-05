@@ -1,0 +1,83 @@
+name: Bump Version
+
+# 触发条件：向 main 分支推送代码时自动递增补丁版本号
+on:
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: write
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2   # 需要上一个提交以对比改动文件（防死循环）
+
+      # ---------------------------------------------------------------
+      # 防死循环：如果本次提交只修改版本相关文件（version.json / notice.json /
+      # js/config.js / sw.js），判定为「版本提交」，不执行递增、不自动提交，
+      # 避免「自动提交 → 触发工作流 → 再次递增」的无限循环。
+      # 注：工作流 bump 时会同步 config.js 的 app.version 与 sw.js 缓存名，
+      #     因此这两个文件也纳入防循环集合。
+      # ---------------------------------------------------------------
+      - name: Detect version-only changes
+        id: detect
+        run: |
+          if git rev-parse -q --verify HEAD^ >/dev/null 2>&1; then
+            CHANGED=$(git diff --name-only HEAD^ HEAD || true)
+          else
+            CHANGED="(initial-push)"
+          fi
+          ONLY_VERSION_FILES=true
+          for f in $CHANGED; do
+            case "$f" in
+              version.json|notice.json|js/config.js|sw.js) ;;
+              *) ONLY_VERSION_FILES=false ;;
+            esac
+          done
+          echo "only_version_files=$ONLY_VERSION_FILES" >> "$GITHUB_OUTPUT"
+          echo "changed_files=$CHANGED"
+
+      # ---------------------------------------------------------------
+      # 版本递增：version.json 补丁号 +1（1.0.0 → 1.0.1），并同步
+      # js/config.js 的 app.version 与 sw.js 的 CACHE_NAME（三处一致，
+      # 保持原有「检查更新」不误报，PWA 缓存随版本升级）
+      # ---------------------------------------------------------------
+      - name: Bump patch version
+        if: steps.detect.outputs.only_version_files == 'false'
+        run: |
+          node - <<'EOF'
+          const fs = require('fs');
+          const p = 'version.json';
+          const j = JSON.parse(fs.readFileSync(p, 'utf8'));
+          const v = String(j.version || '0.0.0').split('.').map((n) => parseInt(n, 10) || 0);
+          while (v.length < 3) v.push(0);
+          v[2] = (v[2] || 0) + 1;
+          j.version = v.join('.');
+          fs.writeFileSync(p, JSON.stringify(j, null, 2) + '\n');
+          const ver = j.version;
+          const cfgPath = 'js/config.js';
+          const cfg = fs.readFileSync(cfgPath, 'utf8');
+          fs.writeFileSync(cfgPath, cfg.replace(/(version:\s*')(\d+\.\d+\.\d+)/, '$1' + ver));
+          const swPath = 'sw.js';
+          const sw = fs.readFileSync(swPath, 'utf8');
+          fs.writeFileSync(swPath, sw.replace(/(sdv-guide-v)(\d+\.\d+\.\d+)/, '$1' + ver));
+          console.log('bumped to ' + ver);
+          EOF
+
+      # ---------------------------------------------------------------
+      # 自动提交修改后的版本文件回仓库（仅版本递增时执行）
+      # ---------------------------------------------------------------
+      - name: Commit and push
+        if: steps.detect.outputs.only_version_files == 'false'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add version.json js/config.js sw.js
+          NEW_VER=$(node -p "require('./version.json').version")
+          git commit -m "chore: bump version to v$NEW_VER" || true
+          git push origin main
