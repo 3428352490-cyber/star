@@ -1,5 +1,5 @@
 {
-  "latestVersion": "1.0.10",
+  "latestVersion": "1.0.11",
   "updateDesc": "打开页面会自动检查新版本，发现更新立即弹窗提示；「检查更新」按钮可随时手动检查，方便确认最新内容",
   "downloadUrl": "./index.html"
 }
