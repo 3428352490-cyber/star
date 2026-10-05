@@ -56,17 +56,20 @@ jobs:
 
       # ---------------------------------------------------------------
       # 防死循环 + 递增判定：
-      # 本次提交只修改版本/公告相关文件（version.json / notice.json / js/config.js / sw.js）
-      # → 判定为「当前版本内修正 / 版本提交」，不递增版本号、不自动提交；
-      # 包含任何业务代码/功能改动 → 触发补丁递增。
+      # 对比本次 push 的 before/after 全部提交改动（避免多提交推送时只检查最后
+      # 一个 commit 而漏检业务改动）；改动仅含版本/公告相关文件
+      # （version.json / notice.json / js/config.js / sw.js）→ 判定为「当前版本内
+      # 修正 / 版本提交」，不递增版本号、不自动提交；包含任何业务代码/功能改动 → 触发补丁递增。
       # ---------------------------------------------------------------
       - name: Detect version-only changes
         id: detect
         run: |
-          if git rev-parse -q --verify HEAD^ >/dev/null 2>&1; then
-            CHANGED=$(git diff --name-only HEAD^ HEAD || true)
-          else
+          BEFORE="${{ github.event.before }}"
+          AFTER="${{ github.event.after }}"
+          if [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
             CHANGED="(initial-push)"
+          else
+            CHANGED=$(git diff --name-only "$BEFORE" "$AFTER" || true)
           fi
           ONLY_VERSION_FILES=true
           for f in $CHANGED; do

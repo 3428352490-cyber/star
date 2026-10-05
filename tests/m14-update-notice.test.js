@@ -64,6 +64,7 @@ test('M14 版本更新提醒：GitHub Actions 工作流完整（main 推送触�
   assert.ok(wf.includes('fetch-depth: 2'), '缺少深度 2 用于防循环对比');
   assert.ok(wf.includes('version.json|notice.json|js/config.js|sw.js'), '防死循环文件集合不完整');
   assert.ok(wf.includes('only_version_files'), '缺少防死循环判定');
+  assert.ok(wf.includes('github.event.before') && wf.includes('github.event.after'), '递增检测未覆盖本次 push 全部提交（多提交推送会漏检业务改动）');
   assert.ok(wf.includes('v[2] = (v[2] || 0) + 1'), '缺少补丁号 +1 递增');
   assert.ok(wf.includes('git commit') && wf.includes('git push origin main'), '缺少自动提交推送');
   // 版本与公告同步规则
