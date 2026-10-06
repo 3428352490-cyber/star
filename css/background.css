@@ -1,0 +1,68 @@
+/* ============================================================
+ * 背景随时间 / 季节自动切换层（纯新增模块，不影响任何原有组件）
+ *  · 置于页面最底层（z-index:-1），所有卡片/文字/UI 均在上层
+ *  · 双图层交叉淡入淡出，过渡 0.8s
+ *  · 调试面板仅 localhost 可见（JS 控制），线上用户不可见
+ * ============================================================ */
+.bg-timelayer {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  z-index: -1;                       /* 页面最底层：所有卡片、文字、UI 元素均在其上层 */
+  overflow: hidden;
+  pointer-events: none;              /* 不拦截任何鼠标/触摸交互 */
+  background: transparent;           /* 加载失败时透明 → 沿用原本背景样式，页面不崩坏 */
+  image-rendering: pixelated;        /* 保持星露谷像素画风 */
+}
+.bg-timelayer .bg-img {
+  position: absolute;
+  inset: 0;
+  background-size: cover;            /* 等比铺满，不拉伸变形 */
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: 0;
+  transition: opacity 0.8s ease;     /* 淡入淡出，时长 0.8s，不影响卡片文字交互 */
+  will-change: opacity;
+}
+.bg-timelayer .bg-img.bg-current {
+  opacity: 1;
+}
+
+/* ===== 背景调试面板（仅本机 localhost 显示；JS 负责渲染与显隐） ===== */
+.bg-debug-panel {
+  position: fixed;
+  right: 12px; bottom: 104px;
+  z-index: 60;
+  display: flex; flex-direction: column; gap: 6px;
+  width: 150px; padding: 10px 12px;
+  background: #faf3e2;
+  border: 3px solid #5d4037;
+  border-radius: 10px;
+  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.28);
+  font-size: 12px;
+  color: #4a3525;
+  image-rendering: pixelated;
+}
+.bg-debug-panel h4 {
+  margin: 0 0 4px; padding: 0;
+  font-size: 12px; color: #7a3b2e;
+}
+.bg-debug-panel label {
+  display: flex; justify-content: space-between; align-items: center; gap: 6px;
+}
+.bg-debug-panel select {
+  width: 76px; font-size: 12px;
+  background: #fff7e8; color: #4a3525;
+  border: 2px solid #5d4037; border-radius: 4px;
+  padding: 2px 2px;
+}
+.bg-debug-panel button {
+  margin-top: 4px; padding: 5px 0;
+  font-size: 12px;
+  background: #6b4f3a; color: #f7e8c8;
+  border: 2px solid #3e2a1a; border-radius: 6px;
+  cursor: pointer;
+}
+.bg-debug-panel button:active {
+  transform: translate(1px, 1px);
+  box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.15);
+}
