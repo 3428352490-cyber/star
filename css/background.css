@@ -31,9 +31,9 @@
   background: linear-gradient(
     to bottom,
     var(--bg-edge-color, #9db47e) 0%,    /* 渐变起点：图底边主色调（实时取色） */
-    var(--bg-edge-soft, #c3bd92) 25%,    /* 中间过渡色（图色与米白柔和混合） */
-    #e6dfc0 55%,
-    #f2edd9 78%,
+    var(--bg-edge-soft, #c3bd92) 30%,    /* 中间过渡色（图色与米白柔和混合） */
+    #e6dfc0 62%,
+    #f2edd9 84%,
     #f2edd9 100%                     /* 页面最底端：米白底色 */
   );
   pointer-events: none;
@@ -54,8 +54,8 @@
   transition: opacity 0.8s ease;     /* 淡入淡出，时长 0.8s，不影响卡片文字交互 */
   will-change: opacity;
   image-rendering: pixelated;        /* 硬像素，关闭抗锯齿 */
-  -webkit-mask-image: linear-gradient(to bottom, #000 90%, rgba(0, 0, 0, 0) 100%);
-  mask-image: linear-gradient(to bottom, #000 90%, rgba(0, 0, 0, 0) 100%); /* 图底 1/10 渐隐，与渐变融合 */
+  -webkit-mask-image: linear-gradient(to bottom, #000 90%, rgba(0, 0, 0, 0.25) 97%, rgba(0, 0, 0, 0) 100%);
+  mask-image: linear-gradient(to bottom, #000 90%, rgba(0, 0, 0, 0.25) 97%, rgba(0, 0, 0, 0) 100%); /* 图底 1/10 向上渐隐（雾面缓出），与渐变双向融合 */
 }
 .bg-timelayer .bg-img.bg-current {
   opacity: 1;
