@@ -1,5 +1,5 @@
 {
-  "latestVersion": "2.1.3",
-  "updateDesc": "底部导航图鉴、搜索、消息、我的替换为像素风新图标，搜索图标放大为左右图标的约 1.85 倍",
+  "latestVersion": "2.2.0",
+  "updateDesc": "新增四季轮换背景：页面随季节与时间自动切换背景风景，顶部背景向下平滑过渡",
   "downloadUrl": "./index.html"
 }
