@@ -1,5 +1,5 @@
 {
-  "latestVersion": "2.2.1",
-  "updateDesc": "①修复移动端软键盘顶起底部导航",
+  "latestVersion": "2.2.2",
+  "updateDesc": "ui(pages): 移除图鉴、搜索、消息、我的四个页面顶部标题板块",
   "downloadUrl": "./index.html"
 }
