@@ -1,5 +1,5 @@
 {
-  "latestVersion": "2.2.0",
-  "updateDesc": "新增四季轮换背景：页面随季节与时间自动切换背景风景，顶部背景向下平滑过渡",
+  "latestVersion": "2.2.1",
+  "updateDesc": "①修复移动端软键盘顶起底部导航",
   "downloadUrl": "./index.html"
 }
