@@ -260,6 +260,72 @@ function buildSummaryItems(message) {
   return items.length ? items : ['本次更新内容'];
 }
 
+/* ---------------- ④ 发版同步：四文件一致 + 自动提交推送（--release） ---------------- */
+
+/** 同步 js/config.js：app.version 与 announcements[0] 新公告条目 */
+function syncConfigJs(newVersion, items, dateStr) {
+  const p = path.join(ROOT, 'js/config.js');
+  let src = fs.readFileSync(p, 'utf8');
+  // ① app.version（替换第一处 version: 'x.y.z'，即 app 对象内）
+  src = src.replace(/(version:\s*')\d+\.\d+\.\d+(')/, '$1' + newVersion + '$2');
+  // ② announcements 头部插入新公告条目（version 同步 + 玩家向 notes）
+  const notes = items.map((it) => "        '" + String(it).replace(/'/g, "\\'") + "',").join('\n');
+  const entry =
+    "    {\n" +
+    "      version: '" + newVersion + "',\n" +
+    "      date: '" + dateStr + "',\n" +
+    "      title: '更新公告',\n" +
+    "      notes: [\n" +
+    notes + '\n' +
+    "      ],\n" +
+    "    },\n";
+  src = src.replace(/announcements:\s*\[/, 'announcements: [\n' + entry);
+  fs.writeFileSync(p, src, 'utf8');
+  console.log('已同步 js/config.js：app.version=' + newVersion + '，announcements[0] 插入 v' + newVersion + ' 公告');
+}
+
+/** 同步 sw.js：CACHE_NAME 代码版本 */
+function syncSwJs(newVersion) {
+  const p = path.join(ROOT, 'sw.js');
+  let src = fs.readFileSync(p, 'utf8');
+  src = src.replace(/sdv-guide-v[\d.]+/, 'sdv-guide-v' + newVersion);
+  fs.writeFileSync(p, src, 'utf8');
+  console.log('已同步 sw.js：CACHE_NAME=sdv-guide-v' + newVersion);
+}
+
+/** 校验四文件版本一致（announcements[0].version == latestVersion 是 Actions 阻断项） */
+function verifyConsistency(newVersion) {
+  const v = readJson(VERSION_FILE);
+  const n = readJson(NOTICE_FILE);
+  const cfg = fs.readFileSync(path.join(ROOT, 'js/config.js'), 'utf8');
+  const sw = fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8');
+  const checks = [];
+  checks.push(['version.json.latestVersion', v.latestVersion === newVersion]);
+  checks.push(['notice.json.version', n.version === newVersion]);
+  checks.push(['config.js app.version', new RegExp("version:\\s*'" + newVersion + "'").test(cfg)]);
+  checks.push(['config.js announcements[0].version', new RegExp("announcements:\\s*\\[[\\s\\S]*?version:\\s*'" + newVersion + "'").test(cfg)]);
+  checks.push(['sw.js CACHE_NAME', sw.includes('sdv-guide-v' + newVersion)]);
+  const bad = checks.filter((c) => !c[1]);
+  if (bad.length) {
+    throw new Error('版本一致性校验失败：' + bad.map((b) => b[0]).join('、') + ' 未同步到 ' + newVersion);
+  }
+  console.log('四文件版本一致性校验通过：version.json / notice.json / config.js / sw.js 均为 v' + newVersion);
+}
+
+/** 自动提交并推送发版（release: vX.Y.Z 同步发版） */
+function gitReleaseCommitPush(newVersion, desc) {
+  git('add version.json notice.json js/config.js sw.js');
+  const msg = 'release: v' + newVersion + ' 同步发版——' + String(desc || '更新').slice(0, 120);
+  git('commit -m "' + msg.replace(/"/g, "'") + '"');
+  console.log('已提交：' + msg);
+  try {
+    git('push origin main');
+    console.log('已推送 origin main（推送即发版完成）');
+  } catch (e) {
+    console.log('⚠️ 推送失败（可能为网络问题或远端有新提交）：请手动执行 git push origin main。');
+  }
+}
+
 /* ---------------- 主流程 ---------------- */
 
 function main() {
@@ -267,18 +333,19 @@ function main() {
   const forced = args.find((a) => /^(--major|--minor|--patch)$/.test(a));
   const forcedType = forced ? forced.slice(2) : null;
   const isPushMode = args.includes('--push');
+  const isReleaseMode = args.includes('--release'); // --release 隐含 --push：完整发版闭环
 
   // 读取旧版本号（以 version.json 为准）
   const versionData = readJson(VERSION_FILE);
   const oldVersion = String(versionData.latestVersion || '').trim();
   if (!oldVersion) throw new Error('version.json 缺少 latestVersion');
 
-  // ① 读取改动清单（--push：上次发版以来的全部提交；默认：最近一次提交）
-  const range = isPushMode ? getReleaseRange() : null;
+  // ① 读取改动清单（--push / --release：上次发版以来的全部提交；默认：最近一次提交）
+  const range = (isPushMode || isReleaseMode) ? getReleaseRange() : null;
   const changeSet = getChangeSet(range);
   console.log('本次改动文件：' + (changeSet.files.length ? changeSet.files.map((f) => f.file).join('、') : '（无）'));
   console.log('提交信息：' + changeSet.message);
-  if (isPushMode) {
+  if (isPushMode || isReleaseMode) {
     console.log('判定范围：' + (range || '(未提交改动)'));
     if (!isReleaseNeeded(changeSet.files)) {
       console.log('本次改动仅含文档/公告/测试/脚本类文件，无需发版。');
@@ -339,8 +406,19 @@ function main() {
   console.log(divider);
   console.log('');
   console.log('已更新：version.json（latestVersion=' + newVersion + '）、notice.json（公告同步为本次版本）');
-  console.log('提示：发布前请同步 js/config.js 的 app.version 与 sw.js 的 CACHE_NAME 为 v' + newVersion + '（脚本不自动修改）。');
-  console.log('脚本不执行 git 提交与推送，改动已留在工作区，由你确认后自行提交。');
+
+  // ⑧ --release：推送即发版闭环（四文件同步 + 自动提交推送）
+  if (isReleaseMode) {
+    syncConfigJs(newVersion, items, today());
+    syncSwJs(newVersion);
+    verifyConsistency(newVersion);
+    gitReleaseCommitPush(newVersion, desc);
+    console.log('');
+    console.log('✅ 推送即发版完成：v' + oldVersion + ' → v' + newVersion + '（四文件同步 + 公告 + 已推送）');
+  } else {
+    console.log('提示：发布前请同步 js/config.js 的 app.version 与 sw.js 的 CACHE_NAME 为 v' + newVersion + '（脚本不自动修改）。');
+    console.log('脚本不执行 git 提交与推送，改动已留在工作区，由你确认后自行提交。');
+  }
 }
 
 main();
