@@ -22,12 +22,13 @@ test('M3-1 layout.css 含底部导航与双端断点结构', () => {
   assert.ok(css.includes('flex: 1'), '底部导航未均分宽度');
 });
 
-test('M3-1b 底部导航简约风格：无外框/背景/容器；无红色选中特效；选中图标永久放大 1.5 倍', () => {
+test('M3-1b 底部导航简约风格：独立纯色背景（初始白色）；无红色选中特效；选中图标永久放大 1.5 倍', () => {
   const css = readAppFile('css/layout.css');
-  // 无外框、无背景色块、无圆角容器（.stardew-nav 与 .bottom-nav 共用规则块）
+  // 独立纯色背景（初始白色 #ffffff，可改这一行换底色）；无外框、无圆角容器
   const navBlock = css.slice(css.indexOf('.stardew-nav'), css.indexOf('.nav-item {'));
-  assert.ok(navBlock.includes('background: transparent'), '底部导航应无背景色块');
+  assert.ok(navBlock.includes('background-color: #ffffff'), '底部导航应有独立纯色背景（初始白色）');
   assert.ok(navBlock.includes('border-top: none'), '底部导航应无外框');
+  assert.ok(navBlock.includes('image-rendering: pixelated'), '底部导航应保持像素硬边');
   // 无红色选中特效：无变色规则、无 mask 剪影、无高亮底板
   assert.ok(!css.includes('.nav-item.active .nav-icon { color: var(--accent); }'), '不应有红色图标变色');
   assert.ok(!css.includes('.nav-item.active .nav-icon::after'), '不应有首页 mask 剪影变色');

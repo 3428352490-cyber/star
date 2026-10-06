@@ -2,7 +2,14 @@
    布局：应用外壳 / 顶部标题栏 / 底部导航 / 双端自适应
    复古 8-bit 红白机风格：直角纯色像素块 + 粗像素边框
    ============================================================ */
-#app { max-width: 1080px; margin: 0 auto; padding: 14px 14px 104px; min-height: 100vh; position: relative; }
+/* 应用外壳：使用动态视口单位 dvh 防软键盘顶起导航——
+   vh 为兜底（大视口），支持 dvh 的浏览器（安卓/鸿蒙 Chromium 内核）
+   键盘弹出时仅收缩内容可视区，底部导航仍固定贴屏幕底部，不跟随上移 */
+#app { max-width: 1080px; margin: 0 auto; padding: 14px 14px 104px; min-height: 100vh; min-height: 100dvh; position: relative; }
+
+/* 搜索页整体容器：预留底部安全边距，避开底部导航区域；
+   软键盘弹出时仅搜索输入区域向上滚动（输入框聚焦由浏览器自动滚入可视区） */
+.search-area { margin-bottom: max(8px, env(safe-area-inset-bottom)); }
 
 /* ===== 顶部背景大图：星露谷农场原画（置于所有卡片下方，靠近卡片上边缘向下渐变淡出，平滑过渡到下方格子背景） ===== */
 .app-bg {
@@ -60,15 +67,16 @@
 }
 .btn-back:active { transform: translate(2px, 2px); box-shadow: inset 0 0 0 2px var(--wood-light), 1px 1px 0 var(--shadow); }
 
-/* ===== 底部固定导航：纯图标简约栏——无外框、无背景色块、无圆角容器；选中图标永久放大 1.5 倍 ===== */
+/* ===== 底部固定导航：纯色简约栏——无外框、无圆角容器；选中图标永久放大 1.5 倍 ===== */
 .stardew-nav,
 .bottom-nav {
-  position: fixed; left: 0; right: 0; bottom: 0;
+  position: fixed; left: 0; right: 0; bottom: 0;   /* 固定视口底部：软键盘弹出不跟随上移 */
   display: flex;
-  background: transparent;              /* 无背景色块 */
-  border-top: none;                     /* 无外框 */
+  background-color: #ffffff;                       /* 独立纯色背景（初始白色，改这一行即可换底色） */
+  border-top: none;                                /* 无外框 */
   z-index: 50;
-  padding-bottom: env(safe-area-inset-bottom); /* 底部安全区 */
+  padding-bottom: env(safe-area-inset-bottom);     /* 底部安全区 */
+  image-rendering: pixelated;                      /* 保持星露谷像素硬边风格 */
 }
 .nav-item {
   flex: 1; min-width: 0;
@@ -95,10 +103,10 @@
 @media (prefers-reduced-motion: reduce) {
   .nav-item .nav-icon { transition: none; }
 }
-/* 搜索图标位于导航中间位置，放大至左右图标约 1.85 倍（26px→48px）：
+/* 搜索图标与其余四个图标尺寸完全一致（26px），图标间距均匀、视觉平衡：
    无色块、无边框、无上浮；点击放大交互、选中 1.5 倍、0.15s 过渡不变 */
 .nav-item.search .nav-icon {
-  width: 48px; height: 48px; margin-top: 0;
+  width: 26px; height: 26px; margin-top: 0;
   border-radius: 0;
   background: none;
   border: none;
