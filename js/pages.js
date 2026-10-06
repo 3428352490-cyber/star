@@ -80,11 +80,14 @@ const Pages = (() => {
       '<p class="card-foot">分类条目与详情二期填充；当前为分类框架。</p></section>';
   }
 
-  /** 搜索：搜索框 + 结果区 */
+  /** 搜索：搜索框 + 搜索按钮 + 结果区 */
   function search() {
     return pageHeader('搜索', false) +
-      '<section class="card search-area"><div class="search-bar"><input id="search-input" type="search" placeholder="" aria-label="全局搜索">' +
-      '<div id="search-carousel" class="search-carousel" aria-hidden="true"></div></div>' +
+      '<section class="card search-area"><div class="search-bar">' +
+      '<input id="search-input" type="search" placeholder="" aria-label="全局搜索">' +
+      '<button type="button" id="search-btn" class="search-btn">搜索</button>' +
+      '<div id="search-carousel" class="search-carousel" aria-hidden="true"></div>' +
+      '</div>' +
       '<div id="search-panel" class="search-panel"></div>' +
       '<div id="search-result" class="search-result">' + emptyState('输入关键词，检索全部词条', '一期为基础检索框架，全量词条二期接入') + '</div></section>';
   }

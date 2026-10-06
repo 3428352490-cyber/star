@@ -225,17 +225,26 @@
 .notice-more:active { transform: translate(2px, 2px); box-shadow: none; filter: brightness(0.9); }
 
 /* ---- 搜索 ---- */
-.search-bar { position: relative; }
+.search-bar { position: relative; display: flex; gap: 8px; }
 .search-bar input {
-  width: 100%; padding: 12px 14px; font-size: 15px;
+  flex: 1; min-width: 0; padding: 12px 14px; font-size: 15px;
   background: var(--bg-deep); color: var(--text);
   border: 3px solid var(--tile-border); border-radius: var(--radius);
   outline: none;
 }
 .search-bar input:focus { border-color: var(--accent); }
+/* 搜索按钮：像素卡片风格，点击执行搜索（空输入时用当前轮播词） */
+.search-btn {
+  flex: none; width: 56px; padding: 0;
+  background: var(--accent); color: #fff;
+  border: 3px solid var(--wood-frame); border-radius: var(--radius);
+  font-size: 13px; cursor: pointer;
+  transition: none;
+}
+.search-btn:active { transform: translate(2px, 2px); filter: brightness(0.9); }
 /* 占位文字轮播层：覆盖输入框内部、向上滑动切换推荐词 */
 .search-carousel {
-  position: absolute; left: 17px; right: 17px; top: 0; bottom: 0;
+  position: absolute; left: 17px; right: 81px; top: 0; bottom: 0;
   z-index: 2;                  /* 确保绘制在输入框文字之上 */
   overflow: hidden;
   pointer-events: none;      /* 不挡输入框点击与输入 */

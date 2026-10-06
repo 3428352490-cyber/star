@@ -20,9 +20,12 @@ const APP_FILES = [
 ];
 
 function fakeEl(id) {
+  let _html = '';
   return {
     id: id || '',
-    innerHTML: '',
+    // innerHTML 赋值等同真实 DOM：替换内容并清空子节点
+    get innerHTML() { return _html; },
+    set innerHTML(v) { _html = String(v); this.children = []; },
     textContent: '',
     className: '',
     dataset: {},
