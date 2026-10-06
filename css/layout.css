@@ -95,9 +95,9 @@
 @media (prefers-reduced-motion: reduce) {
   .nav-item .nav-icon { transition: none; }
 }
-/* 搜索图标与其余一致：无色块、无边框、无上浮，干净简约 */
+/* 搜索图标位于导航中间位置，尺寸略大（30px vs 其余 26px）：无色块、无边框、无上浮 */
 .nav-item.search .nav-icon {
-  width: 26px; height: 26px; margin-top: 0;
+  width: 30px; height: 30px; margin-top: 0;
   border-radius: 0;
   background: none;
   border: none;

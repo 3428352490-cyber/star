@@ -18,6 +18,13 @@ const App = (() => {
     messages: '<path d="M4 6 H20 V16 H12 L8 20 V16 H4 Z"/><circle cx="8" cy="11" r="1"/><circle cx="12" cy="11" r="1"/><circle cx="16" cy="11" r="1"/>',
     mine: '<circle cx="12" cy="8" r="4"/><path d="M5.5 20 C5.5 15.5 8 13.5 12 13.5 C16 13.5 18.5 15.5 18.5 20"/>',
   };
+  /** 底部导航图标图片（透明底 PNG；首页沿用 nav-home.png，其余 4 项替换为 assets 图标） */
+  const NAV_IMG = {
+    codex: 'assets/icon_book.png',
+    search: 'assets/icon_search.png',
+    messages: 'assets/icon_message.png',
+    mine: 'assets/icon_user.png',
+  };
 
   /** 按 tabs 数组渲染底部导航（5 Tab 均分，搜索居中） */
   function renderTabs() {
@@ -27,7 +34,7 @@ const App = (() => {
       '<button class="nav-item' + (t.key === 'search' ? ' search' : '') + '" data-tab="' + t.key + '" data-route="#/' + t.key + '">' +
         '<span class="nav-icon">' + (t.key === 'home'
           ? '<img src="assets/nav-home.png" alt="" style="width:100%;height:100%;object-fit:contain">'
-          : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="miter">' + (NAV_SVG[t.key] || '') + '</svg>') + '</span>' +
+          : '<img src="' + (NAV_IMG[t.key] || '') + '" alt="" style="width:100%;height:100%;object-fit:contain">') + '</span>' +
         '<span class="nav-label">' + esc(t.label) + '</span>' +
       '</button>'
     ).join('');
