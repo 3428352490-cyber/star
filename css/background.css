@@ -1,8 +1,11 @@
 /* ============================================================
- * 背景随时间 / 季节自动切换层（纯新增模块，不影响任何原有组件）
- *  · 置于页面最底层（z-index:-1），所有卡片/文字/UI 均在上层
- *  · 双图层交叉淡入淡出，过渡 0.8s
- *  · 调试面板仅 localhost 可见（JS 控制），线上用户不可见
+ * 背景随时间 / 季节自动切换层（纯 CSS 展示改造）
+ *
+ * 多层结构（自上而下）：
+ *   ① ::after 线性渐变层 —— 从背景图底边位置开始，向下平滑流淌填充下方空白
+ *   ② .bg-img 轮换背景图层 —— 置于页面顶部，由 js/background.js 按季节时段轮换
+ * 层级：背景层整体 z-index:-1，所有卡片/文字/UI 均在其上层
+ * 保持 image-rendering:pixelated 硬像素风格；适配移动端
  * ============================================================ */
 .bg-timelayer {
   position: fixed;
@@ -10,18 +13,43 @@
   z-index: -1;                       /* 页面最底层：所有卡片、文字、UI 元素均在其上层 */
   overflow: hidden;
   pointer-events: none;              /* 不拦截任何鼠标/触摸交互 */
-  background: transparent;           /* 加载失败时透明 → 沿用原本背景样式，页面不崩坏 */
+  background: #f2edd9;               /* 页面底色兜底：渐变填充的下限色 */
   image-rendering: pixelated;        /* 保持星露谷像素画风 */
 }
+
+/* ---- 上层：垂直向下线性渐变 ----
+ * 起点位于背景图最底边位置（top:46vh 与背景图底部对齐），
+ * 起点色取背景图片底边主色调（星露谷低饱和草地绿近似），
+ * 向下平滑过渡到页面米白底色，颜色如流淌般填充图片下方所有空白区域 */
+.bg-timelayer::after {
+  content: '';
+  position: absolute;
+  top: 46vh;                         /* 与背景图底边对齐 */
+  left: 0; right: 0; bottom: 0;
+  background: linear-gradient(
+    to bottom,
+    #9db47e 0%,                      /* 渐变起点：背景图底边主色调（低饱和草绿） */
+    #c3bd92 28%,
+    #e6dfc0 55%,
+    #f2edd9 82%,
+    #f2edd9 100%                     /* 平滑衔接页面底色 */
+  );
+  pointer-events: none;
+}
+
+/* ---- 下层：轮换像素背景图 ----
+ * 置于页面顶部，等比铺满不拉伸；由 JS 双图层淡入淡出 0.8s 切换 */
 .bg-timelayer .bg-img {
   position: absolute;
-  inset: 0;
+  top: 0; left: 0; right: 0;
+  height: 46vh;                      /* 背景图占据页面顶部区域，下方留白由渐变填充 */
   background-size: cover;            /* 等比铺满，不拉伸变形 */
-  background-position: center;
+  background-position: top center;
   background-repeat: no-repeat;
   opacity: 0;
   transition: opacity 0.8s ease;     /* 淡入淡出，时长 0.8s，不影响卡片文字交互 */
   will-change: opacity;
+  image-rendering: pixelated;        /* 硬像素，关闭抗锯齿 */
 }
 .bg-timelayer .bg-img.bg-current {
   opacity: 1;
