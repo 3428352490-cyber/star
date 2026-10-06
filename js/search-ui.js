@@ -40,7 +40,12 @@ const SearchUI = (() => {
   let search_panelVisible = false;       // 面板展开态
   let search_panelExpanded = false;      // 历史展开态（>5 条时）
   let search_focused = false;            // 搜索框聚焦标记
-  let search_bound = false;              // 事件是否已绑定（仅一次）
+  // 事件绑定跟踪：元素级监听跟随元素身份（真实浏览器每次路由重建 DOM，
+  // 二次进入搜索页必须对新元素重新绑定）；document/window 全局监听仅绑一次
+  let search_boundPanelEl = null;        // 已绑定点击委托的面板元素
+  let search_boundInputEl = null;        // 已绑定事件的输入框元素
+  let search_boundBtnEl = null;          // 已绑定事件的搜索按钮元素
+  let search_docBound = false;           // 全局（document/window）监听是否已绑
 
   const log = (msg) => {
     try {
@@ -286,7 +291,7 @@ const SearchUI = (() => {
       log('未找到搜索组件，跳过初始化');
       return;
     }
-    if (!search_bound) search_bindEvents();
+    search_bindEvents(); // 按元素身份绑定：新元素（路由重建后）自动重绑，同元素不重复绑
     // 重置轮播层可见性（无输入无聚焦时显示轮播层）
     if (search_carouselEl) search_carouselEl.style.display = '';
     search_fetchRecommendations(search_historyGet()).then((list) => {
@@ -299,13 +304,21 @@ const SearchUI = (() => {
     search_startPlaceholderTimer();
   }
 
-  /** 面板事件绑定（仅绑定一次；innerHTML 重渲染不丢失委托） */
+  /**
+   * 事件绑定：
+   *  · 面板 / 输入框 / 搜索按钮：跟随元素身份绑定（真实浏览器每次路由
+   *    重建搜索 DOM，二次进入搜索页必须对新元素重新绑定，否则词条点击、
+   *    聚焦停轮播、按钮/回车全部失效）
+   *  · document / window 全局监听：仅绑定一次（document 不随页面重建）
+   */
   function search_bindEvents() {
-    search_bound = true;
-    if (search_panelEl && search_panelEl.addEventListener) {
+    // 面板点击委托：元素变化时重绑
+    if (search_panelEl && search_panelEl.addEventListener && search_boundPanelEl !== search_panelEl) {
       search_panelEl.addEventListener('click', search_onPanelClick);
+      search_boundPanelEl = search_panelEl;
     }
-    if (search_inputEl && search_inputEl.addEventListener) {
+    // 输入框：聚焦 / 失焦 / 回车 / 输入 —— 元素变化时重绑
+    if (search_inputEl && search_inputEl.addEventListener && search_boundInputEl !== search_inputEl) {
       search_inputEl.addEventListener('focus', () => {
         search_focused = true; // 聚焦：暂停轮播并隐藏轮播层（原生占位已空，输入区干净）
         search_stopPlaceholderTimer();
@@ -326,19 +339,23 @@ const SearchUI = (() => {
         if (search_inputEl.value.trim()) search_hidePanel();
         else search_showPanel();
       });
+      search_boundInputEl = search_inputEl;
     }
-    // 搜索按钮：点击执行搜索；空输入时用当前轮播词
-    if (search_btnEl && search_btnEl.addEventListener) {
+    // 搜索按钮：点击执行搜索；空输入时用当前轮播词 —— 元素变化时重绑
+    if (search_btnEl && search_btnEl.addEventListener && search_boundBtnEl !== search_btnEl) {
       search_btnEl.addEventListener('click', () => {
         log('点击搜索按钮');
         runSearch(search_inputEl ? search_inputEl.value : '');
       });
+      search_boundBtnEl = search_btnEl;
     }
-    // 点击页面空白处收起面板
-    document.addEventListener('click', search_onDocClick);
-    // Tab 切换：离开搜索页时销毁搜索组件（当前已是搜索页重复点击不做任何显隐操作）
-    window.addEventListener('hashchange', search_onHashChange);
-    log('绑定搜索面板事件');
+    // 全局监听（document / window）只绑一次
+    if (!search_docBound) {
+      search_docBound = true;
+      document.addEventListener('click', search_onDocClick);
+      window.addEventListener('hashchange', search_onHashChange);
+    }
+    log('绑定搜索面板事件（panel=' + (search_boundPanelEl ? 'bound' : '-') + ' input=' + (search_boundInputEl ? 'bound' : '-') + ' btn=' + (search_boundBtnEl ? 'bound' : '-') + '）');
   }
 
   /** Tab 切换处理：离开搜索页销毁组件；停留在搜索页不做任何面板显隐操作 */

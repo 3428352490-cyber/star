@@ -161,6 +161,11 @@ function setupGlobals() {
 
   globalThis.__testEls = els;
   globalThis.__testMql = mql;
+  // 模拟真实浏览器路由重建：让 getElementById 下次返回全新元素对象
+  globalThis.__resetEl = (key) => {
+    els.delete(key);
+    return getEl(key);
+  };
   globalThis.fire = fire;
   globalThis.__setQSA = (arr) => { qsaResults = arr || []; };
   globalThis.__fireDoc = (type, event) => {
