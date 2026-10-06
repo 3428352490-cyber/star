@@ -18,29 +18,23 @@
 }
 
 /* ---- 上层：全屏线性渐变蒙版（叠加在背景图片上方） ----
- * 渐变起始位置：背景图片最底部（46vh）开始向下渐变；
- * 起点色 = 当前背景图片底部主色调（background.js 轮换加载时实时取色写入
- * --bg-edge-color，切换季节自动适配；未取到色时回退星露谷低饱和草绿近似），
- * 颜色逐步加深（图底主色 → 暗化 18% → 32% → 45%），平滑过渡到页面最底部，
- * 自然雾面淡出，无生硬分割线；pixelated 像素渲染不变。
- * 附近似色兜底声明：不支持 color-mix 的浏览器自动回退近似加深色 */
+ * 渐变位置沿用画面 85% 高度（46vh × 0.85 ≈ 39.1vh，即图片底部往上约 1/10 处），
+ * 从该位置开始向下渐变：起点采用当前背景图片底部主色调
+ * （background.js 轮换加载时实时取色写入 --bg-edge-color，切换季节自动适配；
+ * 未取到色时回退星露谷低饱和草绿近似值），
+ * 经中间柔和过渡色平缓过渡，最终在页面最底部融入页面底色（#f2edd9）。
+ * 保持雾面淡出效果，无生硬分割线；pixelated 像素渲染不变 */
 .bg-timelayer::after {
   content: '';
   position: absolute;
   top: 0; left: 0; right: 0; bottom: 0;   /* 覆盖整个可视区域 */
   background: linear-gradient(
     to bottom,
-    transparent 46vh,                       /* 背景图片最底部前：蒙版透明，图片完整显示 */
-    #9db47e 47vh,                          /* 近似兜底：图底主色 */
-    #6f7f55 62vh, #57644a 80vh, #46523c 100vh
-  );
-  background: linear-gradient(
-    to bottom,
-    transparent 46vh,                       /* 背景图片最底部：蒙版透明 */
-    var(--bg-edge-color, #9db47e) 47vh,     /* 起点：当前背景图底部主色调（轮换自动适配） */
-    color-mix(in srgb, var(--bg-edge-color, #9db47e) 82%, #000 18%) 62vh,  /* 逐步加深 */
-    color-mix(in srgb, var(--bg-edge-color, #9db47e) 68%, #000 32%) 80vh,  /* 再加深 */
-    color-mix(in srgb, var(--bg-edge-color, #9db47e) 55%, #000 45%) 100vh  /* 页面最底部：最深 */
+    transparent 39.1vh,                   /* 背景图高度 85% 位置：蒙版透明，图片完整显示 */
+    var(--bg-edge-color, #9db47e) 42vh,   /* 起点：当前背景图底部主色调（轮换自动适配） */
+    var(--bg-edge-soft, #c3bd92) 56vh,    /* 中间柔和过渡色（图色与米白混合） */
+    #f2edd9 85vh,                         /* 逐步融入页面底色 */
+    #f2edd9 100%                          /* 页面最底端 = 页面底色 */
   );
   pointer-events: none;
 }
@@ -60,6 +54,8 @@
   transition: opacity 0.8s ease;     /* 淡入淡出，时长 0.8s，不影响卡片文字交互 */
   will-change: opacity;
   image-rendering: pixelated;        /* 硬像素，关闭抗锯齿 */
+  -webkit-mask-image: linear-gradient(to bottom, #000 90%, rgba(0, 0, 0, 0.4) 95%, rgba(0, 0, 0, 0) 100%);
+  mask-image: linear-gradient(to bottom, #000 90%, rgba(0, 0, 0, 0.4) 95%, rgba(0, 0, 0, 0) 100%); /* 图底 1/10 向上雾面缓出：先轻微淡化再完全消失，与渐变双向融合 */
 }
 .bg-timelayer .bg-img.bg-current {
   opacity: 1;
