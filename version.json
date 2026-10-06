@@ -1,5 +1,5 @@
 {
-  "latestVersion": "2.4.3",
-  "updateDesc": "全新社交功能上线：消息私聊、个人主页、关注互动、楼中楼评论，支持游客登录与主题设置",
+  "latestVersion": "2.4.4",
+  "updateDesc": "更新弹窗优化：立即更新展示拉取进度并确认完成，版本一致时明确提示已是最新版本",
   "downloadUrl": "./index.html"
 }
