@@ -74,16 +74,14 @@ const Pages = (() => {
   /** 图鉴：38 分类网格（复用模块数组，单一数据源） */
   function codex() {
     const grid = SDV_CONFIG.modules.map((m) => tile(m, 'tile-codex')).join('');
-    return pageHeader('图鉴', false) +
-      '<section class="card"><div class="card-head"><h2>物品分类</h2><span class="card-sub">' + SDV_CONFIG.modules.length + ' 类</span></div>' +
+    return '<section class="card"><div class="card-head"><h2>物品分类</h2><span class="card-sub">' + SDV_CONFIG.modules.length + ' 类</span></div>' +
       '<div class="codex-grid">' + grid + '</div>' +
       '<p class="card-foot">分类条目与详情二期填充；当前为分类框架。</p></section>';
   }
 
   /** 搜索：搜索框 + 搜索按钮 + 结果区 */
   function search() {
-    return pageHeader('搜索', false) +
-      '<section class="card search-area"><div class="search-bar">' +
+    return '<section class="card search-area"><div class="search-bar">' +
       '<input id="search-input" type="search" placeholder="" aria-label="全局搜索">' +
       '<button type="button" id="search-btn" class="search-btn">搜索</button>' +
       '<div id="search-carousel" class="search-carousel" aria-hidden="true"></div>' +
@@ -135,8 +133,7 @@ const Pages = (() => {
   function mine() {
     const t = Store.getTheme();
     const me = (typeof CommunityAPI !== 'undefined') ? CommunityAPI.getProfile() : null;
-    return pageHeader('我的', false) +
-      '<button class="card account-card" data-action="open-profile-modal">' +
+    return '<button class="card account-card" data-action="open-profile-modal">' +
         '<span class="avatar px-avatar" data-size="md" style="background:' + esc(me ? me.color : '#6a8a5a') + '">' + esc(me ? me.avatar : '🧑‍🌾') + '</span>' +
         '<span class="account-text">' + esc(me ? me.nick : '星露谷村民') + '</span>' +
         '<span class="account-arrow">›</span>' +

@@ -267,9 +267,7 @@ const Community = (() => {
   function renderMessages() {
     const msgs = CommunityAPI.fetchMessages();
     const unread = msgs.filter((m) => !m.read).length;
-    return '<header class="page-header"><button class="btn-back" data-route="#/home">←</button>' +
-      '<h1>消息</h1></header>' +
-      '<section class="card"><div class="card-head"><h2>通知</h2>' +
+    return '<section class="card"><div class="card-head"><h2>通知</h2>' +
         (unread ? '<button class="notice-more" data-action="mark-all-read">全部已读</button>' : '<span class="card-sub">已全部读完</span>') +
       '</div>' +
       (msgs.length ? '<div class="message-list">' + msgs.map((m) => {

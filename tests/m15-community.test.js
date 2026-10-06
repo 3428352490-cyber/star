@@ -109,7 +109,7 @@ test('M15-7 页面骨架：社区列表 / 帖子详情 / 消息页 / 我的子�
   assert.ok(detail.includes('帖子详情'), '详情页骨架缺失');
   assert.ok(detail.includes('post-like') && detail.includes('post-fav') && detail.includes('post-comment'), '详情页缺少互动按钮');
   const msgs = Community.renderMessages();
-  assert.ok(msgs.includes('消息'), '消息页骨架缺失');
+  assert.ok(msgs.includes('通知'), '消息页骨架缺失');
   const minePosts = Community.renderMinePosts();
   assert.ok(minePosts.includes('我的帖子'), '我的帖子页骨架缺失');
   assert.ok(Pages.mine().includes('open-admin'), '我的页缺少管理后台预留入口');
