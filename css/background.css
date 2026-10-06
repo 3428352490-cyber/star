@@ -18,29 +18,31 @@
 }
 
 /* ---- 上层：垂直向下线性渐变 ----
- * 起点位于背景图最底边位置（top:46vh 与背景图底部对齐），
- * 渐变起点色 = 背景图片底边主色调（由 background.js 图片加载成功后
- * 取色写入 --bg-edge-color；未取到色时回退星露谷低饱和草绿近似值），
- * 从图底边向下拉长距离（280px）缓慢柔和过渡到页面米白底色，
- * 慢慢淡化填充下方空白，边界无明显切割线；pixelated 与移动端 vh 适配不变 */
+ * 起点上移至图片底部渐隐起点（约 36vh，与 .bg-img 的 mask 78% 渐隐区对齐），
+ * 渐变起点色 = 背景图片底边主色调（background.js 取色写入 --bg-edge-color；
+ * 未取到色时回退星露谷低饱和草绿近似值），
+ * 从图内底部开始覆盖渐隐区并向下长距离（340px）缓慢柔和过渡，
+ * 图底边被渐变接管、与图片融为一体，下方空白由米白底色填充，无明显切割线 */
 .bg-timelayer::after {
   content: '';
   position: absolute;
-  top: 46vh;                         /* 与背景图底边对齐 */
+  top: 36vh;                         /* 覆盖图片底部渐隐区起点，实现无缝混合 */
   left: 0; right: 0;
-  height: 280px;                     /* 拉长的柔和过渡距离 */
+  height: 340px;                     /* 拉长的柔和过渡距离 */
   background: linear-gradient(
     to bottom,
     var(--bg-edge-color, #9db47e) 0%,    /* 渐变起点：图底边主色调（实时取色） */
     var(--bg-edge-soft, #c3bd92) 40%,    /* 中间过渡色（图色与米白柔和混合） */
-    #f2edd9 85%,
+    #f2edd9 82%,
     #f2edd9 100%                     /* 平滑衔接背景层米白底色 */
   );
   pointer-events: none;
 }
 
 /* ---- 下层：轮换像素背景图 ----
- * 置于页面顶部，等比铺满不拉伸；由 JS 双图层淡入淡出 0.8s 切换 */
+ * 置于页面顶部，等比铺满不拉伸；由 JS 双图层淡入淡出 0.8s 切换；
+ * 底部 22% 区域 mask 渐隐（底边融化），与上层渐变互相混合、无缝衔接，
+ * 消除图片底部锐利分界线 */
 .bg-timelayer .bg-img {
   position: absolute;
   top: 0; left: 0; right: 0;
@@ -52,6 +54,8 @@
   transition: opacity 0.8s ease;     /* 淡入淡出，时长 0.8s，不影响卡片文字交互 */
   will-change: opacity;
   image-rendering: pixelated;        /* 硬像素，关闭抗锯齿 */
+  -webkit-mask-image: linear-gradient(to bottom, #000 78%, rgba(0, 0, 0, 0) 100%);
+  mask-image: linear-gradient(to bottom, #000 78%, rgba(0, 0, 0, 0) 100%); /* 图底边渐隐，与渐变融合 */
 }
 .bg-timelayer .bg-img.bg-current {
   opacity: 1;
