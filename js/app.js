@@ -285,7 +285,7 @@ const App = (() => {
     });
   }
 
-  /* ---------- 搜索（基础框架：38 模块实时过滤） ---------- */
+  /* ---------- 搜索（站内全量检索：首页功能 + 图鉴条目 + 帖子主题，按来源分组展示） ---------- */
   function handleSearch(q) {
     const box = $('#search-result');
     if (!box) return;
@@ -296,18 +296,63 @@ const App = (() => {
       mountIcons(box);
       return;
     }
-    const hits = Pages.filterModules(query);
-    if (!hits.length) {
-      box.innerHTML = Pages.emptyState('未找到相关词条', '二期将接入游戏全量词条');
+
+    // ① 首页功能卡片（homeCards：地图 / 指南 / 计算器 / 模组）
+    const homeHits = (SDV_CONFIG.homeCards || []).filter((c) =>
+      (c.title || '').toLowerCase().includes(query) ||
+      (c.desc || '').toLowerCase().includes(query) ||
+      (c.key || '').toLowerCase().includes(query)
+    );
+
+    // ② 图鉴条目（modules，复用既有 filterModules 模糊匹配）
+    const codexHits = Pages.filterModules(query);
+
+    // ③ 帖子主题（社区帖，按标题匹配）
+    let postHits = [];
+    try {
+      if (typeof CommunityAPI !== 'undefined' && typeof CommunityAPI.fetchPosts === 'function') {
+        postHits = CommunityAPI.fetchPosts().filter((p) => (p.title || '').toLowerCase().includes(query));
+      }
+    } catch (e) { postHits = []; }
+
+    const total = homeHits.length + codexHits.length + postHits.length;
+    if (!total) {
+      box.innerHTML = Pages.emptyState('未找到相关词条', '试试其他关键词，或去图鉴与社区逛逛');
       mountIcons(box);
       return;
     }
-    box.innerHTML = '<div class="search-hit-list">' + hits.map((m) =>
-      '<button class="search-hit" data-route="#/module/' + m.key + '">' +
-        '<span class="tile-icon sm" data-icon="' + m.key + '"><span class="tile-fallback">' + esc(m.label[0]) + '</span></span>' +
-        esc(m.label) + '<span class="tag">模块</span>' +
-      '</button>'
-    ).join('') + '</div>';
+
+    // 按来源分组渲染（区分：首页功能 / 图鉴条目 / 帖子主题）
+    let html = '<div class="search-hit-list">';
+    if (homeHits.length) {
+      html += '<div class="search-hit-group"><div class="search-hit-group-title">首页功能</div>' +
+        homeHits.map((c) =>
+          '<button class="search-hit" data-route="#/home">' +
+            '<span class="tile-icon sm" data-icon="' + esc(c.key) + '"><span class="tile-fallback">' + esc(c.title[0]) + '</span></span>' +
+            esc(c.title) + '<span class="tag">首页功能</span>' +
+          '</button>'
+        ).join('') + '</div>';
+    }
+    if (codexHits.length) {
+      html += '<div class="search-hit-group"><div class="search-hit-group-title">图鉴条目</div>' +
+        codexHits.map((m) =>
+          '<button class="search-hit" data-route="#/module/' + esc(m.key) + '">' +
+            '<span class="tile-icon sm" data-icon="' + esc(m.key) + '"><span class="tile-fallback">' + esc(m.label[0]) + '</span></span>' +
+            esc(m.label) + '<span class="tag">图鉴条目</span>' +
+          '</button>'
+        ).join('') + '</div>';
+    }
+    if (postHits.length) {
+      html += '<div class="search-hit-group"><div class="search-hit-group-title">帖子主题</div>' +
+        postHits.map((p) =>
+          '<button class="search-hit" data-route="#/post/' + esc(p.id) + '">' +
+            '<span class="tile-icon sm"><span class="tile-fallback">帖</span></span>' +
+            esc(p.title) + '<span class="tag">帖子主题</span>' +
+          '</button>'
+        ).join('') + '</div>';
+    }
+    html += '</div>';
+    box.innerHTML = html;
     mountIcons(box);
   }
 

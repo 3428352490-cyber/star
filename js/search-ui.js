@@ -349,11 +349,13 @@ const SearchUI = (() => {
     }
   }
 
-  /** 点击页面空白处收起面板 */
+  /** 点击页面空白处收起面板；点击搜索区/导航与路由元素不收起（避免"再次点击搜索图标面板消失"） */
   function search_onDocClick(e) {
     if (!search_panelVisible || !search_panelEl) return;
     const t = e.target;
-    if (t && typeof t.closest === 'function' && t.closest('.search-area')) return;
+    if (t && typeof t.closest === 'function') {
+      if (t.closest('.search-area') || t.closest('[data-route]')) return;
+    }
     search_hidePanel();
   }
 
