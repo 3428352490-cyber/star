@@ -48,7 +48,8 @@ test('M14 版本更新提醒：update.js 自动检测 + 手动入口共用一套
   assert.ok(js.includes('cache: \'no-store\''), '缺少禁用缓存请求');
   assert.ok(js.includes("cloudVersionUrl + '?t=' + ts"), 'version.json 请求缺少 Date.now() 时间戳防缓存');
   assert.ok(js.includes('console.error'), '缺少异常控制台打印（页面不崩溃）');
-  assert.ok(js.includes('location.href = remote.downloadUrl'), '缺少立即更新跳转下载地址刷新逻辑（用户手动选择后才加载新版本）');
+  assert.ok(js.includes('performUpdate'), '缺少立即更新拉取新版资源流程（进度条 + 完成弹窗）');
+  assert.ok(!js.includes('location.href = remote.downloadUrl'), '立即更新不应整页跳转（旧实现被旧缓存拦截、错误返回首页）');
   // 页面载入完成自动检测 + 【检查更新】备用手动入口：共用 checkUpdate
   const app = readAppFile('js/app.js');
   assert.ok(app.includes("Updater.checkUpdate(false)"), '页面载入完成缺少自动版本检测');
@@ -67,7 +68,10 @@ test('M14 版本更新提醒：update.js 更新弹窗底部按钮改造（暂不
   assert.ok(js.includes("sessionStorage.getItem(AUTO_REFRESH_KEY)"), '自动刷新缺少会话标记防循环检测');
   assert.ok(js.includes('不保存忽略标记'), '暂不更新不应写入任何忽略标记');
   assert.ok(js.includes('localStorage.setItem(STORAGE_KEY'), '立即更新缺少本地版本写入');
-  assert.ok(js.includes('location.href = remote.downloadUrl'), '立即更新缺少跳转下载地址刷新');
+  assert.ok(js.includes('async function performUpdate'), '缺少拉取新版资源异步流程');
+  assert.ok(js.includes('更新完成'), '缺少【更新完成】确认弹窗');
+  assert.ok(js.includes("label: '确认'"), '完成弹窗缺少确认按钮');
+  assert.ok(js.includes('upd-progress-bar'), '缺少加载进度条');
   assert.ok(js.includes('检测到新版本'), '弹窗缺少新版本号内容');
   assert.ok(js.includes('更新内容详见发布说明'), '弹窗缺少更新简介回退文案');
   assert.ok(js.includes('不下载任何新版资源'), '暂不更新缺少「禁止下载资源」语义');

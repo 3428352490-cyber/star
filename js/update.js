@@ -47,6 +47,18 @@ const Updater = (() => {
      关闭网页/新开标签页为新会话，会重新检测并自动刷新。 */
   const AUTO_REFRESH_KEY = 'sdv-guide:auto-refreshed';
 
+  /* 核心资源清单（必须与 sw.js 的 CORE_ASSETS 同步维护）：
+     点击【立即更新】后逐个预取到新版缓存，实时展示拉取进度；
+     全部拉取完成后再弹【更新完成】确认弹窗。 */
+  const CORE_ASSETS = [
+    './', './index.html', './version.json',
+    './css/base.css', './css/layout.css', './css/components.css', './css/community.css',
+    './js/util.js', './js/config.js', './js/store.js', './js/theme.js', './js/ui.js',
+    './js/pages.js', './js/api.js', './js/community.js', './js/router.js', './js/review-log.js',
+    './js/self-check.js', './js/security-guard.js', './js/update.js', './js/app.js',
+    './manifest.webmanifest', './assets/icons/icon-192.png', './assets/icons/icon-512.png',
+  ];
+
   /**
    * 语义化版本解析：把 v1.0.10 去掉 v 前缀、按小数点分割、转为数字数组
    * [1, 0, 10]（非法/缺段自动回退 0），供分段数字比对使用
@@ -280,9 +292,27 @@ const Updater = (() => {
         return { updated: true, notice: '发现新版本 v' + remote.latestVersion };
       }
       if (cmp === 0) {
-        // 版本一致：自动检测静默；手动入口提示「当前已是最新版本」
+        // 版本一致：自动检测静默；手动入口弹出独立提示弹窗「已是最新版本」
         log('version-compare', 'success', '版本一致，无需更新', { local: LOCAL_VERSION, remote: remote.latestVersion, cmp });
-        if (manual) Toast.show('当前已是最新版本 v' + LOCAL_VERSION);
+        if (manual) {
+          // v2.4.3+：原 Toast 提示改为独立弹窗（像素风格），确认按钮关闭
+          Modal.show({
+            title: '',
+            body:
+              '<h2 class="upd-title">已是最新版本</h2>' +
+              '<p>当前版本 v' + esc(LOCAL_VERSION) + ' 已是最新版本。</p>',
+            actions: [
+              {
+                label: '确认',
+                cls: 'btn-primary',
+                onClick: () => {
+                  // 确认仅关闭提示弹窗
+                  log('latest-close', 'success', '已是最新版本提示弹窗已关闭', { local: LOCAL_VERSION });
+                },
+              },
+            ],
+          });
+        }
         return { updated: false, notice: '当前已是最新版本 v' + LOCAL_VERSION };
       }
       // 本地版本高于云端（正常不出现，仅防御）
@@ -339,15 +369,98 @@ const Updater = (() => {
           label: '立即更新',
           cls: 'btn-primary',
           onClick: () => {
-            // 记录已确认版本 → 跳转下载地址刷新页面加载云端最新静态资源
-            // （由用户动作触发，非后台静默下载）
-            log('modal-close', 'success', '立即更新，跳转加载新版资源', { remote: remote.latestVersion });
-            setInstalledVersion(remote.latestVersion);
-            location.href = remote.downloadUrl || location.href;
+            // 修复（v2.4.3+）：不再 location.href 整页跳转（旧实现会被旧版
+            // Service Worker 缓存拦截，导致错误返回首页且没有拉到新内容）。
+            // 改为：弹出加载进度条弹窗 → 逐个预取新版核心资源写入新版缓存
+            // （实时进度）→ 全部完成后弹出【更新完成】确认弹窗。
+            // setTimeout(0)：等 Modal 按钮 click 的 close() 执行完再渲染进度
+            // 弹窗，避免进度弹窗刚打开就被 close() 清掉（进度条显示不出来）。
+            log('modal-close', 'success', '立即更新：开始拉取新版资源', { remote: remote.latestVersion });
+            setTimeout(() => { performUpdate(remote); }, 0);
           },
         },
       ],
     });
+  }
+
+  /**
+   * 立即更新流程（v2.4.3+ 修复）：不整页跳转（旧实现被旧版 SW 缓存拦截，
+   * 错误返回首页且未拉到新内容）。改为三步：
+   * 1) 弹出「正在更新」进度弹窗：像素风格进度条实时展示预取进度（n / 总数）；
+   * 2) 逐个预取新版核心资源（绕过 HTTP 缓存强拉最新）写入「新版本号」缓存，
+   *    单资源失败不中断（记录后继续），全部完成即视为拉取完成；
+   * 3) 全部拉取完成后写入已确认版本，弹出【更新完成】确认弹窗——
+   *    点击确认仅关闭弹窗（新版资源已入缓存，下次刷新由新版 SW 接管生效）。
+   * @param {{latestVersion: string, updateDesc: string, downloadUrl: string}} remote 云端版本信息
+   */
+  async function performUpdate(remote) {
+    const total = CORE_ASSETS.length;
+    let done = 0;
+    // 1) 进度弹窗（占位按钮防止误触关闭；遮罩点击仅关闭显示，拉取仍继续）
+    Modal.show({
+      title: '',
+      body:
+        '<h2 class="upd-title">正在更新</h2>' +
+        '<p>正在拉取 v' + esc(remote.latestVersion) + ' 新内容，请稍候…</p>' +
+        '<div class="upd-progress"><div class="upd-progress-bar"></div></div>' +
+        '<p class="upd-progress-text">0 / ' + total + '</p>',
+      actions: [{ label: '更新中…', cls: 'btn-text', onClick: () => {} }],
+    });
+    // 实时绘制进度：每完成一个资源刷新进度条宽度与计数文字
+    const paint = () => {
+      const bar = document.querySelector('.upd-progress-bar');
+      const txt = document.querySelector('.upd-progress-text');
+      if (bar) bar.style.width = Math.round((done / total) * 100) + '%';
+      if (txt) txt.textContent = done + ' / ' + total;
+    };
+    // 2) 逐个预取核心资源到新版缓存
+    try {
+      if (typeof caches !== 'undefined' && caches.open) {
+        const cache = await caches.open('sdv-guide-v' + remote.latestVersion);
+        for (const url of CORE_ASSETS) {
+          try {
+            const res = await fetch(url, { cache: 'reload' }); // 绕过 HTTP 缓存强拉最新
+            if (res && res.ok) await cache.put(url, res.clone());
+          } catch (err) {
+            console.warn('[Updater] 预取失败（继续下一个）：' + url, err);
+          }
+          done += 1;
+          paint();
+        }
+      } else {
+        // 无 Cache API 环境（如本地直开）：直接视为完成
+        done = total;
+        paint();
+      }
+    } catch (e) {
+      console.error('[Updater] 更新拉取异常：', e);
+    }
+    // 3) 写入已确认版本 → 完成弹窗 → 通知 SW 检查新版本
+    setInstalledVersion(remote.latestVersion);
+    log('update-done', 'success', '新版资源拉取完成', { remote: remote.latestVersion, total, done });
+    Modal.show({
+      title: '',
+      body:
+        '<h2 class="upd-title">更新完成</h2>' +
+        '<p>新版本 v' + esc(remote.latestVersion) + ' 内容已全部拉取完成。</p>' +
+        '<p class="upd-done-tip">刷新页面即可使用最新内容。</p>',
+      actions: [
+        {
+          label: '确认',
+          cls: 'btn-primary',
+          onClick: () => {
+            // 确认仅关闭完成弹窗；新版资源已预取，下次刷新由新版 SW 生效
+            log('update-done-close', 'success', '更新完成弹窗已关闭', { remote: remote.latestVersion });
+          },
+        },
+      ],
+    });
+    try {
+      if (navigator.serviceWorker && navigator.serviceWorker.getRegistration) {
+        const reg = await navigator.serviceWorker.getRegistration();
+        if (reg && reg.update) reg.update(); // 让新版 SW 接管，下次刷新生效
+      }
+    } catch (e) { /* 通知失败不影响已完成的拉取 */ }
   }
 
   return { checkUpdate, compareVersion, extractVersion, parseVersion, getUpdateTypeInfo, startPolling, stopPolling, pollCheck };

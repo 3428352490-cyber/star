@@ -416,6 +416,21 @@
 .modal-body .upd-type { font-size: 12px; color: var(--accent-dim, var(--accent)); margin-bottom: 6px; }
 /* 更新弹窗：分隔线（更新简介与版本信息分界） */
 .modal-body hr { border: none; border-top: 2px dashed var(--dialog-border); margin: 10px 0; }
+/* 更新弹窗：加载进度条（像素风格，实时展示预取进度） */
+.modal-body .upd-progress {
+  position: relative; height: 18px; margin: 10px 0 6px;
+  background: var(--card-bg);
+  border: 3px solid var(--wood-frame); border-radius: var(--radius);
+  overflow: hidden;
+}
+.modal-body .upd-progress-bar {
+  height: 100%; width: 0%;
+  background: var(--accent);
+  transition: width 0.15s steps(4, end);
+}
+.modal-body .upd-progress-text { font-size: 12px; color: var(--text-dim); text-align: center; }
+/* 更新弹窗：完成提示小字（刷新页面即可使用最新内容） */
+.modal-body .upd-done-tip { margin-top: 4px; font-size: 12px; color: var(--text-dim); }
 /* 纯文本：默认纵向排版 */
 .modal-body { font-size: 13px; color: var(--dialog-text-dim); line-height: 1.7; }
 .modal-body ul { padding-left: 18px; list-style: disc; }

@@ -131,12 +131,14 @@ test('M6-4 已是最新版本：自动检测静默不提示；手动入口 Toast
   assert.equal(els.get('modal-root').innerHTML, '', '自动检测不应弹出更新弹窗');
   const toastAuto = els.get('created:div');
   assert.equal(toastAuto ? toastAuto.textContent : '', '', '自动检测版本一致应静默');
-  // 手动入口（true）：Toast「当前已是最新版本」
+  // 手动入口（true）：弹出独立提示弹窗「已是最新版本」+ 确认按钮
   const r = await Updater.checkUpdate(true);
   assert.equal(r.updated, false);
   assert.ok(r.notice.includes('已是最新版本'), 'notice 错误: ' + r.notice);
-  assert.equal(els.get('modal-root').innerHTML, '', '不应弹出更新弹窗');
-  assert.equal(els.get('created:div').textContent, '当前已是最新版本 v' + CONFIG.app.version);
+  const modalHtml = els.get('modal-root').innerHTML;
+  assert.ok(modalHtml.includes('已是最新版本'), '版本一致应弹出「已是最新版本」提示弹窗');
+  assert.ok(modalHtml.includes('确认'), '提示弹窗缺少确认按钮');
+  assert.equal(els.get('created:div') ? els.get('created:div').textContent : '', '', '版本一致弹窗即反馈，不应再弹 Toast');
 });
 
 test('M6-5 本地版本高于云端：自动静默，手动提示不回退', async () => {
