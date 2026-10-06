@@ -1,5 +1,5 @@
 {
-  "latestVersion": "2.2.2",
-  "updateDesc": "ui(pages): 移除图鉴、搜索、消息、我的四个页面顶部标题板块",
+  "latestVersion": "2.2.3",
+  "updateDesc": "渐变蒙版色彩浓度加深",
   "downloadUrl": "./index.html"
 }
