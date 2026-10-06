@@ -61,6 +61,33 @@
 
   /* ---------------- 背景层 ---------------- */
 
+  /**
+   * 采样背景图片底边主色调（canvas 取底部 15% 区域的平均色），
+   * 写入 CSS 变量 --bg-edge-color / --bg-edge-soft 供渐变起点使用，
+   * 让渐变起点色与图片底边真实颜色一致，消除生硬分界线。
+   * 取色失败时静默返回，CSS 回退近似色，不影响任何轮换/容错逻辑。
+   */
+  function sampleEdgeColor(img) {
+    try {
+      var c = document.createElement('canvas');
+      var w = 16, h = 2;
+      c.width = w; c.height = h;
+      var ctx = c.getContext('2d');
+      // 取原图底部 15% 区域缩放到 16x2，第 2 行即底边主色
+      var sh = Math.max(1, Math.floor(img.height * 0.15));
+      ctx.drawImage(img, 0, img.height - sh, img.width, sh, 0, 0, w, h);
+      var d = ctx.getImageData(0, 1, w, 1).data;
+      var r = 0, g = 0, b = 0;
+      for (var i = 0; i < d.length; i += 4) { r += d[i]; g += d[i + 1]; b += d[i + 2]; }
+      r = Math.round(r / w); g = Math.round(g / w); b = Math.round(b / w);
+      document.documentElement.style.setProperty('--bg-edge-color', 'rgb(' + r + ',' + g + ',' + b + ')');
+      // 中间过渡色：图底色与米白底色的柔和混合（约 45% 图色 + 55% 米白）
+      var mix = function (a, m) { return Math.round(a * 0.45 + m * 0.55); };
+      document.documentElement.style.setProperty('--bg-edge-soft', 'rgb(' +
+        mix(r, 242) + ',' + mix(g, 237) + ',' + mix(b, 217) + ')');
+    } catch (e) { /* 取色失败：CSS 使用近似色回退，不影响功能 */ }
+  }
+
   function ensureLayer() {
     var layer = document.getElementById('bg-timelayer');
     if (layer) return layer;
@@ -95,6 +122,8 @@
       layer.dataset.url = url;
       // 新背景成功渲染：标记生效，CSS 据此隐藏旧版顶部背景大图，避免两图重叠
       document.body.classList.add('bg-live');
+      // 采样当前背景图底边主色，写入 CSS 变量供渐变起点使用（失败静默回退近似色）
+      sampleEdgeColor(img);
     };
     img.onerror = function () {
       // 兜底：加载失败 → 背景层保持透明，沿用原本背景样式，页面不崩坏
