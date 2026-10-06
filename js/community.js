@@ -43,34 +43,38 @@ const Community = (() => {
 
   const VISIBILITY_LABEL = { public: '全部可见', partial: '部分可见', private: '自己可见' };
 
-  /* ---------- 帖子卡片（首页 / 列表共用） ---------- */
+  /**
+   * 瀑布流帖子卡片（首页双列瀑布流，v2.3.0 骨架）
+   * 卡片从上至下：帖子图片预览 → 帖子标题 → 作者昵称 → 空心爱心点赞按钮 + 点赞数字；
+   * 卡片不等高自适应（标题 1~2 行高度自然差异，双列瀑布流排布）。
+   * 点击卡片进入详情；点赞按钮独立响应（事件委托中 action 优先于路由）。
+   */
   function postCard(post) {
     const author = villagerOf(post);
     const cover = coverOf(post);
-    return '<article class="post-card" data-route="#/post/' + esc(post.id) + '">' +
-      '<div class="post-card-cover">' + cover + '</div>' +
-      '<div class="post-card-body">' +
-        '<div class="post-card-head">' + avatarOf(author, 'sm') +
+    const liked = CommunityAPI.fetchMyLikes().some((p) => p.id === post.id);
+    return '<article class="masonry-card" data-route="#/post/' + esc(post.id) + '">' +
+      '<div class="masonry-cover">' + cover + '</div>' +
+      '<div class="masonry-body">' +
+        '<h3 class="masonry-title">' + esc(post.title) + '</h3>' +
+        '<div class="masonry-meta">' +
+          avatarOf(author, 'sm') +
           '<span class="post-nick">' + esc(author.nick) + '</span>' +
-          '<span class="post-time">' + timeText(post.createdAt) + '</span>' +
-        '</div>' +
-        '<h3 class="post-title">' + esc(post.title) + '</h3>' +
-        '<div class="post-stats">' +
-          '<span class="stat"><b>❤️</b>' + (post.likes || 0) + '</span>' +
-          '<span class="stat"><b>💬</b>' + (post.comments || 0) + '</span>' +
-          '<span class="stat"><b>⭐</b>' + (post.favorites || 0) + '</span>' +
+          '<button class="masonry-like' + (liked ? ' on' : '') + '" data-action="post-like" data-post="' + esc(post.id) + '" title="点赞">' +
+            (liked ? '❤' : '♡') + '<span data-like-count>' + (post.likes || 0) + '</span>' +
+          '</button>' +
         '</div>' +
       '</div>' +
     '</article>';
   }
 
   /* ============================================================
-   * 首页【老乡有话说】板块（≤6 条 + 刷新 / 发布 / 查看更多）
+   * 首页【老乡有话说】板块（双列瀑布流 + 刷新 / 发布 / 查看更多）
    * ============================================================ */
   function renderHomeBlock() {
-    const posts = CommunityAPI.fetchPosts().slice(0, 6);
+    const posts = CommunityAPI.fetchPosts().slice(0, 8);
     const list = posts.length
-      ? '<div class="post-grid">' + posts.map(postCard).join('') + '</div>'
+      ? '<div class="masonry-feed">' + posts.map(postCard).join('') + '</div>'
       : '<p class="empty-sub">还没有帖子，来发第一条吧</p>';
     return '<section class="card community-block">' +
       '<div class="card-head community-head">' +
@@ -83,12 +87,12 @@ const Community = (() => {
     '</section>';
   }
 
-  /** 刷新 Mock 帖子列表（重新拉取并按时间倒序渲染） */
+  /** 刷新瀑布流帖子列表（重新拉取并按时间倒序渲染） */
   function refreshBlock(el) {
     if (!el) return;
-    const fresh = CommunityAPI.fetchPosts().slice(0, 6);
+    const fresh = CommunityAPI.fetchPosts().slice(0, 8);
     el.innerHTML = fresh.length
-      ? '<div class="post-grid">' + fresh.map(postCard).join('') + '</div>'
+      ? '<div class="masonry-feed">' + fresh.map(postCard).join('') + '</div>'
       : '<p class="empty-sub">还没有帖子，来发第一条吧</p>';
     Toast.show('帖子已刷新');
   }
@@ -101,13 +105,15 @@ const Community = (() => {
     return '<header class="page-header"><button class="btn-back" data-route="#/home" aria-label="返回">←</button>' +
       '<h1>老乡有话说</h1></header>' +
       '<section class="card"><div class="card-head"><h2>全部帖子</h2><span class="card-sub">共 ' + posts.length + ' 条</span></div>' +
-      (posts.length ? '<div class="post-grid">' + posts.map(postCard).join('') + '</div>'
+      (posts.length ? '<div class="masonry-feed">' + posts.map(postCard).join('') + '</div>'
         : '<p class="empty-sub">还没有帖子</p>') +
       '</section>';
   }
 
   /* ============================================================
-   * 帖子详情页
+   * 帖子详情页（v2.3.0 骨架新布局）
+   * 卡片从上至下：作者头像+昵称+发布时间 → 右上角黄色「全部可见」标签 →
+   * 标题 → 大图 → 正文 → 多图 → 横向点赞/收藏/评论按钮组（点赞填红、收藏填黄）
    * ============================================================ */
   function renderPostDetail(id) {
     const post = CommunityAPI.fetchPostDetail(id);
@@ -117,44 +123,85 @@ const Community = (() => {
     }
     const author = villagerOf(post);
     const me = CommunityAPI.getProfile();
-    const liked = false; // 骨架：状态后续由 myLikes 注入
-    const faved = false;
-    const comments = CommunityAPI.fetchComments(id);
+    const liked = CommunityAPI.fetchMyLikes().some((p) => p.id === post.id);
+    const faved = CommunityAPI.fetchMyFavorites().some((p) => p.id === post.id);
+    const comments = CommunityAPI.fetchComments(id);       // 扁平列表（一级 + 楼中楼）
+    const total = CommunityAPI.countComments(id);          // 评论总数 = 一级 + 楼中楼
     const canEdit = CommunityAPI.canEdit(post, me.id);
+    // 楼中楼回复目标：由 App 点击「回复」设置；目标属于本帖时输入框显示回复态
+    const rt = getReplyTarget();
+    const replyPlaceholder = (rt && rt.postId === id) ? '回复 @' + rt.nick + '：' : '说点什么…';
 
     return '<header class="page-header"><button class="btn-back" data-route="#/home">←</button><h1>帖子详情</h1></header>' +
       '<section class="card post-detail">' +
         '<div class="post-detail-author">' + avatarOf(author, 'lg') +
           '<div><div class="post-nick">' + esc(author.nick) + '</div>' +
           '<span class="post-time">' + timeText(post.createdAt) + '</span></div>' +
-          '<span class="tag">' + VISIBILITY_LABEL[post.visibility] + '</span>' +
+          '<span class="tag">' + VISIBILITY_LABEL[post.visibility] + '</span>' +  // 右上角黄色「全部可见」
         '</div>' +
         '<h2 class="post-detail-title">' + esc(post.title) + '</h2>' +
         '<div class="post-cover post-detail-cover">' + coverOf(post) + '</div>' +
         '<p class="post-detail-body">' + esc(post.body) + '</p>' +
         imagesHtml(post) +
         '<div class="post-detail-actions">' +
-          '<button class="pixel-btn act-btn" data-action="post-like" data-post="' + esc(post.id) + '">❤️ <span data-like-count>' + (post.likes || 0) + '</span></button>' +
-          '<button class="pixel-btn act-btn" data-action="post-fav" data-post="' + esc(post.id) + '">⭐ <span data-fav-count>' + (post.favorites || 0) + '</span></button>' +
+          '<button class="pixel-btn act-btn like-btn' + (liked ? ' on' : '') + '" data-action="post-like" data-post="' + esc(post.id) + '">' +
+            (liked ? '❤' : '♡') + ' <span data-like-count>' + (post.likes || 0) + '</span></button>' +
+          '<button class="pixel-btn act-btn fav-btn' + (faved ? ' on' : '') + '" data-action="post-fav" data-post="' + esc(post.id) + '">' +
+            (faved ? '⭐' : '☆') + ' <span data-fav-count>' + (post.favorites || 0) + '</span></button>' +
           '<button class="pixel-btn act-btn" data-action="post-comment-scroll">💬 <span data-comment-count>' + (post.comments || 0) + '</span></button>' +
           (canEdit ? '<button class="pixel-btn act-btn" data-action="edit-post" data-post="' + esc(post.id) + '">✏️ 编辑</button>' : '') +
           (canEdit ? '<button class="pixel-btn act-btn danger" data-action="delete-post" data-post="' + esc(post.id) + '">🗑️ 删除</button>' : '') +
         '</div>' +
       '</section>' +
-      '<section class="card comment-section">' +
-        '<div class="card-head"><h2>评论</h2><span class="card-sub">' + comments.length + ' 条</span></div>' +
-        (comments.length ? '<div class="comment-list">' + comments.map((c) => {
-          const cv = (c.authorId === me.id) ? me : (CommunityAPI.villagerById(c.authorId) || { id: c.authorId, nick: '村民', avatar: '🧑‍🌾', color: '#6a8a5a' });
-          return '<div class="comment-item">' + avatarOf(cv, 'sm') +
-            '<div class="comment-main"><div class="comment-head"><span class="post-nick">' + esc(cv.nick) + '</span><span class="post-time">' + timeText(c.createdAt) + '</span></div>' +
-            '<p>' + esc(c.text) + '</p></div></div>';
-        }).join('') : '<p class="empty-sub">还没有评论</p>') +
-        '<div class="comment-input-row">' +
-          '<input id="comment-input" type="text" placeholder="说点什么…" maxlength="120">' +
-          '<button class="btn btn-primary" data-action="post-comment" data-post="' + esc(post.id) + '">发表</button>' +
-        '</div>' +
-      '</section>';
+      commentSection(id, comments, total, replyPlaceholder);
   }
+
+  /* ---------- 评论区（标题「评论」+ 右侧总条数；一级评论 + 楼中楼回复；底部输入框 + 红色发表按钮） ---------- */
+  function commentSection(postId, comments, total, replyPlaceholder) {
+    const me = CommunityAPI.getProfile();
+    const topLevel = comments.filter((c) => !c.parentId);            // 一级评论
+    const repliesOf = (cid) => comments.filter((c) => c.parentId === cid); // 楼中楼回复
+    const rows = topLevel.length ? topLevel.map((c) => {
+      const cv = commentAuthor(c, me);
+      const replies = repliesOf(c.id);
+      return '<div class="comment-item" data-comment="' + esc(c.id) + '">' +
+        avatarOf(cv, 'sm') +
+        '<div class="comment-main"><div class="comment-head"><span class="post-nick">' + esc(cv.nick) + '</span>' +
+          '<span class="post-time">' + timeText(c.createdAt) + '</span></div>' +
+        '<p>' + esc(c.text) + '</p>' +
+        '<button class="reply-btn" data-action="comment-reply" data-post="' + esc(postId) + '" data-comment="' + esc(c.id) + '" data-nick="' + esc(cv.nick) + '">回复</button>' +
+        (replies.length ? '<div class="comment-replies">' + replies.map((r) => {
+          const rv = commentAuthor(r, me);
+          return '<div class="comment-item reply-item" data-comment="' + esc(r.id) + '">' +
+            avatarOf(rv, 'sm') +
+            '<div class="comment-main"><div class="comment-head"><span class="post-nick">' + esc(rv.nick) + '</span>' +
+              '<span class="post-time">' + timeText(r.createdAt) + '</span></div>' +
+            '<p>' + esc(r.text) + '</p></div></div>';
+        }).join('') + '</div>' : '') +
+      '</div></div>';
+    }).join('') : '<p class="empty-sub">还没有评论</p>';
+
+    return '<section class="card comment-section">' +
+      '<div class="card-head"><h2>评论</h2><span class="card-sub">' + total + ' 条</span></div>' +
+      '<div class="comment-list">' + rows + '</div>' +
+      '<div class="comment-input-row">' +
+        '<input id="comment-input" type="text" placeholder="' + esc(replyPlaceholder) + '" maxlength="120">' +
+        '<button class="btn btn-primary" data-action="post-comment" data-post="' + esc(postId) + '">发表</button>' +
+      '</div>' +
+    '</section>';
+  }
+
+  /** 评论作者：游客本人或 Mock 村民 */
+  function commentAuthor(c, me) {
+    if (c.authorId === me.id) return { id: me.id, nick: me.nick, avatar: me.avatar, color: me.color };
+    return CommunityAPI.villagerById(c.authorId) || { id: c.authorId, nick: '村民', avatar: '🧑‍🌾', color: '#6a8a5a' };
+  }
+
+  /* ---------- 楼中楼回复目标（跨渲染记忆，由 App 点击「回复」设置/清除） ---------- */
+  let _replyTarget = null;   // { postId, commentId, nick }
+  function setReplyTarget(t) { _replyTarget = t; return _replyTarget; }
+  function getReplyTarget() { return _replyTarget; }
+  function clearReplyTarget() { _replyTarget = null; }
 
   /* ============================================================
    * 发帖 / 编辑弹窗（复用同一弹窗，编辑时预填）
@@ -262,7 +309,7 @@ const Community = (() => {
   }
 
   /* ============================================================
-   * 消息页
+   * 消息页（v2.3.0 骨架：通知列表在上 + 机器人聊天会话在下）
    * ============================================================ */
   function renderMessages() {
     const msgs = CommunityAPI.fetchMessages();
@@ -280,7 +327,30 @@ const Community = (() => {
           (m.read ? '' : '<span class="msg-dot"></span>') +
         '</div>';
       }).join('') : '<p class="empty-sub">暂无消息</p>') +
-      '</section>';
+      '</section>' +
+      renderChat();
+  }
+
+  /* ---------- 机器人聊天会话（内置村民机器人，延迟应答） ---------- */
+  function renderChat() {
+    const chat = CommunityAPI.fetchChat();
+    const bubbles = chat.map((m) => {
+      if (m.from === 'me') {
+        return '<div class="chat-bubble me"><div class="chat-text">' + esc(m.text) + '</div></div>';
+      }
+      const v = CommunityAPI.villagerById(m.villagerId) || { id: m.villagerId, nick: '村民', avatar: '🧑‍🌾', color: '#6a8a5a' };
+      return '<div class="chat-bubble bot">' + avatarOf(v, 'sm') +
+        '<div><div class="chat-nick">' + esc(v.nick) + '</div>' +
+        '<div class="chat-text">' + esc(m.text) + '</div></div></div>';
+    }).join('');
+    return '<section class="card chat-card">' +
+      '<div class="card-head"><h2>机器人聊天</h2><span class="card-sub">和村民唠唠嗑</span></div>' +
+      '<div class="chat-window" id="chat-window">' + (bubbles || '<p class="empty-sub">暂无消息</p>') + '</div>' +
+      '<div class="chat-input-row">' +
+        '<input id="chat-input" type="text" placeholder="说点什么…" maxlength="120">' +
+        '<button class="btn btn-primary" data-action="chat-send">发送</button>' +
+      '</div>' +
+    '</section>';
   }
 
   /* ============================================================
@@ -310,7 +380,7 @@ const Community = (() => {
     const list = CommunityAPI.fetchMyLikes();
     return '<header class="page-header"><button class="btn-back" data-route="#/mine">←</button><h1>我的点赞</h1></header>' +
       '<section class="card"><div class="card-head"><h2>我赞过的帖子</h2><span class="card-sub">' + list.length + ' 条</span></div>' +
-      (list.length ? '<div class="post-grid">' + list.map(postCard).join('') + '</div>' : '<p class="empty-sub">还没有点过赞</p>') +
+      (list.length ? '<div class="masonry-feed">' + list.map(postCard).join('') + '</div>' : '<p class="empty-sub">还没有点过赞</p>') +
       '</section>';
   }
 
@@ -318,7 +388,7 @@ const Community = (() => {
     const list = CommunityAPI.fetchMyFavorites();
     return '<header class="page-header"><button class="btn-back" data-route="#/mine">←</button><h1>我的收藏</h1></header>' +
       '<section class="card"><div class="card-head"><h2>我收藏的帖子</h2><span class="card-sub">' + list.length + ' 条</span></div>' +
-      (list.length ? '<div class="post-grid">' + list.map(postCard).join('') + '</div>' : '<p class="empty-sub">还没有收藏过帖子</p>') +
+      (list.length ? '<div class="masonry-feed">' + list.map(postCard).join('') + '</div>' : '<p class="empty-sub">还没有收藏过帖子</p>') +
       '</section>';
   }
 
@@ -326,5 +396,6 @@ const Community = (() => {
     renderHomeBlock, refreshBlock, renderCommunityList, renderPostDetail,
     renderMessages, renderMinePosts, renderMineLikes, renderMineFavorites,
     openPostModal, submitPostForm,
+    setReplyTarget, getReplyTarget, clearReplyTarget,
   };
 })();

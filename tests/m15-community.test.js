@@ -92,6 +92,9 @@ test('M15-5 数据层：点赞/收藏计数 + 我的数据 + 评论 + 消息已�
 
 test('M15-6 数据层：发帖后随机村民互动生成通知（模拟调度）', async () => {
   API.resetForTest();
+  // v2.3.0 点赞通知规则：仅当游客发布过评论后，其帖子/评论被点赞才生成点赞通知。
+  // 先发一条评论满足先决条件，保证 like / comment / favorite 三类通知均可生成。
+  API.addComment('seed-1', '规则前置评论');
   const before = API.fetchMessages().length;
   const created = API.createPost({ title: '互动测试帖', body: 'x', visibility: 'public', allowedUsers: [], images: [] });
   // 等待随机互动调度（延迟 3~9 秒 + 村民间隔，最晚约 12 秒，预留余量）

@@ -21,24 +21,56 @@
 .refresh-btn { font-size: 18px; }
 
 /* ---------- 帖子卡片 ---------- */
-.post-grid {
-  display: grid; grid-template-columns: 1fr; gap: 12px;
+/* ============================================================
+ * 双列瀑布流（v2.3.0 骨架）
+ * .masonry-feed 用 CSS 多列实现双列排布；卡片 break-inside 防截断，
+ * 高度由内容自然决定（标题 1~2 行/封面固定比例），不等高自适应。
+ * 注意：多列布局按列纵向填充，适合帖子信息流。
+ * ============================================================ */
+.masonry-feed {
+  column-count: 2;                 /* 双列瀑布流 */
+  column-gap: 12px;
   margin-top: 10px;
 }
-.post-card {
-  display: flex; flex-direction: column; overflow: hidden;
+.masonry-card {
+  break-inside: avoid;             /* 卡片不在列间截断 */
+  -webkit-column-break-inside: avoid;
+  display: flex; flex-direction: column;
+  margin: 0 0 12px;
   background: #fdf6e3; color: #3a2a1a;
   border: 3px solid #3a2a1a; box-shadow: 4px 4px 0 rgba(58, 42, 26, 0.3);
   cursor: pointer; text-align: left; font-family: inherit;
+  overflow: hidden;
 }
-.post-card:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 rgba(58, 42, 26, 0.3); }
-.post-card-cover .post-cover { width: 100%; aspect-ratio: 16 / 9; display: flex; align-items: center; justify-content: center; }
+.masonry-card:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 rgba(58, 42, 26, 0.3); }
+/* 封面：帖子图片预览（第一张图 / 无图占位），固定 16:9 */
+.masonry-cover .post-cover { width: 100%; aspect-ratio: 16 / 9; }
+.masonry-body { padding: 8px 10px 10px; }
+/* 标题：最多 2 行省略，防撑破卡片，保持卡片不等高 */
+.masonry-title {
+  font-size: 13px; line-height: 1.45; margin: 0 0 6px;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+/* 底部元信息：作者头像 + 昵称 + 空心爱心点赞按钮（右侧） */
+.masonry-meta { display: flex; align-items: center; gap: 6px; }
+.masonry-meta .post-nick { font-size: 11px; }
+.masonry-like {
+  margin-left: auto;
+  display: inline-flex; align-items: center; gap: 3px;
+  padding: 3px 8px; font-size: 12px;
+  background: #fdf6e3; color: #3a2a1a;
+  border: 2px solid #3a2a1a; cursor: pointer; font-family: inherit;
+}
+.masonry-like:active { transform: translate(1px, 1px); }
+/* 点赞已赞态：爱心填充红色 */
+.masonry-like.on { background: #e6342c; color: #fff; }
+
+/* ---------- 通用帖子元素（封面/昵称/时间/标题/统计，详情页与我的帖子共用） ---------- */
 .post-cover { display: flex; align-items: center; justify-content: center; }
 .post-cover span { font-size: 34px; image-rendering: pixelated; }
 .post-cover-empty { background: #b8a88a; }
 .post-cover-empty span { font-size: 28px; opacity: 0.8; }
-.post-card-body { padding: 8px 10px 10px; }
-.post-card-head { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
 .post-nick { font-size: 12px; color: #5a4a2a; font-weight: 700; }
 .post-time { font-size: 10px; color: #8a7a5a; }
 .post-title {
@@ -72,16 +104,51 @@
 .post-img span { font-size: 26px; }
 .post-detail-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
 .act-btn { font-size: 13px; }
+/* 点赞/收藏填充态（v2.3.0）：点击填充实心（点赞红、收藏黄），再次点击恢复空心 */
+.like-btn.on { background: #e6342c; color: #fff; border-color: #b3231c; }
+.fav-btn.on { background: #ffb800; color: #1f1b16; border-color: #c98f00; }
+/* 帖子正文 / 评论 / 聊天长文本自动换行，不溢出屏幕 */
+.post-detail-body, .comment-main p, .chat-text { overflow-wrap: anywhere; word-break: break-word; }
 
 /* ---------- 评论区 ---------- */
 .comment-section { margin-bottom: 12px; }
 .comment-list { margin-top: 8px; }
 .comment-item { display: flex; gap: 8px; padding: 8px 0; border-top: 2px dashed rgba(58, 42, 26, 0.25); }
-.comment-main { flex: 1; }
+.comment-main { flex: 1; min-width: 0; }
 .comment-head { display: flex; align-items: baseline; gap: 8px; }
 .comment-main p { font-size: 13px; line-height: 1.6; margin: 2px 0 0; }
 .comment-input-row { display: flex; gap: 8px; margin-top: 12px; }
-.comment-input-row input { flex: 1; }
+.comment-input-row input { flex: 1; min-width: 0; max-width: 100%; }
+/* 楼中楼回复（v2.3.0）：一级评论下的回复缩进展示 + 虚线引导线 */
+.reply-btn {
+  display: inline-block; margin-top: 4px; padding: 2px 8px;
+  font-size: 11px; background: #fdf6e3; color: #5a4a2a;
+  border: 2px solid #3a2a1a; cursor: pointer; font-family: inherit;
+}
+.reply-btn:active { transform: translate(1px, 1px); }
+.comment-replies {
+  margin: 6px 0 0 34px; padding-left: 10px;
+  border-left: 2px dashed rgba(58, 42, 26, 0.25);
+}
+.reply-item { border-top: 2px dashed rgba(58, 42, 26, 0.18); }
+
+/* ---------- 机器人聊天会话（v2.3.0 骨架） ---------- */
+.chat-card { margin-bottom: 12px; }
+.chat-window {
+  display: flex; flex-direction: column; gap: 8px;
+  max-height: 320px; overflow-y: auto; padding: 2px 2px 6px;
+}
+.chat-bubble { display: flex; align-items: flex-start; gap: 8px; max-width: 86%; }
+.chat-bubble.me { align-self: flex-end; flex-direction: row-reverse; }
+.chat-bubble .chat-text {
+  font-size: 13px; line-height: 1.6; padding: 6px 10px;
+  background: #fdf6e3; border: 2px solid #3a2a1a;
+}
+.chat-bubble.bot .chat-text { background: #efe8cf; }
+.chat-bubble.me .chat-text { background: #ffe9a8; }
+.chat-nick { font-size: 10px; color: #8a7a5a; margin-bottom: 2px; }
+.chat-input-row { display: flex; gap: 8px; margin-top: 12px; }
+.chat-input-row input { flex: 1; min-width: 0; max-width: 100%; }
 
 /* ---------- 发帖弹窗 ---------- */
 .post-form { display: flex; flex-direction: column; gap: 8px; }
@@ -147,8 +214,3 @@
   cursor: pointer; font-size: 17px; image-rendering: pixelated;
 }
 .billboard-btn:active { transform: translate(2px, 2px); }
-
-/* ---------- 宽屏双列（帖子网格） ---------- */
-@media (min-width: 1024px) {
-  .post-grid { grid-template-columns: 1fr 1fr; gap: 14px; }
-}

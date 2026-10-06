@@ -26,7 +26,7 @@ const App = (() => {
     mine: 'assets/icon_user.png',
   };
 
-  /** 按 tabs 数组渲染底部导航（5 Tab 均分，搜索居中） */
+  /** 按 tabs 数组渲染底部导航（5 Tab 均分，搜索居中；消息图标带未读角标） */
   function renderTabs() {
     const nav = $('#bottom-nav');
     if (!nav) return;
@@ -34,10 +34,25 @@ const App = (() => {
       '<button class="nav-item' + (t.key === 'search' ? ' search' : '') + '" data-tab="' + t.key + '" data-route="#/' + t.key + '">' +
         '<span class="nav-icon">' + (t.key === 'home'
           ? '<img src="assets/nav-home.png" alt="" style="width:100%;height:100%;object-fit:contain">'
-          : '<img src="' + (NAV_IMG[t.key] || '') + '" alt="" style="width:100%;height:100%;object-fit:contain">') + '</span>' +
+          : '<img src="' + (NAV_IMG[t.key] || '') + '" alt="" style="width:100%;height:100%;object-fit:contain">') +
+          (t.key === 'messages' ? '<span class="nav-badge" data-nav-badge hidden></span>' : '') +
+        '</span>' +
         '<span class="nav-label">' + esc(t.label) + '</span>' +
       '</button>'
     ).join('');
+    updateNavBadge();
+  }
+
+  /**
+   * 消息 Tab 未读角标：统计 notices 中未读条数（CommunityAPI.unreadCount）。
+   * 进入消息页 / 全部已读 / 刷新后实时更新；0 条时隐藏。
+   */
+  function updateNavBadge() {
+    const badge = document.querySelector('[data-nav-badge]');
+    if (!badge) return;
+    const n = (typeof CommunityAPI !== 'undefined' && CommunityAPI.unreadCount) ? CommunityAPI.unreadCount() : 0;
+    badge.textContent = n > 99 ? '99+' : String(n);
+    badge.hidden = n <= 0;
   }
 
   /**
@@ -62,11 +77,12 @@ const App = (() => {
     });
   }
 
-  /** 渲染当前路由页面 + 挂载图标 + 搜索页挂载搜索面板（历史/AI 推荐） */
+  /** 渲染当前路由页面 + 挂载图标 + 搜索页挂载搜索面板 + 刷新消息角标 */
   function render() {
     if (typeof Router !== 'undefined') Router.handle();
     mountIcons($('#page-container'));
     if (typeof SearchUI !== 'undefined' && location.hash.indexOf('#/search') === 0) SearchUI.mount();
+    updateNavBadge();
   }
 
   /* ---------- 全局事件（事件委托） ---------- */
@@ -74,6 +90,13 @@ const App = (() => {
     const t = e.target;
     if (!t || typeof t.closest !== 'function') return;
 
+    // ① 动作优先于路由：帖子卡片内的点赞/收藏/回复等按钮先响应，避免同时触发卡片跳转
+    const actionEl = t.closest('[data-action]');
+    if (actionEl) {
+      handleAction(actionEl.dataset.action, t);
+      return;
+    }
+    // ② 路由跳转
     const routeEl = t.closest('[data-route]');
     if (routeEl) {
       if (location.hash !== routeEl.dataset.route) location.hash = routeEl.dataset.route;
@@ -85,8 +108,6 @@ const App = (() => {
       render();
       return;
     }
-    const actionEl = t.closest('[data-action]');
-    if (actionEl) handleAction(actionEl.dataset.action, t);
 
     /* 快捷键上限：点击已达上限而被禁用的未勾选项 → 弹出提示弹窗（仅提示，不执行新增动作） */
     const navItem = t.closest('.check-item');
@@ -122,7 +143,24 @@ const App = (() => {
     if (e.target && e.target.id === 'search-input') handleSearch(e.target.value);
   });
 
+  /* ---------- 软键盘适配（移动端）：输入框聚焦时隐藏底部导航，避免键盘遮挡输入区 ---------- */
+  document.addEventListener('focusin', (e) => {
+    if (e.target && typeof e.target.matches === 'function' && e.target.matches('input, textarea')) {
+      document.body.classList.add('kbd-open');
+    }
+  });
+  document.addEventListener('focusout', (e) => {
+    if (e.target && typeof e.target.matches === 'function' && e.target.matches('input, textarea')) {
+      document.body.classList.remove('kbd-open');
+    }
+  });
+
   /* ---------- 动作分发 ---------- */
+  /** 从事件目标向上查找最近匹配选择器的元素（替代 $(target)，target 是元素不是选择器） */
+  function closestOf(el, sel) {
+    return el && typeof el.closest === 'function' ? el.closest(sel) : null;
+  }
+
   function handleAction(action, target) {
     const container = $('#page-container');
     switch (action) {
@@ -137,19 +175,19 @@ const App = (() => {
         });
         break;
       case 'refresh-posts':
-        if (typeof Community !== 'undefined') Community.refreshBlock(container ? container.querySelector('.post-grid') : null);
+        if (typeof Community !== 'undefined') Community.refreshBlock(container ? container.querySelector('.masonry-feed') : null);
         break;
       case 'open-post-modal':
         if (typeof Community !== 'undefined') Community.openPostModal(null);
         break;
       case 'edit-post': {
-        const post = CommunityAPI.fetchPostDetail($(target).closest('[data-post]').dataset.post);
+        const post = CommunityAPI.fetchPostDetail(closestOf(target, '[data-post]').dataset.post);
         if (post) Community.openPostModal(post);
         else Toast.show('帖子不存在或无权编辑');
         break;
       }
       case 'delete-post': {
-        const id = $(target).closest('[data-post]').dataset.post;
+        const id = closestOf(target, '[data-post]').dataset.post;
         Modal.show({
           title: '删除帖子',
           body: '<p>确定删除这篇帖子吗？删除后不可恢复。</p>',
@@ -166,31 +204,66 @@ const App = (() => {
         break;
       }
       case 'post-like': {
-        const id = $(target).closest('[data-post]').dataset.post;
+        const btn = closestOf(target, '[data-action="post-like"]');
+        const id = btn ? btn.dataset.post : null;
+        if (!id) break;
         const r = CommunityAPI.toggleLike(id);
-        if (r && r.ok) updatePostCounts(id);
+        if (r && r.ok) applyLikeState(btn, r.liked, r.count);
         else Toast.show('帖子不存在或无权查看');
         break;
       }
       case 'post-fav': {
-        const id = $(target).closest('[data-post]').dataset.post;
+        const btn = closestOf(target, '[data-action="post-fav"]');
+        const id = btn ? btn.dataset.post : null;
+        if (!id) break;
         const r = CommunityAPI.toggleFavorite(id);
-        if (r && r.ok) updatePostCounts(id);
+        if (r && r.ok) applyFavState(btn, r.faved, r.count);
         else Toast.show('帖子不存在或无权查看');
         break;
       }
       case 'post-comment': {
-        const id = $(target).closest('[data-post]').dataset.post;
+        const btn = closestOf(target, '[data-action="post-comment"]');
+        const id = btn ? btn.dataset.post : null;
         const input = $('#comment-input');
         const text = input ? input.value : '';
-        const c = CommunityAPI.addComment(id, text);
-        if (c) { Toast.show('评论已发布'); render(); }
-        else Toast.show('请输入评论内容');
+        // 楼中楼：若当前处于「回复 @xxx」状态且目标属于本帖，则作为楼中楼回复提交
+        const rt = (typeof Community !== 'undefined' && Community.getReplyTarget) ? Community.getReplyTarget() : null;
+        const parentId = (rt && rt.postId === id) ? rt.commentId : null;
+        const c = CommunityAPI.addComment(id, text, parentId);
+        if (c) {
+          Toast.show(parentId ? '回复已发布' : '评论已发布');
+          if (typeof Community !== 'undefined' && Community.clearReplyTarget) Community.clearReplyTarget();
+          render();
+        } else Toast.show('请输入评论内容');
         break;
       }
       case 'post-comment-scroll': {
         const input = $('#comment-input');
         if (input) input.focus();
+        break;
+      }
+      case 'comment-reply': {
+        // 点击「回复」：记录楼中楼回复目标并聚焦评论输入框（不整页重渲染）
+        const btn = closestOf(target, '[data-action="comment-reply"]');
+        if (!btn || typeof Community === 'undefined' || !Community.setReplyTarget) break;
+        Community.setReplyTarget({ postId: btn.dataset.post, commentId: btn.dataset.comment, nick: btn.dataset.nick });
+        const input = $('#comment-input');
+        if (input) {
+          input.placeholder = '回复 @' + btn.dataset.nick + '：';
+          input.focus();
+        }
+        break;
+      }
+      case 'chat-send': {
+        // 消息页机器人聊天：发送 → 追加气泡并滚到底部，机器人延迟应答
+        const input = $('#chat-input');
+        const text = input ? input.value : '';
+        const m = CommunityAPI.sendChat(text);
+        if (m) {
+          render();
+          const win = $('#chat-window');
+          if (win) win.scrollTop = win.scrollHeight;
+        } else Toast.show('请输入聊天内容');
         break;
       }
       case 'mark-all-read':
@@ -218,14 +291,21 @@ const App = (() => {
     }
   }
 
-  /** 点赞/收藏后原地刷新计数（不整页重载，保留阅读位置） */
-  function updatePostCounts(id) {
-    const post = CommunityAPI.fetchPostDetail(id);
-    if (!post) return;
-    const like = document.querySelector('[data-action="post-like"] [data-like-count]');
-    const fav = document.querySelector('[data-action="post-fav"] [data-fav-count]');
-    if (like) like.textContent = post.likes || 0;
-    if (fav) fav.textContent = post.favorites || 0;
+  /**
+   * 点赞按钮局部刷新：切换填充/空心样式（❤ 实心红 / ♡ 空心）+ 计数，
+   * 不整页重载，保留阅读位置（首页瀑布流与详情页按钮共用）。
+   */
+  function applyLikeState(btn, liked, count) {
+    if (!btn) return;
+    btn.classList.toggle('on', liked);
+    btn.innerHTML = (liked ? '❤' : '♡') + ' <span data-like-count>' + (count || 0) + '</span>';
+  }
+
+  /** 收藏按钮局部刷新：切换填充/空心样式（⭐ 实心黄 / ☆ 空心）+ 计数 */
+  function applyFavState(btn, faved, count) {
+    if (!btn) return;
+    btn.classList.toggle('on', faved);
+    btn.innerHTML = (faved ? '⭐' : '☆') + ' <span data-fav-count>' + (count || 0) + '</span>';
   }
 
   /** 我的页：游客资料弹窗（昵称 / 像素头像） */

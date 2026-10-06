@@ -11,11 +11,18 @@
  * 实现（保持函数签名与返回结构不变），页面 UI / 渲染逻辑零改动。
  *
  * 数据持久化：localStorage（命名空间 sdv-guide:community:*），
- * 刷新 / 重开页面数据保留。
+ * 刷新 / 重开页面数据保留；清空站点缓存/数据即全部删除（无云端残留）。
  *
  * 用户身份（Mock）：本地游客身份——默认昵称「星露谷村民」+ 本地
  * 随机 UID，可在【我的】页修改头像与昵称；发帖人 = 当前游客；
  * 「部分可见」从内置 Mock 村民列表勾选指定用户。
+ *
+ * 【v2.3.0 骨架扩展】
+ * - 评论支持楼中楼：评论对象新增 parentId（null = 一级评论，否则为一级评论 id）
+ * - 游客发评论后，村民机器人延迟生成楼中楼回复，并随机点赞该评论
+ * - 点赞通知规则：仅当游客发布过评论后，其帖子/评论被点赞才生成点赞通知
+ * - 消息页内置机器人聊天会话（chat 键）
+ * - unreadCount() 供消息 Tab 角标统计未读消息数
  * ============================================================
  */
 const CommunityAPI = (() => {
@@ -147,6 +154,14 @@ const CommunityAPI = (() => {
     }
     if (!read('myLikes', null)) write('myLikes', []);
     if (!read('myFavorites', null)) write('myFavorites', []);
+    if (!read('chat', null)) {
+      // 预置 1 条：村民机器人打招呼，引导游客开启聊天
+      write('chat', [{
+        id: 'chat-seed-1', from: 'villager', villagerId: 'v-robin',
+        text: '你好呀，我是罗宾！有什么想聊的尽管说～',
+        createdAt: Date.now() - 3600e3 * 5,
+      }]);
+    }
   }
 
   /* ============================================================
@@ -330,7 +345,8 @@ const CommunityAPI = (() => {
   }
 
   /* ============================================================
-   * 评论
+   * 评论（v2.3.0 骨架：支持楼中楼回复，评论对象含 parentId/likes）
+   * 评论总数 = 一级评论 + 楼中楼回复，post.comments 实时同步
    * ============================================================ */
   function fetchComments(postId) {
     seedIfEmpty();
@@ -338,21 +354,106 @@ const CommunityAPI = (() => {
     const list = comments[postId] || [];
     return list.slice().sort((a, b) => a.createdAt - b.createdAt);
   }
-  function addComment(postId, text) {
+
+  /** 评论总数（一级评论 + 楼中楼回复），实时统计 */
+  function countComments(postId) {
+    seedIfEmpty();
+    const list = read('comments', {})[postId] || [];
+    return list.length;
+  }
+
+  /** 游客是否发布过评论（点赞通知生成的先决条件） */
+  function hasGuestCommented() {
+    const me = getProfile();
+    const comments = read('comments', {});
+    return Object.keys(comments).some((pid) =>
+      comments[pid].some((c) => c.authorId === me.id)
+    );
+  }
+
+  /** 写入一条评论并同步帖子评论计数（一级与楼中楼均计入） */
+  function persistComment(postId, c) {
+    const comments = read('comments', {});
+    if (!comments[postId]) comments[postId] = [];
+    comments[postId].push(c);
+    write('comments', comments);
+    const post = read('posts', []).find((x) => x.id === postId);
+    if (post) { post.comments = (post.comments || 0) + 1; persistPost(post); }
+  }
+
+  /**
+   * 新增评论（游客）；parentId 提供时即为楼中楼回复（仅允许回复一级评论）。
+   * 游客发评论后自动触发村民机器人延迟楼中楼回复。
+   */
+  function addComment(postId, text, parentId) {
     seedIfEmpty();
     const content = String(text || '').trim();
     if (!content) return null;
     const post = fetchPostDetail(postId);
     if (!post) return null;
+    let pid = null;
+    if (parentId) {
+      const existing = (read('comments', {})[postId] || []).find((x) => x.id === parentId && !x.parentId);
+      if (!existing) return null;
+      pid = existing.id;
+    }
     const me = getProfile();
-    const c = { id: uid('c'), authorId: me.id, text: content, createdAt: Date.now() };
-    const comments = read('comments', {});
-    if (!comments[postId]) comments[postId] = [];
-    comments[postId].push(c);
-    write('comments', comments);
-    post.comments = (post.comments || 0) + 1;
-    persistPost(post);
+    const c = { id: uid('c'), authorId: me.id, text: content, createdAt: Date.now(), parentId: pid, likes: 0 };
+    persistComment(postId, c);
+    scheduleBotReply(postId, c.id);   // 游客发评论 → 村民机器人延迟楼中楼回复
     return c;
+  }
+
+  /** 村民机器人发评论（楼中楼回复），作者为村民，不触发机器人调度 */
+  function addBotComment(postId, text, parentId, villagerId) {
+    const c = {
+      id: uid('c'), authorId: villagerId, text: String(text || '').trim(),
+      createdAt: Date.now(), parentId: parentId || null, likes: 0,
+    };
+    persistComment(postId, c);
+    return c;
+  }
+
+  /** 村民点赞评论（+1 计数；点赞通知的底层动作） */
+  function likeComment(postId, commentId, villagerId) {
+    seedIfEmpty();
+    const comments = read('comments', {});
+    const list = comments[postId] || [];
+    const c = list.find((x) => x.id === commentId);
+    if (!c) return false;
+    c.likes = (c.likes || 0) + 1;
+    write('comments', comments);
+    return true;
+  }
+
+  /**
+   * 游客发评论后：随机 1 位村民延迟 3~8 秒生成楼中楼回复；
+   * 回复统一挂到该评论所属的「一级评论」下（渲染层楼中楼为单层），
+   * 回复后随机（50%）点赞该评论并生成点赞通知
+   * （满足「点赞通知仅游客评论被点赞才生成」）。
+   */
+  function scheduleBotReply(postId, commentId) {
+    const v = VILLAGERS[Math.floor(Math.random() * VILLAGERS.length)];
+    const delay = 3000 + Math.random() * 5000;
+    setTimeout(() => {
+      const post = fetchPostDetail(postId);
+      if (!post) return; // 帖子可能已被删除
+      // 若目标评论本身是楼中楼回复，则归一挂到其一级评论下（保持单层楼中楼）
+      const list = read('comments', {})[postId] || [];
+      const target = list.find((c) => c.id === commentId);
+      const topId = (target && target.parentId) ? target.parentId : commentId;
+      const replies = [
+        '真不错！', '学到了，谢谢分享！', '这个思路太棒了', '下次我也试试',
+        '同意楼上！', '我也是这么想的～', '说得对，记得提前备好材料。',
+      ];
+      const text = replies[Math.floor(Math.random() * replies.length)];
+      addBotComment(postId, text, topId, v.id);
+      pushNotice({ type: 'comment', villagerId: v.id, postId, text: v.nick + ' 回复了你的评论' });
+      if (Math.random() < 0.5) {
+        likeComment(postId, commentId, v.id);
+        pushNotice({ type: 'like', villagerId: v.id, postId, text: v.nick + ' 赞了你的评论' });
+      }
+    }, delay);
   }
 
   /* ============================================================
@@ -370,6 +471,12 @@ const CommunityAPI = (() => {
     return notices.length;
   }
 
+  /** 未读消息数（消息 Tab 角标统计） */
+  function unreadCount() {
+    seedIfEmpty();
+    return read('notices', []).filter((n) => !n.read).length;
+  }
+
   function pushNotice({ type, villagerId, postId, text }) {
     const notices = read('notices', []);
     notices.push({
@@ -378,6 +485,51 @@ const CommunityAPI = (() => {
       read: false, createdAt: Date.now(),
     });
     write('notices', notices);
+  }
+
+  /* ============================================================
+   * 机器人聊天会话（消息页下方，v2.3.0 骨架新增）
+   * chat 数组：{ id, from: 'me'|'villager', villagerId, text, createdAt }
+   * ============================================================ */
+  function fetchChat() {
+    seedIfEmpty();
+    return read('chat', []).slice().sort((a, b) => a.createdAt - b.createdAt);
+  }
+
+  /** 游客发送聊天消息 → 触发机器人延迟应答 */
+  function sendChat(text) {
+    seedIfEmpty();
+    const content = String(text || '').trim();
+    if (!content) return null;
+    const me = getProfile();
+    const msg = {
+      id: uid('chat'), from: 'me', authorId: me.id, villagerId: null,
+      text: content, createdAt: Date.now(),
+    };
+    const chat = read('chat', []);
+    chat.push(msg);
+    write('chat', chat);
+    scheduleBotChatReply();
+    return msg;
+  }
+
+  /** 机器人延迟应答（2~5 秒，随机村民） */
+  function scheduleBotChatReply() {
+    const v = VILLAGERS[Math.floor(Math.random() * VILLAGERS.length)];
+    const delay = 2000 + Math.random() * 3000;
+    setTimeout(() => {
+      const replies = [
+        '哈哈，这个话题有意思！', '原来是这样，学到了。', '明天星露谷集市见！',
+        '我今天在农场忙了一天～', '你说得对，我也有同感！', '改天一起去钓鱼吧！',
+      ];
+      const msg = {
+        id: uid('chat'), from: 'villager', authorId: v.id, villagerId: v.id,
+        text: replies[Math.floor(Math.random() * replies.length)], createdAt: Date.now(),
+      };
+      const chat = read('chat', []);
+      chat.push(msg);
+      write('chat', chat);
+    }, delay);
   }
 
   /** 发帖成功后：随机 2~4 个 Mock 村民延迟产生点赞/评论/收藏互动并生成通知（本地模拟） */
@@ -392,9 +544,12 @@ const CommunityAPI = (() => {
         if (type === 'like') {
           post.likes = (post.likes || 0) + 1;
           persistPost(post);
-          pushNotice({ type: 'like', villagerId: v.id, postId, text: v.nick + ' 赞了你的帖子' });
+          // 点赞通知规则（v2.3.0）：仅当游客发布过评论后，帖子被点赞才生成点赞通知
+          if (hasGuestCommented()) {
+            pushNotice({ type: 'like', villagerId: v.id, postId, text: v.nick + ' 赞了你的帖子' });
+          }
         } else if (type === 'comment') {
-          addComment(postId, '（' + v.nick + '）' + ['真不错！', '学到了，谢谢分享！', '这个思路太棒了', '下次我也试试'][Math.floor(Math.random() * 4)]);
+          addBotComment(postId, ['真不错！', '学到了，谢谢分享！', '这个思路太棒了', '下次我也试试'][Math.floor(Math.random() * 4)], null, v.id);
           pushNotice({ type: 'comment', villagerId: v.id, postId, text: v.nick + ' 评论了你的帖子' });
         } else {
           post.favorites = (post.favorites || 0) + 1;
@@ -418,7 +573,8 @@ const CommunityAPI = (() => {
 
   return {
     getProfile, setProfile, fetchPosts, fetchPostDetail, createPost, updatePost, deletePost,
-    toggleLike, toggleFavorite, fetchComments, addComment, fetchMessages, markAllRead,
+    toggleLike, toggleFavorite, fetchComments, addComment, countComments, hasGuestCommented,
+    fetchMessages, markAllRead, unreadCount, fetchChat, sendChat,
     fetchMyPosts, fetchMyLikes, fetchMyFavorites, canView, canEdit,
     villagerById, __villagers, resetForTest,
   };

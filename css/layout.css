@@ -114,6 +114,22 @@
 }
 .nav-item.search .nav-icon svg { stroke: currentColor; }
 
+/* ===== 消息 Tab 未读角标（v2.3.0）：图标右上角红底白字小圆标 ===== */
+.nav-badge {
+  position: absolute; top: -5px; right: -8px;
+  min-width: 15px; height: 15px; padding: 0 3px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: #e6342c; color: #fff; font-size: 9px; line-height: 1;
+  border: 2px solid #fff; border-radius: 8px;
+  font-style: normal; font-weight: 700;
+  pointer-events: none;   /* 不拦截 Tab 点击 */
+}
+.nav-badge[hidden] { display: none; }
+
+/* ===== 软键盘适配（v2.3.0）：输入框聚焦时隐藏底部导航，防止键盘遮挡输入区 ===== */
+body.kbd-open .bottom-nav,
+body.kbd-open .stardew-nav { display: none; }
+
 /* ===== 双端自适应：手机竖屏单列；电脑宽屏双栏 ===== */
 .home-grid { display: block; }
 @media (min-width: 1024px) {
