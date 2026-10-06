@@ -18,23 +18,31 @@
 }
 
 /* ---- 上层：全屏线性渐变蒙版（叠加在背景图片上方） ----
- * 渐变位置沿用画面 85% 高度（46vh × 0.85 ≈ 39.1vh，即图片底部往上约 1/10 处），
- * 从该位置开始向下渐变：起点采用当前背景图片底部主色调
- * （background.js 轮换加载时实时取色写入 --bg-edge-color，切换季节自动适配；
- * 未取到色时回退星露谷低饱和草绿近似值），
- * 经中间柔和过渡色平缓过渡，最终在页面最底部融入页面底色（#f2edd9）。
- * 保持雾面淡出效果，无生硬分割线；pixelated 像素渲染不变 */
+ * 渐变起点保持不变：背景图片底部往上约 1/10 处（46vh × 0.85 ≈ 39.1vh）。
+ * 起点色 = 当前背景图片底部主色调（background.js 轮换加载时实时取色写入
+ * --bg-edge-color，切换季节自动适配；未取到色时回退星露谷低饱和草绿近似），
+ * 整体加深色彩浓度：从图底主色经中间过渡色，页面底部保留图底主色调
+ * （约 70% 主色 + 30% 米白，不再褪成纯米白），显著提升底部颜色覆盖度；
+ * 全程平滑柔和雾面融合，无生硬分割边线；pixelated 像素渲染不变。
+ * 附近似色兜底声明：不支持 color-mix 的浏览器自动回退近似浓度色 */
 .bg-timelayer::after {
   content: '';
   position: absolute;
   top: 0; left: 0; right: 0; bottom: 0;   /* 覆盖整个可视区域 */
   background: linear-gradient(
     to bottom,
-    transparent 39.1vh,                   /* 背景图高度 85% 位置：蒙版透明，图片完整显示 */
-    var(--bg-edge-color, #9db47e) 42vh,   /* 起点：当前背景图底部主色调（轮换自动适配） */
-    var(--bg-edge-soft, #c3bd92) 56vh,    /* 中间柔和过渡色（图色与米白混合） */
-    #f2edd9 85vh,                         /* 逐步融入页面底色 */
-    #f2edd9 100%                          /* 页面最底端 = 页面底色 */
+    transparent 39.1vh,                       /* 背景图片底部往上 1/10 处：蒙版透明，图片完整显示 */
+    #9db47e 42vh,                            /* 近似兜底：图底主色 */
+    #c3bd92 52%,
+    #b7b48c 78%, #a8a67e 100%
+  );
+  background: linear-gradient(
+    to bottom,
+    transparent 39.1vh,                       /* 起点保持不变（图底 1/10 处） */
+    var(--bg-edge-color, #9db47e) 42vh,      /* 起点：当前背景图底部主色调（轮换自动适配） */
+    var(--bg-edge-soft, #c3bd92) 52%,        /* 中间柔和过渡色（图色与米白混合） */
+    color-mix(in srgb, var(--bg-edge-color, #9db47e) 78%, #f2edd9 22%) 78%, /* 浓度加深 */
+    color-mix(in srgb, var(--bg-edge-color, #9db47e) 70%, #f2edd9 30%) 100% /* 页面底部：保留图底主色调，雾面浓色 */
   );
   pointer-events: none;
 }
