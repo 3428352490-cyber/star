@@ -9,8 +9,9 @@
  * ============================================================ */
 const Community = (() => {
   /* ---------- 头像 / 封面渲染 ---------- */
-  function avatarOf(v, size) {
-    return '<span class="px-avatar" style="background:' + esc(v.color) + '" data-size="' + (size || 'md') + '">' + esc(v.avatar) + '</span>';
+  /** attrs：附加到头像元素的 data 属性字符串（如 'data-avatar-user="v-robin"'，用于全局头像跳转） */
+  function avatarOf(v, size, attrs) {
+    return '<span class="px-avatar" style="background:' + esc(v.color) + '" data-size="' + (size || 'md') + '"' + (attrs ? ' ' + attrs : '') + '>' + esc(v.avatar) + '</span>';
   }
   function coverOf(post) {
     const img = (post.images && post.images.length) ? post.images[0] : null;
@@ -34,6 +35,19 @@ const Community = (() => {
     return CommunityAPI.villagerById(post.authorId) || { id: post.authorId, nick: '村民', avatar: '🧑‍🌾', color: '#6a8a5a' };
   }
 
+  /* ---------- v2.4.0 社交：头像加号关注按钮（帖子卡片 / 横向头像栏共用） ---------- */
+  function followBtnHtml(targetId, cls) {
+    const st = CommunityAPI.followStateOf(targetId);
+    const on = st.following ? ' on' : '';
+    return '<button class="avatar-follow' + (cls ? ' ' + cls : '') + on + '" data-action="follow" data-user="' + esc(targetId) + '" title="' + (st.following ? '已关注' : '关注') + '">' +
+      (st.following ? '✓' : '+') + '</button>';
+  }
+
+  /** 作者是否为 Mock 村民（游客自己不显示关注按钮） */
+  function isVillagerUser(id) {
+    return !!CommunityAPI.villagerById(id);
+  }
+
   function timeText(ts) {
     const diff = Date.now() - ts;
     if (diff < 3600e3) return Math.max(1, Math.round(diff / 60e3)) + ' 分钟前';
@@ -53,13 +67,17 @@ const Community = (() => {
     const author = villagerOf(post);
     const cover = coverOf(post);
     const liked = CommunityAPI.fetchMyLikes().some((p) => p.id === post.id);
+    const isV = isVillagerUser(author.id);
     return '<article class="masonry-card" data-route="#/post/' + esc(post.id) + '">' +
       '<div class="masonry-cover">' + cover + '</div>' +
       '<div class="masonry-body">' +
         '<h3 class="masonry-title">' + esc(post.title) + '</h3>' +
         '<div class="masonry-meta">' +
-          avatarOf(author, 'sm') +
-          '<span class="post-nick">' + esc(author.nick) + '</span>' +
+          '<div class="author-cell">' +
+            '<span class="author-avatar" data-avatar-user="' + esc(author.id) + '" title="查看主页">' + avatarOf(author, 'sm') + '</span>' +
+            (isV ? followBtnHtml(author.id, 'mini') : '') +
+          '</div>' +
+          '<span class="post-nick" data-route="#/user/' + esc(author.id) + '">' + esc(author.nick) + '</span>' +
           '<button class="masonry-like' + (liked ? ' on' : '') + '" data-action="post-like" data-post="' + esc(post.id) + '" title="点赞">' +
             (liked ? '❤' : '♡') + '<span data-like-count>' + (post.likes || 0) + '</span>' +
           '</button>' +
@@ -102,7 +120,7 @@ const Community = (() => {
    * ============================================================ */
   function renderCommunityList() {
     const posts = CommunityAPI.fetchPosts();
-    return '<header class="page-header"><button class="btn-back" data-route="#/home" aria-label="返回">←</button>' +
+    return '<header class="page-header"><button class="btn-back" data-action="nav-back" aria-label="返回">←</button>' +
       '<h1>老乡有话说</h1></header>' +
       '<section class="card"><div class="card-head"><h2>全部帖子</h2><span class="card-sub">共 ' + posts.length + ' 条</span></div>' +
       (posts.length ? '<div class="masonry-feed">' + posts.map(postCard).join('') + '</div>'
@@ -118,7 +136,7 @@ const Community = (() => {
   function renderPostDetail(id) {
     const post = CommunityAPI.fetchPostDetail(id);
     if (!post) {
-      return '<header class="page-header"><button class="btn-back" data-route="#/home">←</button><h1>帖子详情</h1></header>' +
+      return '<header class="page-header"><button class="btn-back" data-action="nav-back">←</button><h1>帖子详情</h1></header>' +
         '<section class="card"><p class="empty-sub">帖子不存在或无权查看</p></section>';
     }
     const author = villagerOf(post);
@@ -132,10 +150,11 @@ const Community = (() => {
     const rt = getReplyTarget();
     const replyPlaceholder = (rt && rt.postId === id) ? '回复 @' + rt.nick + '：' : '说点什么…';
 
-    return '<header class="page-header"><button class="btn-back" data-route="#/home">←</button><h1>帖子详情</h1></header>' +
+    return '<header class="page-header"><button class="btn-back" data-action="nav-back">←</button><h1>帖子详情</h1></header>' +
       '<section class="card post-detail">' +
-        '<div class="post-detail-author">' + avatarOf(author, 'lg') +
-          '<div><div class="post-nick">' + esc(author.nick) + '</div>' +
+        '<div class="post-detail-author">' +
+          '<span class="author-avatar lg" data-avatar-user="' + esc(author.id) + '" title="查看主页">' + avatarOf(author, 'lg') + '</span>' +
+          '<div data-route="#/user/' + esc(author.id) + '" style="cursor:pointer"><div class="post-nick">' + esc(author.nick) + '</div>' +
           '<span class="post-time">' + timeText(post.createdAt) + '</span></div>' +
           '<span class="tag">' + VISIBILITY_LABEL[post.visibility] + '</span>' +  // 右上角黄色「全部可见」
         '</div>' +
@@ -165,7 +184,7 @@ const Community = (() => {
       const cv = commentAuthor(c, me);
       const replies = repliesOf(c.id);
       return '<div class="comment-item" data-comment="' + esc(c.id) + '">' +
-        avatarOf(cv, 'sm') +
+        avatarOf(cv, 'sm', 'data-avatar-user="' + esc(cv.id) + '"') +
         '<div class="comment-main"><div class="comment-head"><span class="post-nick">' + esc(cv.nick) + '</span>' +
           '<span class="post-time">' + timeText(c.createdAt) + '</span></div>' +
         '<p>' + esc(c.text) + '</p>' +
@@ -173,7 +192,7 @@ const Community = (() => {
         (replies.length ? '<div class="comment-replies">' + replies.map((r) => {
           const rv = commentAuthor(r, me);
           return '<div class="comment-item reply-item" data-comment="' + esc(r.id) + '">' +
-            avatarOf(rv, 'sm') +
+            avatarOf(rv, 'sm', 'data-avatar-user="' + esc(rv.id) + '"') +
             '<div class="comment-main"><div class="comment-head"><span class="post-nick">' + esc(rv.nick) + '</span>' +
               '<span class="post-time">' + timeText(r.createdAt) + '</span></div>' +
             '<p>' + esc(r.text) + '</p></div></div>';
@@ -309,48 +328,278 @@ const Community = (() => {
   }
 
   /* ============================================================
-   * 消息页（v2.3.0 骨架：通知列表在上 + 机器人聊天会话在下）
+   * 消息页（v2.4.0：顶部栏 + 横向头像栏 + 通知双入口 + 私聊会话列表）
    * ============================================================ */
   function renderMessages() {
-    const msgs = CommunityAPI.fetchMessages();
-    const unread = msgs.filter((m) => !m.read).length;
-    return '<section class="card"><div class="card-head"><h2>通知</h2>' +
-        (unread ? '<button class="notice-more" data-action="mark-all-read">全部已读</button>' : '<span class="card-sub">已全部读完</span>') +
+    const followUnread = CommunityAPI.unreadByCategory('follow');
+    const interactUnread = CommunityAPI.unreadByCategory('interact');
+    const convs = CommunityAPI.fetchConversations();
+
+    // ① 顶部栏：搜索 / 标题 / 创建会话（搜索框默认隐藏，点🔍展开）
+    const topbar =
+      '<div class="msg-topbar">' +
+        '<button class="pixel-btn" data-action="msg-search" title="搜索会话">🔍</button>' +
+        '<h1>消息</h1>' +
+        '<button class="pixel-btn" data-action="new-conversation" title="发起会话">＋</button>' +
       '</div>' +
-      (msgs.length ? '<div class="message-list">' + msgs.map((m) => {
+      '<div class="msg-search-box" id="msg-search-box" hidden>' +
+        '<input id="msg-search-input" type="text" placeholder="搜索会话或联系人…" maxlength="30">' +
+      '</div>';
+
+    // ② 通知双入口：新关注我的 / 互动消息（各带未读数字角标）
+    const entries =
+      '<button class="notice-entry" data-route="#/notices/follow">' +
+        '<span class="notice-entry-icon">➕</span>' +
+        '<span class="notice-entry-text">新关注我的</span>' +
+        (followUnread ? '<span class="badge-num">' + followUnread + '</span>' : '') +
+      '</button>' +
+      '<button class="notice-entry" data-route="#/notices/interact">' +
+        '<span class="notice-entry-icon">💬</span>' +
+        '<span class="notice-entry-text">互动消息</span>' +
+        (interactUnread ? '<span class="badge-num">' + interactUnread + '</span>' : '') +
+      '</button>';
+
+    // ③ 私聊会话列表：头像 / 昵称 / 消息预览 / 时间 / 未读红点数字角标
+    const convRows = convs.length ? convs.map((c) =>
+      '<button class="conv-item" data-route="#/chat/' + esc(c.peerId) + '">' +
+        avatarOf(c.peer, 'md', 'data-avatar-user="' + esc(c.peerId) + '"') +
+        '<div class="conv-main">' +
+          '<div class="conv-head"><span class="conv-nick">' + esc(c.peer.nick) + '</span>' +
+          '<span class="post-time">' + timeText(c.time) + '</span></div>' +
+          '<div class="conv-preview">' + esc(c.preview) + '</div>' +
+        '</div>' +
+        (c.unread ? '<span class="badge-num badge-red">' + (c.unread > 99 ? '99+' : c.unread) + '</span>' : '') +
+      '</button>'
+    ).join('') : '<p class="empty-sub">还没有会话，点右上角 ＋ 发起私聊</p>';
+
+    return topbar +
+      '<section class="card"><div class="card-head"><h2>通知</h2></div><div class="notice-entries">' + entries + '</div></section>' +
+      '<section class="card"><div class="card-head"><h2>私聊</h2><span class="card-sub">' + convs.length + ' 个会话</span></div>' +
+        '<div class="conv-list">' + convRows + '</div>' +
+      '</section>';
+  }
+
+  /* ---------- 通知分类列表（新关注我的 / 互动消息） ---------- */
+  function renderNotices(category) {
+    const cat = category === 'follow' ? 'follow' : 'interact';
+    const title = cat === 'follow' ? '新关注我的' : '互动消息';
+    const list = CommunityAPI.fetchNotices(cat);
+    const unread = CommunityAPI.unreadByCategory(cat);
+    return '<header class="page-header"><button class="btn-back" data-action="nav-back" aria-label="返回">←</button>' +
+      '<h1>' + title + '</h1></header>' +
+      '<section class="card"><div class="card-head"><h2>' + title + '</h2>' +
+        (unread ? '<button class="notice-more" data-action="mark-cat-read" data-cat="' + cat + '">全部已读</button>' : '<span class="card-sub">已全部读完</span>') +
+      '</div>' +
+      (list.length ? '<div class="message-list">' + list.map((m) => {
         const v = CommunityAPI.villagerById(m.villagerId) || { id: m.villagerId, nick: '村民', avatar: '🧑‍🌾', color: '#6a8a5a' };
         const route = m.postId ? ' data-route="#/post/' + esc(m.postId) + '"' : '';
         return '<div class="message-item' + (m.read ? ' read' : ' unread') + '"' + route + '>' +
-          avatarOf(v, 'sm') +
+          avatarOf(v, 'sm', 'data-avatar-user="' + esc(v.id) + '"') +
           '<div class="message-main"><div class="message-text">' + esc(m.text) + '</div>' +
           '<span class="post-time">' + timeText(m.createdAt) + '</span></div>' +
           (m.read ? '' : '<span class="msg-dot"></span>') +
         '</div>';
       }).join('') : '<p class="empty-sub">暂无消息</p>') +
-      '</section>' +
-      renderChat();
+      '</section>';
   }
 
-  /* ---------- 机器人聊天会话（内置村民机器人，延迟应答） ---------- */
-  function renderChat() {
-    const chat = CommunityAPI.fetchChat();
+  /* ---------- 私聊窗口（气泡布局：我方右侧 / 对方村民左侧，本地持久化 + 机器人应答） ---------- */
+  function renderChatWindow(peerId) {
+    const peer = CommunityAPI.villagerById(peerId) || { id: peerId, nick: '村民', avatar: '🧑‍🌾', color: '#6a8a5a' };
+    const chat = CommunityAPI.fetchChat(peerId);
     const bubbles = chat.map((m) => {
       if (m.from === 'me') {
         return '<div class="chat-bubble me"><div class="chat-text">' + esc(m.text) + '</div></div>';
       }
-      const v = CommunityAPI.villagerById(m.villagerId) || { id: m.villagerId, nick: '村民', avatar: '🧑‍🌾', color: '#6a8a5a' };
-      return '<div class="chat-bubble bot">' + avatarOf(v, 'sm') +
+      const v = CommunityAPI.villagerById(m.villagerId) || peer;
+      return '<div class="chat-bubble bot">' + avatarOf(v, 'sm', 'data-avatar-user="' + esc(v.id) + '"') +
         '<div><div class="chat-nick">' + esc(v.nick) + '</div>' +
         '<div class="chat-text">' + esc(m.text) + '</div></div></div>';
     }).join('');
-    return '<section class="card chat-card">' +
-      '<div class="card-head"><h2>机器人聊天</h2><span class="card-sub">和村民唠唠嗑</span></div>' +
-      '<div class="chat-window" id="chat-window">' + (bubbles || '<p class="empty-sub">暂无消息</p>') + '</div>' +
-      '<div class="chat-input-row">' +
-        '<input id="chat-input" type="text" placeholder="说点什么…" maxlength="120">' +
-        '<button class="btn btn-primary" data-action="chat-send">发送</button>' +
-      '</div>' +
-    '</section>';
+    return '<header class="page-header"><button class="btn-back" data-action="nav-back" aria-label="返回">←</button>' +
+      '<h1><span class="chat-header-avatar" data-avatar-user="' + esc(peer.id) + '" title="查看主页">' + avatarOf(peer, 'sm') + '</span> ' + esc(peer.nick) + '</h1></header>' +
+      '<section class="card chat-card">' +
+        '<div class="chat-window" id="chat-window">' + (bubbles || '<p class="empty-sub">打个招呼吧</p>') + '</div>' +
+        '<div class="chat-input-row">' +
+          '<input id="chat-input" type="text" placeholder="说点什么…" maxlength="120">' +
+          '<button class="btn btn-primary" data-action="chat-send" data-peer="' + esc(peerId) + '">发送</button>' +
+        '</div>' +
+      '</section>';
+  }
+
+  /* ============================================================
+   * 我的个人主页（v2.4.0：背景区 + 圆形头像 + 统计行 + 昵称简介 + 标签栏 + 编辑主页）
+   * 仅保留指定项目；底部保留原有「主题设置」「关于」板块（用户已确认）
+   * ============================================================ */
+  let _mineTab = 'posts'; // 我的主页标签：posts 作品 / favorites 收藏 / likes 喜欢
+  function setMineTab(t) { _mineTab = t; return _mineTab; }
+  function getMineTab() { return _mineTab; }
+
+  function statCell(num, label, kind) {
+    return '<button class="stat-cell" data-action="stats-list" data-kind="' + kind + '">' +
+      '<span class="stat-num">' + num + '</span><span class="stat-label">' + label + '</span></button>';
+  }
+
+  /** 底部板块（v2.4.2+）：设置 / 管理后台 整卡可点击（无内部跳转文字），关于板块保留 */
+  function renderMineLegacy(t) {
+    return '<section class="card card-link" data-route="#/settings">' +
+        '<div class="card-head"><h2>设置</h2><span class="row-arrow">›</span></div>' +
+      '</section>' +
+      '<section class="card card-link" data-action="open-admin">' +
+        '<div class="card-head"><h2>管理后台</h2><span class="row-arrow">›</span></div>' +
+      '</section>' +
+      '<section class="card"><div class="card-head"><h2>关于</h2></div>' +
+        '<div class="setting-row"><div class="setting-title">版本</div><div>v' + esc(SDV_CONFIG.app.version) + '</div></div>' +
+        '<button class="row-btn" data-action="check-update"><span>检查更新</span><span>›</span></button>' +
+      '</section>';
+  }
+
+  function mineTheme() {
+    return (typeof Store !== 'undefined' && Store.getTheme) ? Store.getTheme() : { followSystem: true, manual: 'light' };
+  }
+
+  /* ============================================================
+   * v2.4.1 未登录视图：顶部像素登录卡片（点击弹出登录弹窗），
+   * 下方保留原「主题设置」「关于」板块
+   * ============================================================ */
+  function renderLoginEntry() {
+    const me = CommunityAPI.getProfile();
+    return '<button class="login-entry-card" data-action="open-login">' +
+        '<span class="login-entry-avatar">' + avatarOf(me, 'md') + '</span>' +
+        '<span class="login-entry-text">' + esc(me.nick) + '</span>' +
+        '<span class="login-entry-arrow">›</span>' +
+      '</button>' +
+      '<p class="login-entry-hint">登录后查看你的获赞、关注与帖子</p>' +
+      renderMineLegacy(mineTheme());
+  }
+
+  function renderMyProfile() {
+    // v2.4.1：无登录记录 → 未登录视图（游客登录后才能进入个人主页）
+    if (!CommunityAPI.getLoginState()) return renderLoginEntry();
+
+    const me = CommunityAPI.getProfile();
+    const likes = CommunityAPI.countAuthorLikes(me.id);
+    const cnt = CommunityAPI.followCounts();
+
+    // 标签栏内容（作品 / 收藏 / 喜欢）
+    const list = _mineTab === 'posts' ? CommunityAPI.fetchMyPosts()
+      : _mineTab === 'favorites' ? CommunityAPI.fetchMyFavorites()
+      : CommunityAPI.fetchMyLikes();
+    const tabBody = list.length
+      ? '<div class="masonry-feed">' + list.map(postCard).join('') + '</div>'
+      : '<p class="empty-sub">' + (_mineTab === 'posts' ? '还没有发过帖子' : _mineTab === 'favorites' ? '还没有收藏过帖子' : '还没有点过赞') + '</p>';
+
+    const tabs = [['posts', '作品'], ['favorites', '收藏'], ['likes', '喜欢']];
+    const tabBar = '<div class="tab-bar">' + tabs.map(([k, label]) =>
+      '<button class="tab-btn' + (_mineTab === k ? ' on' : '') + '" data-action="profile-tab" data-tab="' + k + '">' + label + '</button>'
+    ).join('') + '</div>';
+
+    return '<div class="profile-banner"></div>' +
+      '<section class="card profile-main">' +
+        '<div class="profile-avatar" data-avatar-user="' + esc(me.id) + '" title="我的主页">' + avatarOf(me, 'xl') + '</div>' +
+        '<div class="stat-row">' +
+          statCell(likes, '获赞', 'likes') +
+          statCell(cnt.mutual, '互关', 'mutual') +
+          statCell(cnt.following, '关注', 'following') +
+          statCell(cnt.followers, '粉丝', 'followers') +
+        '</div>' +
+        '<div class="profile-name">' + esc(me.nick) + '</div>' +
+        '<p class="profile-bio">' + (me.bio ? esc(me.bio) : '这个人很懒，还没有填写简介') + '</p>' +
+        '<button class="btn btn-primary profile-edit-btn" data-action="edit-profile">编辑主页</button>' +
+      '</section>' +
+      tabBar +
+      '<section class="card profile-tab-body">' + tabBody + '</section>' +
+      renderMineLegacy(mineTheme());
+  }
+
+  /* ============================================================
+   * v2.4.2 设置页（#/settings）
+   * ① 主题设置板块（由我的页整体迁移，功能与原有完全一致）
+   * ② 账号板块：展示当前登录账号名称 + 退出登录按钮（确认弹窗后清状态跳回我的页）
+   * ============================================================ */
+  function renderSettings() {
+    const t = mineTheme();
+    const st = CommunityAPI.getLoginState();
+    const me = CommunityAPI.getProfile();
+    // 账号板块：已登录显示账号名 + 退出按钮；未登录显示「未登录」
+    const account = st
+      ? '<div class="setting-row"><div><div class="setting-title">当前账号</div>' +
+          '<div class="setting-desc">' + esc(me.nick) + '</div></div>' +
+          '<button class="btn btn-danger" data-action="logout">退出登录</button></div>'
+      : '<div class="setting-row"><div><div class="setting-title">当前账号</div>' +
+          '<div class="setting-desc">未登录</div></div></div>';
+
+    return '<header class="page-header"><button class="btn-back" data-action="nav-back" aria-label="返回">←</button>' +
+        '<h1>设置</h1></header>' +
+      '<section class="card"><div class="card-head"><h2>主题设置</h2></div>' +
+        '<div class="setting-row">' +
+          '<div><div class="setting-title">跟随系统主题</div><div class="setting-desc">开启后自动同步系统深浅色模式</div></div>' +
+          '<label class="switch"><input type="checkbox" data-theme-follow' + (t.followSystem ? ' checked' : '') + '><span class="slider"></span></label>' +
+        '</div>' +
+        '<div class="setting-row">' +
+          '<div><div class="setting-title">手动主题</div><div class="setting-desc">手动切换时自动关闭「跟随系统」</div></div>' +
+          '<div class="theme-switch-btns">' +
+            '<button class="chip' + (!t.followSystem && t.manual === 'light' ? ' active' : '') + '" data-theme-manual="light">浅色</button>' +
+            '<button class="chip' + (!t.followSystem && t.manual === 'dark' ? ' active' : '') + '" data-theme-manual="dark">深色</button>' +
+          '</div>' +
+        '</div>' +
+      '</section>' +
+      '<section class="card"><div class="card-head"><h2>账号</h2></div>' + account + '</section>';
+  }
+
+  /* ============================================================
+   * 他人用户主页（v2.4.0：背景图 + 返回 + 圆形头像昵称 + 统计行 + 简介/IP属地 +
+   * 关注按钮三态 + 私信 + 作品/推荐标签栏；点击任意帖子内头像跳转进入）
+   * ============================================================ */
+  let _userTab = 'posts'; // 他人主页标签：posts 作品 / recommend 推荐
+  function setUserTab(t) { _userTab = t; return _userTab; }
+  function getUserTab() { return _userTab; }
+
+  function renderUserHome(id) {
+    const me = CommunityAPI.getProfile();
+    if (id === me.id) return renderMyProfile(); // 自己的主页 = 我的个人主页
+    const u = CommunityAPI.villagerById(id);
+    if (!u) {
+      return '<header class="page-header"><button class="btn-back" data-action="nav-back">←</button><h1>用户主页</h1></header>' +
+        '<section class="card"><p class="empty-sub">用户不存在</p></section>';
+    }
+    const st = CommunityAPI.followStateOf(id);
+    const fans = u.baseFans + (st.following ? 1 : 0);
+    const likes = CommunityAPI.countAuthorLikes(id);
+    const followLabel = st.mutual ? '互相关注' : (st.following ? '已关注' : '关注');
+
+    // 作品：该用户公开帖子；推荐：其他村民的帖子
+    const posts = CommunityAPI.fetchPosts().filter((p) => p.authorId === id);
+    const recommend = CommunityAPI.fetchPosts().filter((p) => p.authorId !== id);
+    const list = _userTab === 'posts' ? posts : recommend;
+    const tabBody = list.length
+      ? '<div class="masonry-feed">' + list.map(postCard).join('') + '</div>'
+      : '<p class="empty-sub">' + (_userTab === 'posts' ? '还没有公开帖子' : '暂无推荐内容') + '</p>';
+
+    const tabBar = '<div class="tab-bar">' +
+      '<button class="tab-btn' + (_userTab === 'posts' ? ' on' : '') + '" data-action="user-tab" data-tab="posts">作品</button>' +
+      '<button class="tab-btn' + (_userTab === 'recommend' ? ' on' : '') + '" data-action="user-tab" data-tab="recommend">推荐</button>' +
+    '</div>';
+
+    return '<div class="profile-banner"></div>' +
+      '<button class="btn-back profile-back" data-action="nav-back" aria-label="返回">←</button>' +
+      '<section class="card profile-main">' +
+        '<div class="profile-avatar" data-avatar-user="' + esc(u.id) + '" title="查看主页">' + avatarOf(u, 'xl') + '</div>' +
+        '<div class="stat-row">' +
+          statCell(likes, '获赞', 'likes') +
+          statCell(u.baseFollowing, '关注', 'following') +
+          statCell(fans, '粉丝', 'followers') +
+        '</div>' +
+        '<div class="profile-name">' + esc(u.nick) + '</div>' +
+        '<p class="profile-bio">' + esc(u.bio || '这位村民还没有填写简介') + '</p>' +
+        '<span class="ip-tag">📍 ' + esc(u.ip || '鹈鹕镇') + '</span>' +
+        '<div class="profile-actions">' +
+          '<button class="btn follow-btn' + (st.following ? ' on' : '') + '" data-action="follow" data-user="' + esc(id) + '" data-fans="' + fans + '">' + followLabel + '</button>' +
+          '<button class="btn btn-primary" data-route="#/chat/' + esc(id) + '">私信</button>' +
+        '</div>' +
+      '</section>' +
+      tabBar +
+      '<section class="card profile-tab-body">' + tabBody + '</section>';
   }
 
   /* ============================================================
@@ -358,7 +607,7 @@ const Community = (() => {
    * ============================================================ */
   function renderMinePosts() {
     const list = CommunityAPI.fetchMyPosts();
-    return '<header class="page-header"><button class="btn-back" data-route="#/mine">←</button><h1>我的帖子</h1></header>' +
+    return '<header class="page-header"><button class="btn-back" data-action="nav-back">←</button><h1>我的帖子</h1></header>' +
       '<section class="card"><div class="card-head"><h2>我发布的帖子</h2><span class="card-sub">' + list.length + ' 条</span></div>' +
       (list.length ? '<div class="my-post-list">' + list.map((p) =>
         '<div class="my-post-item">' +
@@ -378,7 +627,7 @@ const Community = (() => {
 
   function renderMineLikes() {
     const list = CommunityAPI.fetchMyLikes();
-    return '<header class="page-header"><button class="btn-back" data-route="#/mine">←</button><h1>我的点赞</h1></header>' +
+    return '<header class="page-header"><button class="btn-back" data-action="nav-back">←</button><h1>我的点赞</h1></header>' +
       '<section class="card"><div class="card-head"><h2>我赞过的帖子</h2><span class="card-sub">' + list.length + ' 条</span></div>' +
       (list.length ? '<div class="masonry-feed">' + list.map(postCard).join('') + '</div>' : '<p class="empty-sub">还没有点过赞</p>') +
       '</section>';
@@ -386,7 +635,7 @@ const Community = (() => {
 
   function renderMineFavorites() {
     const list = CommunityAPI.fetchMyFavorites();
-    return '<header class="page-header"><button class="btn-back" data-route="#/mine">←</button><h1>我的收藏</h1></header>' +
+    return '<header class="page-header"><button class="btn-back" data-action="nav-back">←</button><h1>我的收藏</h1></header>' +
       '<section class="card"><div class="card-head"><h2>我收藏的帖子</h2><span class="card-sub">' + list.length + ' 条</span></div>' +
       (list.length ? '<div class="masonry-feed">' + list.map(postCard).join('') + '</div>' : '<p class="empty-sub">还没有收藏过帖子</p>') +
       '</section>';
@@ -394,8 +643,11 @@ const Community = (() => {
 
   return {
     renderHomeBlock, refreshBlock, renderCommunityList, renderPostDetail,
-    renderMessages, renderMinePosts, renderMineLikes, renderMineFavorites,
+    renderMessages, renderNotices, renderChatWindow,
+    renderMyProfile, renderSettings, renderUserHome, renderMinePosts, renderMineLikes, renderMineFavorites,
     openPostModal, submitPostForm,
     setReplyTarget, getReplyTarget, clearReplyTarget,
+    setMineTab, getMineTab, setUserTab, getUserTab,
+    followBtnHtml, isVillagerUser,
   };
 })();

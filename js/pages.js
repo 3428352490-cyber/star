@@ -15,7 +15,7 @@ const Pages = (() => {
 
   function pageHeader(title, back, backRoute) {
     return '<header class="page-header">' +
-      (back ? '<button class="btn-back" data-route="' + (backRoute || '#/home') + '" aria-label="返回">←</button>' : '') +
+      (back ? '<button class="btn-back" data-action="nav-back" aria-label="返回">←</button>' : '') +
       '<h1>' + esc(title) + '</h1></header>';
   }
 
@@ -129,41 +129,9 @@ const Pages = (() => {
       '</section>';
   }
 
-  /** 我的：游客资料卡 + 主题设置 + 我的社区数据 + 管理员预留 + 关于 */
+  /** 我的：v2.4.0 个人主页（背景区/统计行/昵称简介/标签栏/编辑主页 + 底部保留主题设置/关于） */
   function mine() {
-    const t = Store.getTheme();
-    const me = (typeof CommunityAPI !== 'undefined') ? CommunityAPI.getProfile() : null;
-    return '<button class="card account-card" data-action="open-profile-modal">' +
-        '<span class="avatar px-avatar" data-size="md" style="background:' + esc(me ? me.color : '#6a8a5a') + '">' + esc(me ? me.avatar : '🧑‍🌾') + '</span>' +
-        '<span class="account-text">' + esc(me ? me.nick : '星露谷村民') + '</span>' +
-        '<span class="account-arrow">›</span>' +
-      '</button>' +
-
-      '<section class="card"><div class="card-head"><h2>我的社区</h2></div>' +
-        '<button class="row-btn" data-route="#/mine-posts"><span>我的帖子</span><span>›</span></button>' +
-        '<button class="row-btn" data-route="#/mine-likes"><span>我的点赞</span><span>›</span></button>' +
-        '<button class="row-btn" data-route="#/mine-favorites"><span>我的收藏</span><span>›</span></button>' +
-      '</section>' +
-
-      '<section class="card"><div class="card-head"><h2>主题设置</h2></div>' +
-        '<div class="setting-row">' +
-          '<div><div class="setting-title">跟随系统主题</div><div class="setting-desc">开启后自动同步系统深浅色模式</div></div>' +
-          '<label class="switch"><input type="checkbox" data-theme-follow' + (t.followSystem ? ' checked' : '') + '><span class="slider"></span></label>' +
-        '</div>' +
-        '<div class="setting-row">' +
-          '<div><div class="setting-title">手动主题</div><div class="setting-desc">手动切换时自动关闭「跟随系统」</div></div>' +
-          '<div class="theme-switch-btns">' +
-            '<button class="chip' + (!t.followSystem && t.manual === 'light' ? ' active' : '') + '" data-theme-manual="light">浅色</button>' +
-            '<button class="chip' + (!t.followSystem && t.manual === 'dark' ? ' active' : '') + '" data-theme-manual="dark">深色</button>' +
-          '</div>' +
-        '</div>' +
-      '</section>' +
-
-      '<section class="card"><div class="card-head"><h2>关于</h2></div>' +
-        '<div class="setting-row"><div class="setting-title">版本</div><div>v' + esc(SDV_CONFIG.app.version) + '</div></div>' +
-        '<button class="row-btn" data-action="check-update"><span>检查更新</span><span>›</span></button>' +
-        '<button class="row-btn" data-action="open-admin"><span>管理后台（预留）</span><span>›</span></button>' +
-      '</section>';
+    return (typeof Community !== 'undefined') ? Community.renderMyProfile() : notFound();
   }
 
   /** 快捷键编辑页：38 项勾选（上限 7） */
@@ -225,6 +193,16 @@ const Pages = (() => {
   function messages() {
     return (typeof Community !== 'undefined') ? Community.renderMessages() : notFound();
   }
+  /* ---------- v2.4.0 社交页面（渲染委托 Community 模块） ---------- */
+  function userPage(param) {
+    return (typeof Community !== 'undefined') ? Community.renderUserHome(param) : notFound();
+  }
+  function chatPage(param) {
+    return (typeof Community !== 'undefined') ? Community.renderChatWindow(param) : notFound();
+  }
+  function noticesPage(param) {
+    return (typeof Community !== 'undefined') ? Community.renderNotices(param) : notFound();
+  }
   function minePosts() {
     return (typeof Community !== 'undefined') ? Community.renderMinePosts() : notFound();
   }
@@ -233,6 +211,11 @@ const Pages = (() => {
   }
   function mineFavorites() {
     return (typeof Community !== 'undefined') ? Community.renderMineFavorites() : notFound();
+  }
+
+  /* ---------- v2.4.2 设置页（主题设置迁移 + 账号退出板块） ---------- */
+  function settingsPage() {
+    return (typeof Community !== 'undefined') ? Community.renderSettings() : notFound();
   }
 
   /** 搜索过滤（基础框架）：按 label/key 模糊匹配 */
@@ -246,7 +229,8 @@ const Pages = (() => {
 
   return {
     home, codex, search, news, newsHistory, mine, quickEdit, modulePage, cardPage,
-    community, postDetail, messages, minePosts, mineLikes, mineFavorites,
+    community, postDetail, messages, userPage, chatPage, noticesPage, settingsPage,
+    minePosts, mineLikes, mineFavorites,
     notFound, emptyState, searchEmptyHint, filterModules, newsToggleMore, newsResetExpand,
   };
 })();

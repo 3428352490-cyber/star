@@ -79,6 +79,11 @@ test('M19-3 二次进入搜索页（DOM 重建）后：红色搜索按钮触发�
 
 test('M19-4 二次进入搜索页（DOM 重建）后：回车键触发检索', () => {
   simulateRebuild();
+  // v2.4.2 回车提交仅电脑端有效：显式切到桌面端设备再验证回车触发
+  // （切换会通知主题媒体查询监听器，需先加载 Store 配置）
+  const Store = ref('Store');
+  if (Store) Store.load();
+  globalThis.__testMql.set(true);
   input.value = '蓝莓';
   fire(input, 'keydown', { key: 'Enter', keyCode: 13, target: input });
   assert.ok(SearchUI.SearchHistory.get().includes('蓝莓'), '重建后回车应触发搜索并写入历史');

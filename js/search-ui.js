@@ -330,7 +330,8 @@ const SearchUI = (() => {
         search_syncCarousel(); // 失焦且无输入：恢复轮播层
       });
       search_inputEl.addEventListener('keydown', (e) => {
-        if ((e.key === 'Enter' || e.keyCode === 13) && search_inputEl.value.trim()) {
+        // v2.4.2 回车触发搜索仅电脑端有效；手机端回车不提交（仅换行/无操作）
+        if (isDesktopInput() && (e.key === 'Enter' || e.keyCode === 13) && search_inputEl.value.trim()) {
           runSearch(search_inputEl.value);
         }
       });

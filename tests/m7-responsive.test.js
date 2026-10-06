@@ -61,7 +61,7 @@ test('M7-7 触控目标尺寸：瓦片与开关不小于 44px 交互区', () => 
   assert.ok(comp.includes('width: 46px; height: 26px;'), '开关尺寸定义缺失');
   assert.ok(comp.includes('padding: 9px 10px;'), '勾选项点击区过小');
   const lay = readAppFile('css/layout.css');
-  assert.ok(lay.includes('width: 36px; height: 36px;'), '搜索按钮过小');
+  assert.ok(lay.includes('min-height: 44px'), '返回按钮触控热区过小');
 });
 
 test('M7-8 桌面端信息密度：宽屏字号与间距加大', () => {

@@ -44,8 +44,8 @@ const App = (() => {
   }
 
   /**
-   * 消息 Tab 未读角标：统计 notices 中未读条数（CommunityAPI.unreadCount）。
-   * 进入消息页 / 全部已读 / 刷新后实时更新；0 条时隐藏。
+   * 消息 Tab 未读角标：统计 notices 未读 + 全部会话未读合计（v2.4.0 口径）。
+   * 进入消息页 / 通知分类 / 私聊窗口 / 全部已读 / 刷新后实时更新；0 条时隐藏。
    */
   function updateNavBadge() {
     const badge = document.querySelector('[data-nav-badge]');
@@ -77,12 +77,29 @@ const App = (() => {
     });
   }
 
-  /** 渲染当前路由页面 + 挂载图标 + 搜索页挂载搜索面板 + 刷新消息角标 */
+  /** 渲染当前路由页面 + 挂载图标 + 搜索页挂载搜索面板 + 路由感知标记已读 + 刷新消息角标 */
   function render() {
     if (typeof Router !== 'undefined') Router.handle();
     mountIcons($('#page-container'));
     if (typeof SearchUI !== 'undefined' && location.hash.indexOf('#/search') === 0) SearchUI.mount();
+    markContextualRead();
     updateNavBadge();
+  }
+
+  /**
+   * 路由感知（v2.4.0）：进入「新关注我的/互动消息」分类列表 → 标记该分类已读；
+   * 进入私聊窗口 → 确保会话存在并标记该会话已读。
+   */
+  function markContextualRead() {
+    const raw = (location.hash || '#/home').replace(/^#\/?/, '');
+    const parts = raw.split('/').filter(Boolean);
+    if (parts[0] === 'notices' && typeof CommunityAPI.markCategoryRead === 'function') {
+      CommunityAPI.markCategoryRead(parts[1] === 'follow' ? 'follow' : 'interact');
+    }
+    if (parts[0] === 'chat' && parts[1]) {
+      if (typeof CommunityAPI.startConversation === 'function') CommunityAPI.startConversation(parts[1]);
+      if (typeof CommunityAPI.openChat === 'function') CommunityAPI.openChat(parts[1]);
+    }
   }
 
   /* ---------- 全局事件（事件委托） ---------- */
@@ -94,6 +111,16 @@ const App = (() => {
     const actionEl = t.closest('[data-action]');
     if (actionEl) {
       handleAction(actionEl.dataset.action, t);
+      return;
+    }
+    // ①b v2.4.2 全局头像跳转：点击任意头像，自动判断身份（自己 → 我的主页；他人 → 他人主页）
+    const avatarEl = t.closest('[data-avatar-user]');
+    if (avatarEl) {
+      const uid = avatarEl.dataset.avatarUser;
+      const me = (typeof CommunityAPI !== 'undefined' && CommunityAPI.getProfile) ? CommunityAPI.getProfile() : null;
+      // 统计弹窗 / 通知等弹层内的头像点击跳转时自动关闭弹窗，保持主流社交交互
+      if (typeof Modal !== 'undefined' && Modal.close) Modal.close();
+      location.hash = (me && uid === me.id) ? '#/mine' : '#/user/' + uid;
       return;
     }
     // ② 路由跳转
@@ -141,7 +168,36 @@ const App = (() => {
 
   document.addEventListener('input', (e) => {
     if (e.target && e.target.id === 'search-input') handleSearch(e.target.value);
+    if (e.target && e.target.id === 'msg-search-input') filterConversations(e.target.value);
   });
+
+  /**
+   * v2.4.2 回车提交（仅电脑端有效）：
+   * 私聊输入框 / 评论输入框（含楼中楼回复态）按下回车 = 点击对应提交按钮；
+   * 手机端（触屏）回车不触发提交，仅换行/无操作（主流社交平台交互）。
+   * 搜索框回车逻辑在 search-ui.js 内，同样受 isDesktopInput() 约束。
+   */
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter' || !isDesktopInput()) return;
+    const t = e.target;
+    if (!t || !t.id) return;
+    if (t.id === 'chat-input') {
+      const btn = document.querySelector('[data-action="chat-send"]');
+      if (btn) btn.click();
+    } else if (t.id === 'comment-input') {
+      const btn = document.querySelector('[data-action="post-comment"]');
+      if (btn) btn.click();
+    }
+  });
+
+  /** 消息页会话搜索：按昵称/预览关键词过滤会话列表（前端即时过滤，不改数据） */
+  function filterConversations(q) {
+    const val = (q || '').trim().toLowerCase();
+    $$('.conv-item').forEach((el) => {
+      const hit = !val || (el.textContent || '').toLowerCase().includes(val);
+      el.style.display = hit ? '' : 'none';
+    });
+  }
 
   /* ---------- 软键盘适配（移动端）：输入框聚焦时隐藏底部导航，避免键盘遮挡输入区 ---------- */
   document.addEventListener('focusin', (e) => {
@@ -255,15 +311,218 @@ const App = (() => {
         break;
       }
       case 'chat-send': {
-        // 消息页机器人聊天：发送 → 追加气泡并滚到底部，机器人延迟应答
+        // 私聊窗口发送：按按钮 data-peer（或页面容器）确定会话对方，机器人延迟应答
+        const btn = closestOf(target, '[data-action="chat-send"]');
+        const peerId = btn ? btn.dataset.peer : (container ? container.dataset.peer : null);
         const input = $('#chat-input');
         const text = input ? input.value : '';
-        const m = CommunityAPI.sendChat(text);
+        const m = peerId ? CommunityAPI.sendChat(peerId, text) : null;
         if (m) {
           render();
           const win = $('#chat-window');
           if (win) win.scrollTop = win.scrollHeight;
         } else Toast.show('请输入聊天内容');
+        break;
+      }
+      /* ---------- v2.4.0 社交动作 ---------- */
+      case 'follow': {
+        // 关注/取消关注村民：局部更新按钮三态（关注/已关注/互相关注）+ 对方粉丝数
+        const btn = closestOf(target, '[data-action="follow"]');
+        const userId = btn ? btn.dataset.user : null;
+        if (!userId) break;
+        const r = CommunityAPI.toggleFollow(userId);
+        if (!r || !r.ok) { Toast.show('无法关注该用户'); break; }
+        const st = CommunityAPI.followStateOf(userId);
+        const v = CommunityAPI.villagerById(userId);
+        $$('[data-action="follow"][data-user="' + userId + '"]').forEach((b) => {
+          if (b.classList.contains('avatar-follow')) {
+            // 头像加号按钮（帖子卡片 / 横向头像栏）
+            b.textContent = st.following ? '✓' : '+';
+            b.classList.toggle('on', st.following);
+            b.title = st.following ? '已关注' : '关注';
+          } else {
+            // 他人主页大按钮
+            b.textContent = st.mutual ? '互相关注' : (st.following ? '已关注' : '关注');
+            b.classList.toggle('on', st.following);
+          }
+        });
+        // 他人主页粉丝统计行同步
+        $$('[data-kind="followers"] .stat-num').forEach((el) => { el.textContent = r.fans; });
+        Toast.show(st.following ? '已关注 ' + (v ? v.nick : '') : '已取消关注');
+        updateNavBadge(); // 回关通知可能已生成，角标同步
+        break;
+      }
+      case 'new-conversation': {
+        // 消息页发起会话：弹窗选择村民 → 创建/进入私聊窗口
+        const villagers = CommunityAPI.__villagers();
+        Modal.show({
+          title: '发起会话',
+          body: '<div class="user-list">' + villagers.map((v) =>
+            '<button class="row-btn" data-action="pick-chat" data-user="' + esc(v.id) + '">' +
+              '<span><span class="px-avatar" data-size="sm" style="background:' + esc(v.color) + '">' + esc(v.avatar) + '</span> ' + esc(v.nick) + '</span><span>›</span></button>'
+          ).join('') + '</div>',
+          actions: [{ label: '取消', cls: 'btn-text', onClick: () => {} }],
+        });
+        break;
+      }
+      case 'pick-chat': {
+        const btn = closestOf(target, '[data-action="pick-chat"]');
+        const uid = btn ? btn.dataset.user : null;
+        if (!uid) break;
+        CommunityAPI.startConversation(uid);
+        Modal.close();
+        location.hash = '#/chat/' + uid;
+        break;
+      }
+      case 'msg-search': {
+        // 消息页搜索框展开/收起
+        const box = $('#msg-search-box');
+        if (!box) break;
+        box.hidden = !box.hidden;
+        if (!box.hidden) {
+          const input = $('#msg-search-input');
+          if (input) input.focus();
+        }
+        break;
+      }
+      case 'mark-cat-read': {
+        const btn = closestOf(target, '[data-action="mark-cat-read"]');
+        CommunityAPI.markCategoryRead(btn ? btn.dataset.cat : 'interact');
+        Toast.show('已全部标记为已读');
+        render();
+        break;
+      }
+      case 'nav-back': {
+        // v2.4.3 返回上一级来源页面（维护访问层级栈，禁止越级直接跳首页）
+        if (typeof Router !== 'undefined' && Router.navBack) Router.navBack();
+        else if (window.history && window.history.length > 1) window.history.back();
+        else location.hash = '#/mine';
+        break;
+      }
+      case 'stats-list': {
+        // 统计行弹窗：获赞 / 互关 / 关注 / 粉丝 列表
+        const btn = closestOf(target, '[data-action="stats-list"]');
+        const kind = btn ? btn.dataset.kind : 'likes';
+        const titles = { likes: '获赞', mutual: '互关', following: '关注', followers: '粉丝' };
+        let items = [];
+        if (kind === 'likes') {
+          items = CommunityAPI.fetchLikers();
+        } else {
+          const f = CommunityAPI.fetchFollows();
+          items = kind === 'following' ? f.following
+            : kind === 'followers' ? f.followers
+            : f.following.filter((x) => f.followers.some((y) => y.id === x.id)); // mutual
+        }
+        const title = titles[kind] || '列表';
+        Modal.show({
+          title,
+          body: items.length
+            ? '<div class="user-list">' + items.map((u) =>
+                '<div class="user-list-item">' +
+                  '<span class="px-avatar" data-size="sm" data-avatar-user="' + esc(u.id) + '" style="background:' + esc(u.color) + '">' + esc(u.avatar) + '</span>' +
+                  '<span class="post-nick">' + esc(u.nick) + '</span></div>'
+              ).join('') + '</div>'
+            : '<p class="empty-sub">暂无' + title + '列表</p>',
+          actions: [{ label: '知道了', cls: 'btn-primary' }],
+        });
+        break;
+      }
+      case 'edit-profile': {
+        // 编辑主页：昵称 / 像素头像 / 简介（本地存储）
+        const me = CommunityAPI.getProfile();
+        const emojis = ['🧑‍🌾', '👩‍🌾', '🧔', '👩‍🎨', '🧑‍🎤'];
+        Modal.show({
+          title: '编辑主页',
+          body:
+            '<div class="post-form">' +
+              '<label class="form-label">昵称</label>' +
+              '<input id="profile-nick" type="text" maxlength="12" value="' + esc(me.nick) + '">' +
+              '<label class="form-label">像素头像</label>' +
+              '<div class="avatar-picker">' + emojis.map((e) =>
+                '<button class="px-avatar' + (me.avatar === e ? ' picked' : '') + '" data-size="md" data-avatar="' + e + '" style="background:' + esc(me.color) + '">' + e + '</button>'
+              ).join('') + '</div>' +
+              '<label class="form-label">简介</label>' +
+              '<input id="profile-bio" type="text" maxlength="40" placeholder="介绍一下自己吧" value="' + esc(me.bio || '') + '">' +
+            '</div>',
+          actions: [
+            { label: '取消', cls: 'btn-text', onClick: () => {} },
+            { label: '保存', cls: 'btn-primary', onClick: () => {
+              const nick = ($('#profile-nick') || {}).value || '';
+              const bio = ($('#profile-bio') || {}).value || '';
+              const picked = document.querySelector('.avatar-picker .px-avatar[data-picked]');
+              CommunityAPI.setProfile({
+                nick: String(nick).trim() || me.nick,
+                avatar: picked ? picked.dataset.avatar : me.avatar,
+                bio: String(bio).trim(),
+              });
+              Toast.show('主页已更新');
+              Modal.close();
+              render();
+            } },
+          ],
+        });
+        $$('.avatar-picker .px-avatar').forEach((el) => {
+          if (el.dataset.avatar === me.avatar) el.setAttribute('data-picked', '');
+          el.addEventListener('click', () => {
+            $$('.avatar-picker .px-avatar').forEach((x) => x.removeAttribute('data-picked'));
+            el.setAttribute('data-picked', '');
+          });
+        });
+        break;
+      }
+      case 'open-login': {
+        // v2.4.1 登录弹窗：账号密码登录恒失败；游客登录进入个人主页
+        Modal.show({
+          title: '登录',
+          body:
+            '<div class="login-form">' +
+              '<label class="form-label">账号</label>' +
+              '<input id="login-account" type="text" maxlength="20" placeholder="输入任意账号">' +
+              '<label class="form-label">密码</label>' +
+              '<input id="login-password" type="password" maxlength="20" placeholder="输入任意密码">' +
+            '</div>',
+          actions: [
+            { label: '账号密码登录', cls: 'btn-primary', onClick: () => {
+              Toast.show('登录失败，请使用游客登录');
+            } },
+            { label: '游客登录', cls: 'btn-warn', onClick: () => {
+              CommunityAPI.guestLogin();
+              Toast.show('已以游客身份登录');
+              Modal.close();
+              render();
+            } },
+          ],
+        });
+        break;
+      }
+      case 'logout': {
+        // v2.4.1/v2.4.2 退出登录（设置页账号板块）：确认后清除登录状态，跳回我的页未登录视图
+        Modal.show({
+          title: '退出登录',
+          body: '<p>确定要退出登录吗？退出后需要重新登录才能查看个人主页。</p>',
+          actions: [
+            { label: '取消', cls: 'btn-text', onClick: () => {} },
+            { label: '退出登录', cls: 'btn-danger', onClick: () => {
+              CommunityAPI.logout();
+              Toast.show('已退出登录');
+              Modal.close();
+              location.hash = '#/mine'; // 退出后跳回【我的】未登录视图
+              render();
+            } },
+          ],
+        });
+        break;
+      }
+      case 'profile-tab': {
+        const btn = closestOf(target, '[data-action="profile-tab"]');
+        if (btn && typeof Community !== 'undefined' && Community.setMineTab) Community.setMineTab(btn.dataset.tab);
+        render();
+        break;
+      }
+      case 'user-tab': {
+        const btn = closestOf(target, '[data-action="user-tab"]');
+        if (btn && typeof Community !== 'undefined' && Community.setUserTab) Community.setUserTab(btn.dataset.tab);
+        render();
         break;
       }
       case 'mark-all-read':

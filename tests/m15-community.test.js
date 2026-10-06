@@ -115,8 +115,9 @@ test('M15-7 页面骨架：社区列表 / 帖子详情 / 消息页 / 我的子�
   assert.ok(msgs.includes('通知'), '消息页骨架缺失');
   const minePosts = Community.renderMinePosts();
   assert.ok(minePosts.includes('我的帖子'), '我的帖子页骨架缺失');
+  API.guestLogin(); // v2.4.1：个人主页需游客登录后可见
   assert.ok(Pages.mine().includes('open-admin'), '我的页缺少管理后台预留入口');
-  assert.ok(Pages.mine().includes('mine-posts'), '我的页缺少我的帖子入口');
+  assert.ok(Pages.mine().includes('data-action="profile-tab" data-tab="posts"'), '我的页缺少作品标签（v2.4.0 标签栏）');
 });
 
 test('M15-8 公告页：默认仅最近 3 条，更多/收起切换', () => {

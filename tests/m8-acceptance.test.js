@@ -100,12 +100,12 @@ test('验收7 38 模块 + 4 卡片入口均可进入占位页并返回', () => {
   for (const m of CONFIG.modules) {
     const html = Pages.modulePage(m.key);
     assert.ok(html.includes(m.label) && html.includes('一期占位'), '模块页缺失: ' + m.key);
-    assert.ok(html.includes('data-route="#/home"'), '模块页缺返回按钮: ' + m.key);
+    assert.ok(html.includes('data-action="nav-back"'), '模块页缺返回按钮: ' + m.key);
   }
   for (const c of CONFIG.homeCards) {
     const html = Pages.cardPage(c.key);
     assert.ok(html.includes(c.title), '卡片页缺失: ' + c.key);
-    assert.ok(html.includes('data-route="#/home"'), '卡片页缺返回按钮: ' + c.key);
+    assert.ok(html.includes('data-action="nav-back"'), '卡片页缺返回按钮: ' + c.key);
   }
 });
 
@@ -166,11 +166,13 @@ test('验收12 重启后主题选择保持', () => {
   assert.equal(Store.getTheme().followSystem, false);
 });
 
-test('验收13 我的页游客资料区块存在，弹窗可打开可关闭', () => {
+test('验收13 我的页游客登录后个人主页区块存在，编辑主页弹窗可打开可关闭', () => {
   resetStore();
+  const API = ref('CommunityAPI');
+  if (typeof API !== 'undefined' && API.guestLogin) API.guestLogin();
   const html = Pages.mine();
-  assert.ok(html.includes('account-card'), '游客资料卡缺失');
-  assert.ok(html.includes('open-profile-modal'), '资料卡应打开个人资料弹窗');
+  assert.ok(html.includes('profile-banner'), '个人主页背景区缺失');
+  assert.ok(html.includes('data-action="edit-profile"'), '编辑主页按钮缺失');
   Modal.show({ title: '个人资料', body: '<p>x</p>', actions: [{ label: '知道了', cls: 'btn-primary' }] });
   assert.ok(els.get('modal-root').innerHTML.includes('个人资料'));
   Modal.close();

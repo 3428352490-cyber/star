@@ -82,10 +82,12 @@
 .see-more-btn { width: 100%; margin-top: 12px; }
 
 /* ---------- 头像 ---------- */
+/* v2.4.2 全局统一圆形头像：所有界面内头像均显示圆形 */
 .px-avatar {
   display: inline-flex; align-items: center; justify-content: center;
   border: 2px solid #3a2a1a; image-rendering: pixelated;
-  flex: none; overflow: hidden;
+  border-radius: 50%; overflow: hidden;
+  flex: none;
 }
 .px-avatar[data-size="sm"] { width: 26px; height: 26px; font-size: 14px; }
 .px-avatar[data-size="md"] { width: 34px; height: 34px; font-size: 18px; }
@@ -214,3 +216,203 @@
   cursor: pointer; font-size: 17px; image-rendering: pixelated;
 }
 .billboard-btn:active { transform: translate(2px, 2px); }
+
+/* ============================================================
+ * v2.4.0 社交模块样式（消息页 / 我的主页 / 他人主页 / 关注 / 私聊）
+ * 沿用星露谷像素风格：直角卡片 / 粗像素边框 / 高饱和复古配色；
+ * v2.4.2 起头像全局圆形（见 .px-avatar 基础规则），不再按容器单独圆角
+ * ============================================================ */
+
+/* 我的页底部整卡可点击板块（设置 / 管理后台）：点击卡片任意区域进入对应页面 */
+.card.card-link { cursor: pointer; }
+.card.card-link:active { transform: translateY(2px); }
+.card-head .row-arrow { color: var(--accent, #e34a2f); font-weight: 700; font-size: 16px; }
+
+.px-avatar[data-size="xl"] { width: 72px; height: 72px; font-size: 40px; }
+
+/* ---------- 帖子卡片作者区：头像（可点击跳主页）+ 加号关注按钮 ---------- */
+.author-cell { position: relative; flex: none; }
+.author-avatar { display: inline-flex; cursor: pointer; }
+.author-avatar.lg { display: inline-flex; }
+.avatar-follow {
+  position: absolute; right: -4px; bottom: -4px; z-index: 2;
+  width: 16px; height: 16px; padding: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: #e8c14a; color: #3a2a1a;
+  border: 2px solid #3a2a1a; border-radius: 50%;
+  font-size: 11px; line-height: 1; cursor: pointer; font-family: inherit;
+}
+.avatar-follow:active { transform: translate(1px, 1px); }
+.avatar-follow.on { background: #6a8a5a; color: #fff; }
+.avatar-follow.mini { width: 14px; height: 14px; font-size: 10px; right: -3px; bottom: -3px; }
+.avatar-follow.strip { width: 18px; height: 18px; font-size: 12px; }
+
+/* ---------- 消息页顶部栏 + 搜索框 ---------- */
+.msg-topbar { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.msg-topbar h1 { flex: 1; font-size: 17px; text-align: center; margin: 0; }
+.msg-search-box { margin-bottom: 10px; }
+.msg-search-box input {
+  width: 100%; box-sizing: border-box;
+  background: #fff8e6; border: 2px solid #3a2a1a; color: #3a2a1a;
+  padding: 7px 10px; font-family: inherit; font-size: 13px;
+}
+
+/* ---------- 顶部横向滚动头像栏 ---------- */
+.avatar-strip {
+  display: flex; gap: 12px; overflow-x: auto; overflow-y: hidden;
+  padding: 4px 2px 10px; margin-bottom: 10px;
+  -webkit-overflow-scrolling: touch;
+}
+.avatar-strip-item { flex: none; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.avatar-strip-cell { position: relative; }
+.avatar-strip-nick { font-size: 11px; color: #5a4a2a; max-width: 56px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ---------- 通知双入口 ---------- */
+.notice-entries { display: flex; flex-direction: column; gap: 8px; }
+.notice-entry {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 12px;
+  background: #fdf6e3; color: #3a2a1a;
+  border: 3px solid #3a2a1a; box-shadow: 3px 3px 0 rgba(58, 42, 26, 0.3);
+  cursor: pointer; font-family: inherit; font-size: 13px; text-align: left; width: 100%;
+}
+.notice-entry:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 rgba(58, 42, 26, 0.3); }
+.notice-entry-icon { font-size: 18px; }
+.notice-entry-text { flex: 1; }
+
+/* ---------- 通用数字角标（通知入口 / 会话列表未读） ---------- */
+.badge-num {
+  min-width: 18px; height: 18px; padding: 0 5px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: #d65a3a; color: #fff; font-size: 11px;
+  border: 2px solid #3a2a1a; border-radius: 9px;
+  flex: none;
+}
+
+/* ---------- 私聊会话列表 ---------- */
+.conv-list { margin-top: 6px; }
+.conv-item {
+  display: flex; align-items: center; gap: 10px;
+  width: 100%; padding: 10px 0; text-align: left;
+  background: transparent; color: #3a2a1a;
+  border: none; border-top: 2px dashed rgba(58, 42, 26, 0.25);
+  cursor: pointer; font-family: inherit;
+}
+.conv-item:active { background: rgba(232, 193, 74, 0.25); }
+.conv-main { flex: 1; min-width: 0; }
+.conv-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.conv-nick { font-size: 13px; color: #3a2a1a; font-weight: 700; }
+.conv-preview {
+  font-size: 12px; color: #8a7a5a; margin-top: 2px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+/* ---------- 个人主页（我的 / 他人共用） ---------- */
+.profile-banner {
+  height: 120px; margin-bottom: -44px;
+  background: linear-gradient(160deg, #7a9a5a, #5a7a4a 55%, #3a5a3a);
+  border: 3px solid #3a2a1a; box-shadow: 4px 4px 0 rgba(58, 42, 26, 0.3);
+}
+.profile-main {
+  position: relative; margin: 0 0 12px; padding-top: 8px;
+  text-align: center;
+}
+.profile-avatar {
+  display: inline-flex; margin-top: -8px;
+  border: 3px solid #fdf6e3; border-radius: 50%;
+  box-shadow: 0 0 0 3px #3a2a1a;
+}
+.profile-back {
+  position: absolute; top: 14px; left: 12px; z-index: 6;
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 44px; min-height: 44px;
+  background: none; border: none; box-shadow: none;
+  color: #fff; text-shadow: 2px 2px 0 rgba(58, 42, 26, 0.9);
+  cursor: pointer; font-size: 22px; font-weight: 700; line-height: 1;
+}
+.profile-back:active { transform: translateY(2px); }
+
+/* ---------- 统计行（获赞/互关/关注/粉丝，点击弹列表弹窗） ---------- */
+.stat-row { display: flex; justify-content: center; gap: 6px; margin: 10px 0 8px; }
+.stat-cell {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  min-width: 56px; padding: 6px 8px;
+  background: #fdf6e3; color: #3a2a1a;
+  border: 2px solid #3a2a1a; cursor: pointer; font-family: inherit;
+}
+.stat-cell:active { transform: translate(1px, 1px); background: #e8c14a; }
+.stat-num { font-size: 15px; font-weight: 700; color: #3a2a1a; }
+.stat-label { font-size: 10px; color: #8a7a5a; }
+
+.profile-name { font-size: 17px; font-weight: 700; margin: 4px 0 2px; }
+.profile-bio { font-size: 12px; color: #5a4a2a; line-height: 1.6; margin: 4px 12px; overflow-wrap: anywhere; word-break: break-word; }
+.profile-edit-btn { margin: 6px auto 2px; }
+.ip-tag {
+  display: inline-block; margin: 4px 0 8px; padding: 2px 8px;
+  font-size: 11px; color: #5a4a2a; background: #efe8cf;
+  border: 2px solid #3a2a1a;
+}
+.profile-actions { display: flex; gap: 10px; justify-content: center; margin: 8px 0 4px; }
+.follow-btn { min-width: 96px; }
+.follow-btn.on { background: #6a8a5a; color: #fff; }
+
+/* ---------- 标签栏（我的主页：作品/收藏/喜欢；他人主页：作品/推荐） ---------- */
+.tab-bar { display: flex; gap: 8px; margin-bottom: 10px; }
+.tab-btn {
+  flex: 1; padding: 8px 0; font-size: 13px;
+  background: #fdf6e3; color: #3a2a1a;
+  border: 3px solid #3a2a1a; box-shadow: 2px 2px 0 rgba(58, 42, 26, 0.3);
+  cursor: pointer; font-family: inherit;
+}
+.tab-btn:active { transform: translate(1px, 1px); }
+.tab-btn.on { background: #e8c14a; }
+.profile-tab-body { margin-bottom: 12px; }
+
+/* ---------- 私聊窗口头部头像 ---------- */
+.chat-header-avatar { display: inline-flex; vertical-align: middle; margin-right: 4px; }
+
+/* ---------- 统计/会话弹窗用户列表 ---------- */
+.user-list { display: flex; flex-direction: column; gap: 2px; }
+.user-list-item { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-top: 2px dashed rgba(58, 42, 26, 0.2); }
+.user-list-item .post-nick { flex: 1; }
+
+/* ---------- 编辑主页头像选择态 ---------- */
+.avatar-picker .px-avatar.picked { outline: 3px solid #d65a3a; outline-offset: -1px; }
+
+/* ---------- 软键盘与输入框防溢出（复用 v2.3.0 规则：chat-input-row input 已含 flex:1;min-width:0） ---------- */
+.chat-window, .comment-list { overflow-wrap: anywhere; word-break: break-word; }
+
+/* ============================================================
+ * v2.4.1 我的页登录视图：未登录登录卡片 / 登录弹窗表单 / 退出登录
+ * ============================================================ */
+.login-entry-card {
+  display: flex; align-items: center; gap: 10px;
+  width: 100%; padding: 14px 14px; margin: 4px 0 8px;
+  background: #fdf6e3; color: #3a2a1a; font-family: inherit; text-align: left;
+  border: 3px solid #3a2a1a; box-shadow: 3px 3px 0 rgba(58, 42, 26, 0.3);
+  cursor: pointer;
+}
+.login-entry-card:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 rgba(58, 42, 26, 0.3); }
+.login-entry-card .px-avatar { border-radius: 50%; }
+.login-entry-text { flex: 1; font-size: 15px; font-weight: 700; }
+.login-entry-arrow { font-size: 20px; color: #8a7a5a; }
+.login-entry-hint { font-size: 12px; color: #8a7a5a; text-align: center; margin: 0 0 10px; }
+
+/* 登录弹窗表单 */
+.login-form input {
+  width: 100%; box-sizing: border-box;
+  background: #fff8e6; border: 2px solid #3a2a1a; color: #3a2a1a;
+  padding: 8px 10px; font-family: inherit; font-size: 13px; margin-bottom: 6px;
+}
+.login-form input::placeholder { color: #b8a888; }
+
+/* 退出登录（红色像素按钮，置于我的页最底部） */
+.btn-danger {
+  background: #b23a2a; border-color: #6a2018; color: #fff;
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.3), 3px 3px 0 rgba(58, 42, 26, 0.35);
+}
+.btn-warn {
+  background: #e8c14a; border-color: #b0902a; color: #3a2a1a;
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.35), 3px 3px 0 rgba(58, 42, 26, 0.35);
+}
+.btn-logout { width: 100%; margin: 12px 0 4px; }

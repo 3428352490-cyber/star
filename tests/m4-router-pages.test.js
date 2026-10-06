@@ -111,22 +111,35 @@ test('M4-7b 历史公告页：展示全部公告 + 左上角返回公告主页',
   assert.equal(count(html, 'notice-item'), CONFIG.announcements.length, '历史页应展示全部公告');
   assert.ok(html.includes('历史公告'), '缺少历史页标题');
   assert.ok(html.includes('往期公告'), '缺少往期公告区块');
-  assert.ok(html.includes('data-route="#/news"'), '缺少返回公告主页按钮');
+  assert.ok(html.includes('data-action="nav-back"'), '缺少返回公告主页按钮');
   assert.ok(html.includes('v' + CONFIG.announcements[0].version), '历史页缺少最新公告版本徽标');
   if (CONFIG.announcements.length >= 2) {
     assert.ok(html.includes(CONFIG.announcements[1].version), '历史页缺少往期版本徽标');
   }
 });
 
-test('M4-8 我的页：游客资料卡 + 我的社区 + 主题开关 + 版本（无快捷键编辑条目）', () => {
+test('M4-8 我的页：未登录登录卡片 + 游客登录后个人主页（设置入口/关于保留，主题设置已迁移，无快捷键编辑条目）', () => {
   Store.load();
+  const API = ref('CommunityAPI');
+  if (typeof API !== 'undefined' && API.resetForTest) API.resetForTest();
+  // ① 未登录视图：登录卡片 + 设置入口 + 关于板块保留
+  const loginHtml = Pages.mine();
+  assert.ok(loginHtml.includes('login-entry-card') && loginHtml.includes('data-action="open-login"'), '未登录显示登录卡片');
+  assert.ok(loginHtml.includes('data-route="#/settings"'), '未登录视图缺少设置入口');
+  assert.ok(loginHtml.includes('v' + CONFIG.app.version), '关于区缺少版本号');
+  assert.ok(loginHtml.includes('data-action="open-admin"'), '缺少管理后台预留入口');
+  assert.ok(!loginHtml.includes('data-route="#/quick-edit"'), '我的页不应有快捷键编辑入口');
+  assert.ok(!loginHtml.includes('data-theme-follow'), '主题设置板块已迁移出我的页');
+  // ② 游客登录后：v2.4.0 个人主页
+  API.guestLogin();
   const html = Pages.mine();
-  assert.ok(html.includes('星露谷村民') || html.includes('account-text'), '缺少游客资料文案');
-  assert.ok(html.includes('account-card'), '缺少账号卡片');
-  assert.ok(html.includes('data-action="open-profile-modal"'), '账号卡应打开个人资料弹窗');
-  assert.ok(html.includes('我的帖子') && html.includes('我的点赞') && html.includes('我的收藏'), '缺少我的社区入口');
-  assert.ok(html.includes('data-theme-follow'), '缺少跟随系统开关');
-  assert.ok(html.includes('data-theme-manual="light"') && html.includes('data-theme-manual="dark"'), '缺少手动主题按钮');
+  assert.ok(html.includes('星露谷村民') || html.includes('profile-name'), '缺少游客昵称');
+  assert.ok(html.includes('profile-banner') && html.includes('stat-row'), '缺少个人主页背景区/统计行');
+  assert.ok(html.includes('data-action="edit-profile"'), '缺少编辑主页按钮');
+  assert.ok(html.includes('data-action="profile-tab" data-tab="posts"') && html.includes('data-tab="favorites"') && html.includes('data-tab="likes"'), '缺少作品/收藏/喜欢标签栏');
+  assert.ok(html.includes('data-route="#/settings"'), '已登录视图缺少设置入口');
+  assert.ok(!html.includes('data-action="logout"'), '退出按钮已迁移至设置页');
+  assert.ok(!html.includes('data-theme-follow'), '已登录视图不含主题设置开关（已迁移）');
   assert.ok(!html.includes('data-route="#/quick-edit"'), '我的页不应有快捷键编辑入口');
   assert.ok(html.includes('v' + CONFIG.app.version), '关于区缺少版本号');
   assert.ok(html.includes('data-action="open-admin"'), '缺少管理后台预留入口');

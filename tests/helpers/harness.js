@@ -94,21 +94,21 @@ function setupGlobals() {
     return els.get(key);
   };
 
-  const localStorage = {
-    store: {},
-    getItem(k) { return Object.prototype.hasOwnProperty.call(this.store, k) ? this.store[k] : null; },
-    setItem(k, v) { this.store[k] = String(v); },
-    removeItem(k) { delete this.store[k]; },
-    clear() { this.store = {}; },
+  /** 模拟真实 Storage：数据键为实例自有属性（Object.keys 可枚举），方法在原型不可枚举 */
+  function StorageMock() {}
+  Object.defineProperty(StorageMock.prototype, 'length', {
+    get() { return Object.keys(this).length; },
+  });
+  StorageMock.prototype.key = function key(i) { return Object.keys(this)[i] || null; };
+  StorageMock.prototype.getItem = function getItem(k) {
+    return Object.prototype.hasOwnProperty.call(this, k) ? this[k] : null;
   };
+  StorageMock.prototype.setItem = function setItem(k, v) { this[k] = String(v); };
+  StorageMock.prototype.removeItem = function removeItem(k) { delete this[k]; };
+  StorageMock.prototype.clear = function clear() { for (const k of Object.keys(this)) delete this[k]; };
 
-  const sessionStorage = {
-    store: {},
-    getItem(k) { return Object.prototype.hasOwnProperty.call(this.store, k) ? this.store[k] : null; },
-    setItem(k, v) { this.store[k] = String(v); },
-    removeItem(k) { delete this.store[k]; },
-    clear() { this.store = {}; },
-  };
+  const localStorage = new StorageMock();
+  const sessionStorage = new StorageMock();
 
   const mql = {
     matches: false,

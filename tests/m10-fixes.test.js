@@ -52,14 +52,14 @@ test('修复1b 端到端：点击「更多」成功打开编辑页，并可返�
   Router.handle();
   const edit = els.get('page-container');
   assert.ok(edit.innerHTML.includes('快捷键编辑'), '编辑页未打开');
-  assert.ok(edit.innerHTML.includes('data-route="#/home"'), '编辑页缺少返回首页按钮');
+  assert.ok(edit.innerHTML.includes('data-action="nav-back"'), '编辑页缺少返回按钮');
   assert.ok(!edit.innerHTML.includes('未找到该页面'), '不应提示页面不存在');
 
-  // 模拟点击编辑页返回按钮（data-route="#/home"）
+  // 模拟点击编辑页返回按钮（v2.4.3 层级返回上一级来源页）
   globalThis.__fireDoc('click', {
-    target: { closest: (sel) => (sel === '[data-route]' ? { dataset: { route: '#/home' } } : null) },
+    target: { closest: (sel) => (sel === '[data-action]' ? { dataset: { action: 'nav-back' } } : null) },
   });
-  assert.equal(globalThis.location.hash, '#/home', '返回未跳回首页');
+  assert.equal(globalThis.location.hash, '#/home', '返回未跳回来源页');
   Router.handle();
   const home = els.get('page-container');
   assert.ok(home.innerHTML.includes('快捷功能'), '返回后未渲染首页');
@@ -181,7 +181,7 @@ test('公告页改版：主页默认 3 条 + 「更多/收起」同页展开全�
   const hist = els.get('page-container');
   assert.equal(count(hist.innerHTML, 'notice-item'), list.length, '历史页应展示全部公告');
   assert.ok(hist.innerHTML.includes(list[1].version), '历史页缺少往期公告');
-  assert.ok(hist.innerHTML.includes('data-route="#/news"'), '历史页缺少返回公告主页按钮');
+  assert.ok(hist.innerHTML.includes('data-action="nav-back"'), '历史页缺少返回公告主页按钮');
 
   // 还原 hash
   globalThis.location.hash = '#/home';
