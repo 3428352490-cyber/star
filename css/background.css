@@ -55,6 +55,12 @@
   opacity: 1;
 }
 
+/* ---- 新旧背景互斥 ----
+ * 新背景轮换成功渲染（body.bg-live，由 background.js 在图片 onload 时标记）时，
+ * 隐藏旧版顶部背景大图 .app-bg，同一时间只渲染一张背景图，杜绝叠加重叠；
+ * 网络异常/图片加载失败时 body 无 .bg-live，旧版顶部背景自动恢复显示作为回退 */
+body.bg-live .app-bg { display: none; }
+
 /* ===== 背景调试面板（仅本机 localhost 显示；JS 负责渲染与显隐） ===== */
 .bg-debug-panel {
   position: fixed;

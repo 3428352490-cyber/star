@@ -93,12 +93,16 @@
       cur.classList.add('bg-next');
       cur.style.backgroundImage = 'none';
       layer.dataset.url = url;
+      // 新背景成功渲染：标记生效，CSS 据此隐藏旧版顶部背景大图，避免两图重叠
+      document.body.classList.add('bg-live');
     };
     img.onerror = function () {
       // 兜底：加载失败 → 背景层保持透明，沿用原本背景样式，页面不崩坏
       if (typeof console !== 'undefined') {
         console.warn('[bg] 背景加载失败，沿用原背景：' + url);
       }
+      // 新背景不可用：恢复旧版顶部背景大图作为回退
+      document.body.classList.remove('bg-live');
       layer.dataset.url = url; // 标记，避免反复尝试同一失败图
     };
     img.src = url;
