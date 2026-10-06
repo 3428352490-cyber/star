@@ -292,7 +292,10 @@ const App = (() => {
     if (typeof Pages === 'undefined') return;
     const query = (q || '').trim().toLowerCase();
     if (!query) {
-      box.innerHTML = Pages.emptyState('输入关键词，检索全部词条', '一期为基础检索框架，全量词条二期接入');
+      // 空查询：显示搜索空态（图标 + 提示文案）
+      box.innerHTML = (typeof Pages.searchEmptyHint === 'function')
+        ? Pages.searchEmptyHint()
+        : Pages.emptyState('输入关键词，检索全部词条', '一期为基础检索框架，全量词条二期接入');
       mountIcons(box);
       return;
     }

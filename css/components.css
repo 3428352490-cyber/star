@@ -263,6 +263,21 @@
 .search-carousel-item.carousel-in { top: 50%; }
 .search-carousel-item.carousel-out { top: -50%; }
 .search-hit-list { display: grid; gap: 8px; margin-top: 12px; }
+/* 搜索空态：居中像素图标 + 小字文案（图标走 data-icon 通道，放同名图片自动替换） */
+.search-empty-hint {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 12px; padding: 32px 12px; text-align: center;
+}
+.search-empty-icon {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 60px; height: 60px;
+  background: var(--bg-deep);
+  border: 3px solid var(--tile-border); border-radius: var(--radius);
+  font-size: 28px; color: var(--text-dim);
+  image-rendering: pixelated;
+}
+.search-empty-fallback { line-height: 1; }
+.search-empty-text { font-size: 13px; color: var(--text-dim); }
 /* 搜索结果按来源分组（首页功能 / 图鉴条目 / 帖子主题） */
 .search-hit-group { display: grid; gap: 6px; margin-bottom: 12px; }
 .search-hit-group:last-child { margin-bottom: 0; }

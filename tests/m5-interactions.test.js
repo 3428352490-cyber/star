@@ -140,7 +140,7 @@ test('M5-9 搜索输入：命中渲染、未命中空态、空查询空态', () 
   assert.ok(box.innerHTML.includes('未找到相关词条'), '未命中未提示');
 
   __fireDoc('input', { target: { id: 'search-input', value: '' } });
-  assert.ok(box.innerHTML.includes('输入关键词，检索全部词条'), '空查询未回空态');
+  assert.ok(box.innerHTML.includes('来搜索感兴趣的内容吧～'), '空查询未回空态');
 });
 
 test('M5-10 检查更新按钮：当前版本缺失 Updater 时安全空操作', () => {

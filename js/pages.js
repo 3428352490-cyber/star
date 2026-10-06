@@ -89,7 +89,15 @@ const Pages = (() => {
       '<div id="search-carousel" class="search-carousel" aria-hidden="true"></div>' +
       '</div>' +
       '<div id="search-panel" class="search-panel"></div>' +
-      '<div id="search-result" class="search-result">' + emptyState('输入关键词，检索全部词条', '一期为基础检索框架，全量词条二期接入') + '</div></section>';
+      '<div id="search-result" class="search-result">' + searchEmptyHint() + '</div></section>';
+  }
+
+  /** 搜索空态：居中像素图标 + 小字文案（图标走 data-icon 通道，放同名图片自动替换） */
+  function searchEmptyHint() {
+    return '<div class="search-empty-hint">' +
+      '<span class="search-empty-icon" data-icon="search-empty"><span class="search-empty-fallback">搜</span></span>' +
+      '<p class="search-empty-text">来搜索感兴趣的内容吧～</p>' +
+    '</div>';
   }
 
   /** 公告主页：默认只展示最近 3 条；右上角「更多」展开全部 / 再次点击收起 */
@@ -242,6 +250,6 @@ const Pages = (() => {
   return {
     home, codex, search, news, newsHistory, mine, quickEdit, modulePage, cardPage,
     community, postDetail, messages, minePosts, mineLikes, mineFavorites,
-    notFound, emptyState, filterModules, newsToggleMore, newsResetExpand,
+    notFound, emptyState, searchEmptyHint, filterModules, newsToggleMore, newsResetExpand,
   };
 })();

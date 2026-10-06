@@ -85,7 +85,8 @@ test('M4-6 搜索页：搜索框与结果区框架', () => {
   const html = Pages.search();
   assert.ok(html.includes('id="search-input"'), '缺少搜索输入框');
   assert.ok(html.includes('id="search-result"'), '缺少结果容器');
-  assert.ok(html.includes('输入关键词，检索全部词条'), '缺少空态提示');
+  assert.ok(html.includes('来搜索感兴趣的内容吧～'), '缺少空态提示');
+  assert.ok(html.includes('data-icon="search-empty"'), '空态图标应走图标替换通道');
 });
 
 test('M4-7 公告主页：默认展示最近 3 条公告 + 「更多/收起」切换（无当前版本卡片、无更新入口）', () => {
