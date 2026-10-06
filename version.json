@@ -1,5 +1,5 @@
 {
-  "latestVersion": "2.1.0",
-  "updateDesc": "搜索更聪明：新增搜索历史与 AI 搜索推荐，点一下直接搜",
+  "latestVersion": "2.1.1",
+  "updateDesc": "搜索模块重构修复4个问题",
   "downloadUrl": "./index.html"
 }
