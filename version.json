@@ -1,5 +1,5 @@
 {
-  "latestVersion": "2.1.1",
-  "updateDesc": "搜索模块重构修复4个问题",
+  "latestVersion": "2.1.2",
+  "updateDesc": "修复反复进出搜索页后，推荐词条点击、聚焦暂停轮播、搜索按钮与回车搜索失效的问题；搜索结果升级为全站检索，按来源分组展示",
   "downloadUrl": "./index.html"
 }

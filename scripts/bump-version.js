@@ -10,19 +10,20 @@
  *  · MAJOR（+1.0.0，其余归零）：颠覆性重构、不兼容旧数据、底层架构大规模改动
  *
  * 执行逻辑：
- *  ① 读取本次提交的改动清单（优先最近一次提交，无提交则读未提交改动）
+ *  ① 读取改动清单（默认最近一次提交；--push 模式读上次发版至今的全部提交）
  *  ② 依据改动类型自动选择递增规则（MAJOR > MINOR > PATCH）
  *  ③ 自动更新 version.json 版本号，同步写入 notice.json 本次更新公告
  *  ④ 输出新版本号 + 简短更新摘要（供 GitHub 提交备注）
  *
  * 约束：
- *  · 仅做版本判断、更新 version.json / notice.json、生成公告摘要；
+ *  · 默认仅做版本判断、更新 version.json / notice.json、生成公告摘要；
  *    不自动执行 git 提交与推送
  *  · 严格区分改动等级，禁止乱跳版本号
  *  · 可用 --major / --minor / --patch 显式指定类型（跳过自动判定）
- *
- * 注意（版本一致性提示）：发布时 js/config.js 的 app.version 与
- * sw.js 的 CACHE_NAME 需与 version.json 保持同步，脚本仅提示不修改。
+ *  · --push 模式：完整发布流程 —— ① 推送业务代码 ② 自动识别是否发版
+ *    （js/css/html/assets 业务文件改动即发版；仅文档/公告/测试不发版）
+ *    ③ 判定版本类型并递增 ④ 四文件同步（version.json / notice.json /
+ *    config.js / sw.js）+ 公告写入 ⑤ 提交版本文件并推送
  * ============================================================
  */
 
@@ -88,14 +89,27 @@ function bumpVersion(version, type) {
   }
 }
 
-/* ---------------- ① 读取本次改动清单 ---------------- */
+/* ---------------- ① 读取改动清单 ---------------- */
 
-/** 读取最近一次提交的改动清单与提交信息；无提交时回退到未提交改动 */
-function getChangeSet() {
+/** 读取最近一次提交（或指定 range）的改动清单与提交信息；无提交时回退到未提交改动 */
+function getChangeSet(range) {
   if (!hasGitRepo()) {
     return { files: [], message: '（非 git 仓库，无法读取改动清单）' };
   }
   try {
+    if (range) {
+      // --push 模式：合并 range 内全部提交的 message 与文件（去重）
+      const messages = git('log ' + range + ' --format=%s').split('\n').filter(Boolean);
+      const statuses = git('diff --name-status ' + range).split('\n').filter(Boolean);
+      const files = [];
+      const seen = {};
+      for (const line of statuses) {
+        const parts = line.split('\t');
+        const file = parts[parts.length - 1];
+        if (!seen[file]) { seen[file] = 1; files.push({ status: parts[0], file }); }
+      }
+      return { files, message: messages.join('；') || '（范围提交无信息）' };
+    }
     const out = git('show HEAD --name-status --format="%s"');
     const lines = out.split('\n');
     const message = (lines[0] || '').trim() || '（无提交信息）';
@@ -118,12 +132,28 @@ function getChangeSet() {
   }
 }
 
+/** --push 模式：上次发版（release:）提交至今的提交范围；无发版记录时取最近 3 条 */
+function getReleaseRange() {
+  try {
+    const last = git('log -1 --format=%H --grep="release:"');
+    if (last) return last + '..HEAD';
+  } catch (e) { /* 无发版记录 */ }
+  return 'HEAD~3..HEAD';
+}
+
+/** 业务代码是否发生改动（js/css/html/assets/sw）：是 → 需要发版；仅文档/公告/测试/脚本 → 不发版 */
+const RELEASE_FILE = /^(js\/|css\/|sw\.js$|assets\/|index\.html$)/;
+function isReleaseNeeded(files) {
+  return files.some((f) => RELEASE_FILE.test(f.file));
+}
+
 /* ---------------- ② 改动类型判定 ---------------- */
 
 // MAJOR：只有明确的"颠覆性 / 不兼容 / 架构级"信号才算（防止"重构"二字误升主版本）
 const MAJOR_KEYS = ['breaking', '不兼容', '迁移', '架构', '颠覆', '底层', '大规模', '数据结构变更', '不兼容旧数据'];
 // MINOR：复合词优先；裸"新增"仅在非修复语境下生效（fix 里"新增 xxx 函数/测试"不算新模块）
-const MINOR_KEYS = ['新页面', '新模块', '独立模块', '新增页面', '新增模块', '新增功能', '新增独立', '新增帖子', '新功能', 'feat:', '接入', '集成', '新增模组'];
+// 注意：裸 "feat:" 前缀不算 MINOR（小功能改动归 PATCH），仅"新增页面/独立模块"等复合词升级
+const MINOR_KEYS = ['新页面', '新模块', '独立模块', '新增页面', '新增模块', '新增功能', '新增独立', '新增帖子', '新功能', '接入', '集成', '新增模组'];
 // PATCH：小改动 / bug 修复 / 素材 / 文案 / 样式
 const PATCH_KEYS = ['fix', '修复', 'bug', '素材', '文案', '样式', '优化', '微调', '调整', '细节', '补丁'];
 
@@ -148,25 +178,26 @@ function judgeType({ files, message }) {
     return { type: 'minor', reason: '新增独立模块文件：' + newJsFiles.map((f) => f.file).join('、') };
   }
 
-  // ③ MINOR：提交信息命中新增页面 / 新模块 / 功能升级信号
+  // ③ MINOR：提交信息命中新增页面 / 新模块 / 功能升级信号（复合词）
   for (const k of MINOR_KEYS) {
     if (msg.includes(k)) {
       return { type: 'minor', reason: '提交信息命中「' + k + '」' };
     }
   }
-  // 非修复语境下的裸"新增"（如"新增社区板块"）→ MINOR
-  if (!isFixContext && msg.includes('新增')) {
-    return { type: 'minor', reason: '提交信息命中「新增」' };
-  }
 
-  // ④ PATCH：bug 修复 / 小改动 / 素材 / 文案 / 样式
+  // ④ PATCH：bug 修复 / 小改动 / 素材 / 文案 / 样式（优先于裸"新增"，防"新增样式类名"误升次版本）
   for (const k of PATCH_KEYS) {
     if (msg.includes(k)) {
       return { type: 'patch', reason: '提交信息命中「' + k + '」' };
     }
   }
 
-  // ⑤ 兜底：仅素材 / 样式 / 配置类文件改动 → PATCH
+  // ⑤ 非修复语境下的裸"新增"（如"新增社区板块"）→ MINOR
+  if (!isFixContext && msg.includes('新增')) {
+    return { type: 'minor', reason: '提交信息命中「新增」' };
+  }
+
+  // ⑥ 兜底：仅素材 / 样式 / 配置类文件改动 → PATCH
   const onlyCosmetic = files.length > 0 && files.every((f) =>
     /\.(css|json|png|jpg|svg|ico|txt|md)$/.test(f.file) ||
     /^assets\//.test(f.file)
@@ -175,7 +206,7 @@ function judgeType({ files, message }) {
     return { type: 'patch', reason: '仅素材 / 样式 / 配置类文件改动' };
   }
 
-  // ⑥ 无法明确判定：默认按最小等级 PATCH，并提示
+  // ⑦ 无法明确判定：默认按最小等级 PATCH，并提示
   return { type: 'patch', reason: '未命中明确信号，按最小等级 PATCH 处理（如有更大改动请用 --major / --minor 显式指定）' };
 }
 
@@ -204,26 +235,29 @@ function cleanTerm(s) {
   return t;
 }
 
-/** 从提交信息清洗生成简短更新摘要条目列表 */
+/** 从提交信息清洗生成简短更新摘要条目列表（每条取一个分句，截断到 45 字） */
 function buildSummaryItems(message) {
   if (!message || message.startsWith('（')) {
     return ['本次更新内容'];
   }
-  // 去掉 fix(scope): / feat: / release: 等前缀
-  let text = message
-    .replace(/^(fix|feat|refactor|chore|docs|release|style|test|perf|build|ci|merge)\s*(\([^)]*\))?\s*[:：]\s*/i, '')
-    .trim();
-  // 按分隔符拆条（——、；、。、！、？、,、.）
-  const parts = text
-    .split(/[———；;。!！?？,，]/)
-    .map((s) => s.trim())
-    .filter(Boolean);
-  // 清理技术词（安全替换）
-  const cleaned = (parts.length ? parts : [text]).map((s) => {
-    let t = cleanTerm(s);
-    return t.replace(/^[-·\s]+/, '').trim();
-  }).filter(Boolean);
-  return cleaned.length ? cleaned : ['本次更新内容'];
+  // 按提交拆分（多提交用；连接）→ 每条剥离 fix():/feat:/release: 前缀 → 取第一个分句
+  const commits = String(message).split(/[；;]\s*(?=fix|feat|release|refactor|chore|docs|style|test|perf|build|ci|merge)/i);
+  const items = [];
+  const seen = {};
+  for (const c of commits) {
+    let text = String(c)
+      .replace(/^(fix|feat|refactor|chore|docs|release|style|test|perf|build|ci|merge)\s*(\([^)]*\))?\s*[:：]\s*/i, '')
+      .trim();
+    if (!text) continue;
+    // 取第一个分句作为摘要
+    const first = text.split(/[———；;。!！?？,，]/)[0].trim();
+    const cleaned = cleanTerm(first).replace(/^[-·\s]+/, '').trim();
+    if (!cleaned || seen[cleaned]) continue;
+    seen[cleaned] = 1;
+    items.push(cleaned.length > 45 ? cleaned.slice(0, 45) + '…' : cleaned);
+    if (items.length >= 6) break; // 公告最多 6 条
+  }
+  return items.length ? items : ['本次更新内容'];
 }
 
 /* ---------------- 主流程 ---------------- */
@@ -232,16 +266,25 @@ function main() {
   const args = process.argv.slice(2);
   const forced = args.find((a) => /^(--major|--minor|--patch)$/.test(a));
   const forcedType = forced ? forced.slice(2) : null;
+  const isPushMode = args.includes('--push');
 
   // 读取旧版本号（以 version.json 为准）
   const versionData = readJson(VERSION_FILE);
   const oldVersion = String(versionData.latestVersion || '').trim();
   if (!oldVersion) throw new Error('version.json 缺少 latestVersion');
 
-  // ① 读取改动清单
-  const changeSet = getChangeSet();
+  // ① 读取改动清单（--push：上次发版以来的全部提交；默认：最近一次提交）
+  const range = isPushMode ? getReleaseRange() : null;
+  const changeSet = getChangeSet(range);
   console.log('本次改动文件：' + (changeSet.files.length ? changeSet.files.map((f) => f.file).join('、') : '（无）'));
   console.log('提交信息：' + changeSet.message);
+  if (isPushMode) {
+    console.log('判定范围：' + (range || '(未提交改动)'));
+    if (!isReleaseNeeded(changeSet.files)) {
+      console.log('本次改动仅含文档/公告/测试/脚本类文件，无需发版。');
+      return;
+    }
+  }
 
   // ② 类型判定
   let type, reason;
