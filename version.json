@@ -1,5 +1,5 @@
 {
-  "latestVersion": "2.4.15",
-  "updateDesc": "一键上传备用通道与网络自检：请求超时+自动重试最多3次，失败弹窗新增检测网络按钮，片段显示优化",
+  "latestVersion": "2.4.16",
+  "updateDesc": "一键上传绕过路径拦截修复：读取远程文件无认证优先绕过拦截，检测网络双段检测精准定位根因",
   "downloadUrl": "./index.html"
 }
