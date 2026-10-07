@@ -1,5 +1,5 @@
 {
-  "latestVersion": "2.4.25",
-  "updateDesc": "检查更新合并覆盖页面并自动刷新；新增版本号自动判定脚本",
+  "latestVersion": "2.4.26",
+  "updateDesc": "新增VERSION-RULES.md版本管理规则文档供后续AI自动读取，README与脚本注释同步引用",
   "downloadUrl": "./index.html"
 }
