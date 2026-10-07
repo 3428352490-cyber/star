@@ -94,6 +94,13 @@ const DevAdmin = (() => {
     ));
   }
 
+  /** 无缓存请求头：绕过浏览器与 GitHub Pages CDN 缓存，确保读取 data/page-content.json 总是拿最新内容 */
+  const NO_CACHE_HEADERS = {
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
+    'Pragma': 'no-cache',
+    'Expires': '0',
+  };
+
   /**
    * 一键提交推送：把本地已保存的「网页文本类 JSON 数据」提交到 GitHub 仓库 main 分支。
    * @param {object} opts { note, payload }
@@ -131,8 +138,9 @@ const DevAdmin = (() => {
         base + '/repos/' + encodeURIComponent(repo.owner) + '/' +
         encodeURIComponent(repo.repo) + '/contents/' +
         encodeURIComponent(repo.jsonPath) +
-        '?ref=' + encodeURIComponent(repo.branch || 'main'),
-        { headers: authHeaders }
+        '?ref=' + encodeURIComponent(repo.branch || 'main') +
+        '&t=' + Date.now(),
+        { headers: Object.assign({}, authHeaders, NO_CACHE_HEADERS) }
       );
       if (fileRes.ok) {
         const fileData = await fileRes.json();
@@ -786,9 +794,10 @@ const DevAdmin = (() => {
     const headers = {};
     if (token) headers.Authorization = 'Bearer ' + token;
     try {
-      // ① 清除本地业务修改缓存（页面文本/字体编辑 + 背景锁定），保留公告由远程驱动
+      // ① 清空当前页面该 json 的本地缓存（页面文本/字体编辑 + 字体配置 + 背景锁定）
       try {
         localStorage.removeItem(NS + 'page_edit');
+        localStorage.removeItem(NS + 'font_cfg');
         localStorage.removeItem('sdv_bg_lock');
       } catch (e) { /* 忽略 */ }
 
@@ -797,8 +806,9 @@ const DevAdmin = (() => {
         base + '/repos/' + encodeURIComponent(repo.owner) + '/' +
         encodeURIComponent(repo.repo) + '/contents/' +
         encodeURIComponent(repo.jsonPath) +
-        '?ref=' + encodeURIComponent(repo.branch || 'main'),
-        { headers: headers }
+        '?ref=' + encodeURIComponent(repo.branch || 'main') +
+        '&t=' + Date.now(),
+        { headers: Object.assign({}, headers, NO_CACHE_HEADERS) }
       );
       if (!res.ok) {
         const err = await safeJson(res);
@@ -817,12 +827,18 @@ const DevAdmin = (() => {
         try { remote = JSON.parse(content); } catch (e) { remote = {}; }
       }
 
-      // ③ 用远程业务数据回写本地缓存并即时重放页面
+      // ③ 用远程业务数据回写本地缓存并即时重放页面（刷新页面数据源 + UI 渲染）
       if (remote.pageEdit) setPageEdit(remote.pageEdit);
       if (remote.fontConfig) setFontConfig(remote.fontConfig);
+      // 远程公告数据若存在，同步进页面数据源（SDV_CONFIG.announcements），供公告页重渲染
+      if (remote.announcements && Array.isArray(remote.announcements) && typeof SDV_CONFIG !== 'undefined') {
+        SDV_CONFIG.announcements = remote.announcements;
+      }
       if (typeof applyPageEdits === 'function') applyPageEdits();
       if (typeof window !== 'undefined' && window.dispatchEvent) {
         window.dispatchEvent(new CustomEvent('sdv-page-edit-change', { detail: { applied: ['refresh-from-remote'] } }));
+        // 通知公告/页面渲染层重新拉取数据源并刷新 UI
+        window.dispatchEvent(new CustomEvent('sdv-content-refresh', { detail: { source: 'page-content.json' } }));
       }
       return { ok: true, message: '已刷新远程业务数据，页面已加载最新内容' };
     } catch (e) {
