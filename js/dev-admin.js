@@ -140,31 +140,51 @@ const DevAdmin = (() => {
       // ① 读取当前文件内容（获取 sha；弱网/拦截自动重试，最多 3 次）
       let sha = '';
       try {
-        const got = await withRetry(function () {
-          return fetchTimeout(
-            base + '/repos/' + encodeURIComponent(repo.owner) + '/' +
-            encodeURIComponent(repo.repo) + '/contents/' +
-            encodeURIComponent(repo.jsonPath) +
-            '?ref=' + encodeURIComponent(repo.branch || 'main') +
-            '&t=' + Date.now(),
-            { headers: Object.assign({}, authHeaders, NO_CACHE_HEADERS), redirect: 'manual' },
-            15000
-          ).then(async function (fileRes) {
-            if (fileRes.type === 'opaqueredirect' || fileRes.status === 301 || fileRes.status === 302 || fileRes.status === 307 || fileRes.status === 308) {
-              throw apiErr('token', 'GitHub API 重定向（Token 失效或未授权）：请重新生成有 contents 权限的 Token 再试');
-            }
-            if (fileRes.status === 401 || fileRes.status === 403) {
-              throw apiErr('token', 'Token 权限不足：请检查 GitHub Personal Access Token 是否有效且具备 contents 写权限');
-            }
-            if (fileRes.status === 404) return { sha: '' }; // 文件不存在则直接创建
-            if (fileRes.ok) {
-              const got = await safeJsonWithCheck(fileRes);
-              return { sha: (got && got.sha) || '' };
-            }
-            throw apiErr('other', '获取文件失败（' + fileRes.status + '）：请检查 Token 权限与仓库配置');
-          });
-        }, 3);
-        sha = got.sha;
+        // 0) 无认证优先读取（v2.4.16）：公开仓库无需 Token 即可读取 sha，
+        //    可绕过部分网络/代理对「带认证请求」的路径级拦截规则；
+        //    私有仓库或读取失败时自动回退到带 Token 流程。
+        const readUrl = base + '/repos/' + encodeURIComponent(repo.owner) + '/' +
+          encodeURIComponent(repo.repo) + '/contents/' +
+          encodeURIComponent(repo.jsonPath) +
+          '?ref=' + encodeURIComponent(repo.branch || 'main') + '&t=' + Date.now();
+        const anonRes = await fetchTimeout(
+          readUrl,
+          { headers: { 'Accept': 'application/vnd.github+json' }, redirect: 'manual' },
+          15000
+        );
+        if (anonRes.ok) {
+          try {
+            const anonData = await safeJsonWithCheck(anonRes);
+            if (anonData && anonData.sha) sha = anonData.sha;
+          } catch (anonErr) {
+            // 无认证读取异常（HTML 拦截 / JSON 异常）不阻塞，继续走带 Token 流程
+            if (anonErr.__class !== 'html' && anonErr.__class !== 'json') throw anonErr;
+          }
+        }
+        if (!sha) {
+          // 1) 带 Token 读取（私有仓库 / 文件不存在判断 / 无认证被拦）
+          const got = await withRetry(function () {
+            return fetchTimeout(
+              readUrl,
+              { headers: Object.assign({}, authHeaders, NO_CACHE_HEADERS), redirect: 'manual' },
+              15000
+            ).then(async function (fileRes) {
+              if (fileRes.type === 'opaqueredirect' || fileRes.status === 301 || fileRes.status === 302 || fileRes.status === 307 || fileRes.status === 308) {
+                throw apiErr('token', 'GitHub API 重定向（Token 失效或未授权）：请重新生成有 contents 权限的 Token 再试');
+              }
+              if (fileRes.status === 401 || fileRes.status === 403) {
+                throw apiErr('token', 'Token 权限不足：请检查 GitHub Personal Access Token 是否有效且具备 contents 写权限');
+              }
+              if (fileRes.status === 404) return { sha: '' }; // 文件不存在则直接创建
+              if (fileRes.ok) {
+                const got = await safeJsonWithCheck(fileRes);
+                return { sha: (got && got.sha) || '' };
+              }
+              throw apiErr('other', '获取文件失败（' + fileRes.status + '）：请检查 Token 权限与仓库配置');
+            });
+          }, 3);
+          sha = got.sha;
+        }
       } catch (ge) {
         return uploadErr(ge);
       }
@@ -282,10 +302,16 @@ const DevAdmin = (() => {
   }
 
   /**
-   * 网络连通自检（v2.4.15）：请求 api.github.com/rate_limit（无需 Token 即可返回 JSON），
-   * 判定当前网络能否直连 GitHub API —— 失败弹窗内点击「检测网络」按钮触发。
+   * 网络连通自检（v2.4.15 / 升级 v2.4.16）：两段检测，精准区分根因——
+   * 段① api.github.com/rate_limit（无认证）判定「能否直连 GitHub API」；
+   * 段② 仓库 contents 路径复现读取（无认证，公开仓库可读）判定「上传路径是否被网络/代理按规则拦截」。
+   * 上传失败弹窗内点击「检测网络」按钮触发。
    */
   async function checkGitHubConnectivity() {
+    const repo = getGitHubRepo();
+    const rate = { ok: false, kind: 'err', status: 0 };
+    const contents = { ok: false, kind: 'err', status: 0 };
+    // 段① 连通性：rate_limit（无需 Token 即可获得 JSON 响应）
     try {
       const res = await fetchTimeout(
         'https://api.github.com/rate_limit',
@@ -296,12 +322,48 @@ const DevAdmin = (() => {
       const text = String(await res.text() || '');
       const looksHtml = /<\s*!doctype|<\s*html/i.test(text);
       if (looksHtml || /html/.test(ct)) {
-        return { ok: false, kind: 'html', status: res.status, snippet: text.slice(0, 200) };
+        rate.ok = false; rate.kind = 'html'; rate.status = res.status;
+      } else {
+        rate.ok = true; rate.kind = 'json'; rate.status = res.status;
       }
-      return { ok: true, kind: 'json', status: res.status };
     } catch (e) {
-      return { ok: false, kind: (e && e.__class === 'net') ? 'net' : 'err', status: 0, message: (e && e.message) || '检测失败' };
+      rate.ok = false; rate.kind = (e && e.__class === 'net') ? 'net' : 'err'; rate.status = 0;
     }
+    // 段② 上传路径复现：仓库 contents 读取（无认证；公开仓库返回 JSON；被拦返回 HTML）
+    if (repo && repo.owner && repo.repo && repo.jsonPath) {
+      try {
+        const res = await fetchTimeout(
+          'https://api.github.com/repos/' + encodeURIComponent(repo.owner) + '/' +
+          encodeURIComponent(repo.repo) + '/contents/' +
+          encodeURIComponent(repo.jsonPath) +
+          '?ref=' + encodeURIComponent(repo.branch || 'main') + '&t=' + Date.now(),
+          { headers: { 'Accept': 'application/vnd.github+json' }, redirect: 'manual' },
+        10000
+        );
+        const ct = String((res.headers && res.headers.get && res.headers.get('Content-Type')) || '').toLowerCase();
+        const text = String(await res.text() || '');
+        const looksHtml = /<\s*!doctype|<\s*html/i.test(text);
+        if (looksHtml || /html/.test(ct)) {
+          contents.ok = false; contents.kind = 'html'; contents.status = res.status;
+        } else {
+          contents.ok = true; contents.kind = 'json'; contents.status = res.status;
+        }
+      } catch (e) {
+        contents.ok = false; contents.kind = (e && e.__class === 'net') ? 'net' : 'err'; contents.status = 0;
+      }
+    }
+    // 汇总结论：三段判断
+    if (rate.ok && contents.ok) {
+      return { ok: true, kind: 'ok', status: rate.status };
+    }
+    if (rate.ok && !contents.ok) {
+      // 连通但上传路径被拦：代理/网络按路径规则拦截 contents 请求
+      return { ok: false, kind: 'path-blocked', status: contents.status };
+    }
+    if (!rate.ok) {
+      return { ok: false, kind: rate.kind, status: rate.status };
+    }
+    return { ok: false, kind: 'err', status: 0 };
   }
 
   /** 失败弹窗「检测网络」按钮：执行自检并即时展示结果 */
@@ -315,8 +377,11 @@ const DevAdmin = (() => {
     const r = await checkGitHubConnectivity();
     if (btn) { btn.disabled = false; btn.textContent = '检测网络'; }
     if (r.ok) {
-      out.textContent = '✓ 可直连 api.github.com（返回 JSON），当前网络可上传，请直接重试';
+      out.textContent = '✓ 可直连 api.github.com 且上传路径可达（返回 JSON），当前网络可上传，请直接重试';
       out.className = 'dev-net-result ok';
+    } else if (r.kind === 'path-blocked') {
+      out.textContent = '✗ 网络可直连，但仓库 contents 路径被拦截（返回 HTML）：疑似 VPN/代理/加速类应用的路径规则，请关闭后重试或切换网络';
+      out.className = 'dev-net-result bad';
     } else if (r.kind === 'html') {
       out.textContent = '✗ 仍被拦截（返回 HTML）：当前网络无法直连 api.github.com，请切换网络（Wi-Fi / 手机流量 / 代理节点）后重试';
       out.className = 'dev-net-result bad';
