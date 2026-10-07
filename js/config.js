@@ -10,7 +10,7 @@
 const SDV_CONFIG = {
   app: {
     name: '星露谷攻略',
-    version: '2.4.13',
+    version: '2.4.14',
     /**
      * 云端版本清单地址（GitHub Pages 部署后替换为实际地址）：
      * 例如 'https://你的用户名.github.io/仓库名/version.json'
@@ -56,6 +56,16 @@ const SDV_CONFIG = {
 
   /** 软件公告（公告页渲染；新版本发布时向数组头部追加条目） */
   announcements: [
+    {
+      version: '2.4.14',
+      date: '2026-10-07',
+      title: '一键上传失败诊断增强',
+      notes: [
+        '上传失败弹窗新增诊断区：展示 HTTP 状态码、实际返回内容片段与针对性建议',
+        '自动区分根因：Token 失效 / GitHub 限流 / 仓库路径配置错误 / 网络拦截页',
+        '遇到上传失败时可一次性定位原因，按弹窗建议操作后重试即可',
+      ],
+    },
     {
       version: '2.4.13',
       date: '2026-10-07',

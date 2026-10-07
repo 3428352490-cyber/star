@@ -1,5 +1,5 @@
 {
-  "latestVersion": "2.4.13",
-  "updateDesc": "一键上传读取本地缓存改造：上传待修改数据而非页面旧内容，成功后自动同步刷新，失败保留数据可重试",
+  "latestVersion": "2.4.14",
+  "updateDesc": "一键上传失败诊断增强：失败弹窗展示HTTP状态码与返回内容片段，自动区分Token失效/限流/配置错误/网络拦截根因",
   "downloadUrl": "./index.html"
 }
