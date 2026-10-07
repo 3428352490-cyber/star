@@ -1111,42 +1111,67 @@ const DevAdmin = (() => {
       } catch (e) { /* 忽略 */ }
 
       // ② 重新 fetch 远程 jsonPath，拉取最新业务内容
-      const res = await fetch(
-        base + '/repos/' + encodeURIComponent(repo.owner) + '/' +
+      //    （v2.4.17 对齐上传流程：无认证优先读取绕过路径拦截 + 超时 + 自动重试）
+      const readUrl = base + '/repos/' + encodeURIComponent(repo.owner) + '/' +
         encodeURIComponent(repo.repo) + '/contents/' +
         encodeURIComponent(repo.jsonPath) +
         '?ref=' + encodeURIComponent(repo.branch || 'main') +
-        '&t=' + Date.now(),
-        { headers: Object.assign({}, headers, NO_CACHE_HEADERS), redirect: 'manual' }
-      );
-      if (res.type === 'opaqueredirect' || res.status === 301 || res.status === 302 || res.status === 307 || res.status === 308) {
-        return { ok: false, message: 'GitHub API 重定向（Token 失效或未授权）：请重新生成有 contents 权限的 Token 再试' };
-      }
-      if (res.status === 401 || res.status === 403) {
-        return { ok: false, message: 'Token 权限不足：请检查 GitHub Personal Access Token 是否有效' };
-      }
-      if (!res.ok) {
-        const err = await safeJson(res);
-        return { ok: false, message: '刷新远程业务数据失败（' + res.status + '）：' + ((err && err.message) || '请检查 Token 权限') };
-      }
-      let data;
-      try {
-        data = await safeJsonWithCheck(res);
-      } catch (re) {
-        if (re.__class === 'html') return { ok: false, message: 'GitHub API 请求异常（网络拦截/域名错误）：返回 HTML 而非 JSON。请检查：① Token 是否有效且具备 contents 权限 ② 手机网络能否直连 api.github.com（VPN/代理可能拦截） ③ 是否触发 GitHub 限流（稍后再试）', diag: { kind: 'html', status: re.status || 0, snippet: re.snippet || '', tip: diagnoseHtml(re.snippet, re.status).tip } };
-        if (re.__class === 'json') return { ok: false, message: '刷新远程业务数据失败：本地 JSON 格式错误，无法解析响应内容' };
-        throw re;
-      }
-      // 解码 base64 内容
-      let content = '';
-      if (data && data.content) {
-        try {
-          content = decodeURIComponent(escape(atob(data.content.replace(/\n/g, ''))));
-        } catch (e) { content = ''; }
-      }
+        '&t=' + Date.now();
       let remote = {};
-      if (content) {
-        try { remote = JSON.parse(content); } catch (e) { remote = {}; }
+      try {
+        // 0) 无认证优先读取（公开仓库可直接读最新内容）
+        const anonRes = await fetchTimeout(
+          readUrl,
+          { headers: { 'Accept': 'application/vnd.github+json' }, redirect: 'manual' },
+          15000
+        );
+        if (anonRes.ok) {
+          try {
+            const anonData = await safeJsonWithCheck(anonRes);
+            if (anonData && anonData.content) {
+              const content = decodeURIComponent(escape(atob(anonData.content.replace(/\n/g, ''))));
+              if (content) { try { remote = JSON.parse(content); } catch (e) { remote = {}; } }
+            }
+          } catch (anonErr) {
+            if (anonErr.__class !== 'html' && anonErr.__class !== 'json') throw anonErr;
+          }
+        }
+        // 1) 未取到则带 Token 重试（私有仓库 / 无认证被拦 / 文件不存在判断）
+        if (!Object.keys(remote).length) {
+          const got = await withRetry(function () {
+            return fetchTimeout(
+              readUrl,
+              { headers: Object.assign({}, headers, NO_CACHE_HEADERS), redirect: 'manual' },
+              15000
+            ).then(async function (res) {
+              if (res.type === 'opaqueredirect' || res.status === 301 || res.status === 302 || res.status === 307 || res.status === 308) {
+                throw apiErr('token', 'GitHub API 重定向（Token 失效或未授权）：请重新生成有 contents 权限的 Token 再试');
+              }
+              if (res.status === 401 || res.status === 403) {
+                throw apiErr('token', 'Token 权限不足：请检查 GitHub Personal Access Token 是否有效');
+              }
+              if (!res.ok) {
+                const err = await safeJson(res);
+                throw apiErr('other', '刷新远程业务数据失败（' + res.status + '）：' + ((err && err.message) || '请检查 Token 权限'));
+              }
+              const data = await safeJsonWithCheck(res);
+              let content = '';
+              if (data && data.content) {
+                try { content = decodeURIComponent(escape(atob(data.content.replace(/\n/g, '')))); } catch (e) { content = ''; }
+              }
+              let parsed = {};
+              if (content) { try { parsed = JSON.parse(content); } catch (e) { parsed = {}; } }
+              return parsed;
+            });
+          }, 3);
+          remote = got;
+        }
+      } catch (re) {
+        if (re && re.__class === 'html') return { ok: false, message: 'GitHub API 请求异常（网络拦截/域名错误）：返回 HTML 而非 JSON。请检查：① Token 是否有效且具备 contents 权限 ② 手机网络能否直连 api.github.com（VPN/代理可能拦截） ③ 是否触发 GitHub 限流（稍后再试）', diag: { kind: 'html', status: re.status || 0, snippet: re.snippet || '', tip: diagnoseHtml(re.snippet, re.status).tip } };
+        if (re && re.__class === 'token') return { ok: false, message: re.message };
+        if (re && re.__class === 'json') return { ok: false, message: '刷新远程业务数据失败：本地 JSON 格式错误，无法解析响应内容' };
+        if (re && re.__class === 'net') return { ok: false, message: '网络异常（网络拦截/域名错误）：无法连接 GitHub API 刷新远程数据，请检查网络后重试' };
+        return { ok: false, message: '刷新远程业务数据失败：' + ((re && re.message) || '未知错误') };
       }
 
       // ③ 用远程业务数据回写本地缓存并即时重放页面（刷新页面数据源 + UI 渲染）
@@ -1161,6 +1186,9 @@ const DevAdmin = (() => {
         window.dispatchEvent(new CustomEvent('sdv-page-edit-change', { detail: { applied: ['refresh-from-remote'] } }));
         // 通知公告/页面渲染层重新拉取数据源并刷新 UI
         window.dispatchEvent(new CustomEvent('sdv-content-refresh', { detail: { source: 'page-content.json' } }));
+        // v2.4.17 触发路由重渲染（hashchange 事件 → 当前页面重新渲染），
+        // 使公告/页面内容立即显示最新远程数据（仅派发自定义事件无监听方，页面不会刷新）
+        window.dispatchEvent(new HashChangeEvent('hashchange'));
       }
       return { ok: true, message: '已刷新远程业务数据，页面已加载最新内容' };
     } catch (e) {
