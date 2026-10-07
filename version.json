@@ -1,5 +1,5 @@
 {
-  "latestVersion": "2.4.16",
-  "updateDesc": "一键上传绕过路径拦截修复：读取远程文件无认证优先绕过拦截，检测网络双段检测精准定位根因",
+  "latestVersion": "2.4.17",
+  "updateDesc": "一键上传内容同步修复：刷新远程数据无认证优先绕过拦截，上传成功后自动重渲染页面，改动即时可见",
   "downloadUrl": "./index.html"
 }
