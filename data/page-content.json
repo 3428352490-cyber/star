@@ -1,13 +1,6 @@
 {
-  "generatedAt": "2026-10-07T11:29:05.320Z",
-  "pageEdit": {
-    "/home::0": {
-      "text": "星露谷",
-      "fontFamily": "\"Microsoft YaHei\", system-ui",
-      "fontSize": 22,
-      "weight": 700
-    }
-  },
+  "generatedAt": "2026-10-07T11:29:18.711Z",
+  "pageEdit": {},
   "fontConfig": {
     "template": "px-retro",
     "fontSize": 14,
