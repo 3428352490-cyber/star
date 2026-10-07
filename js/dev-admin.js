@@ -1171,6 +1171,19 @@ const DevAdmin = (() => {
         '?ref=' + encodeURIComponent(repo.branch || 'main') +
         '&t=' + Date.now();
       let remote = {};
+      // v2.4.21 raw 通道优先（raw.githubusercontent.com 普通 HTTPS，绕过 api.github.com 路径级拦截）
+      try {
+        const rawUrl = 'https://raw.githubusercontent.com/' + encodeURIComponent(repo.owner) + '/' +
+          encodeURIComponent(repo.repo) + '/' + encodeURIComponent(repo.branch || 'main') + '/' +
+          String(repo.jsonPath || '').split('/').map(encodeURIComponent).join('/') + '?t=' + Date.now();
+        const rawRes = await fetchTimeout(rawUrl, { redirect: 'follow' }, 15000);
+        if (rawRes && rawRes.ok) {
+          const rawText = await rawRes.text();
+          if (rawText && rawText.trim().charAt(0) === '{') {
+            try { remote = JSON.parse(rawText); } catch (e) { remote = {}; }
+          }
+        }
+      } catch (e) { /* raw 失败继续走 api 通道 */ }
       try {
         // 0) 无认证优先读取（公开仓库可直接读最新内容）
         const anonRes = await fetchTimeout(
@@ -1260,6 +1273,74 @@ const DevAdmin = (() => {
    *  - 静默失败：网络被拦/超时不影响页面正常使用（自动同步场景）；手动触发时 Toast 提示结果。
    * @param {boolean} manual 手动触发（管理面板「同步覆盖」按钮）时为 true，成功/失败均提示
    */
+  /**
+   * v2.4.21 多通道拉取远程 page-content.json：
+   * ① raw.githubusercontent.com 优先——普通 HTTPS CDN 路径，可绕过 api.github.com 的路径级拦截
+   *   （部分网络/代理只拦 api.github.com 的 /repos/.../contents/ 路径，raw 域名通常放行）；
+   * ② api.github.com 无认证（公开仓库）；③ api.github.com 带 Token（私有仓库/回退）。
+   * @param {object} repo 仓库配置 { owner, repo, branch, jsonPath }
+   * @param {string} token GitHub Token（可为空）
+   * @returns {Promise<{remote: object, via: string}>} remote 为空表示全部通道失败
+   */
+  async function fetchRemoteContentMulti(repo, token) {
+    const branch = encodeURIComponent(repo.branch || 'main');
+    const pathParts = String(repo.jsonPath || '').split('/').map(encodeURIComponent).join('/');
+    const apiUrl = 'https://api.github.com/repos/' + encodeURIComponent(repo.owner) + '/' +
+      encodeURIComponent(repo.repo) + '/contents/' + pathParts +
+      '?ref=' + branch + '&t=' + Date.now();
+    // ① raw 通道（无需认证；绕过 api.github.com 路径级拦截）
+    try {
+      const rawUrl = 'https://raw.githubusercontent.com/' + encodeURIComponent(repo.owner) + '/' +
+        encodeURIComponent(repo.repo) + '/' + branch + '/' + pathParts +
+        '?t=' + Date.now();
+      const rawRes = await fetchTimeout(rawUrl, { redirect: 'follow' }, 10000);
+      if (rawRes && rawRes.ok) {
+        const text = await rawRes.text();
+        if (text && text.trim().charAt(0) === '{') {
+          const parsed = JSON.parse(text);
+          if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+            return { remote: parsed, via: 'raw' };
+          }
+        }
+      }
+    } catch (e) { /* raw 失败继续走 api 通道 */ }
+    // ② api 无认证（公开仓库）
+    try {
+      const anonRes = await fetchTimeout(
+        apiUrl,
+        { headers: { 'Accept': 'application/vnd.github+json' }, redirect: 'manual' },
+        10000
+      );
+      if (anonRes.ok) {
+        try {
+          const anonData = await safeJsonWithCheck(anonRes);
+          const parsed = parseRemoteContent(anonData);
+          if (parsed) return { remote: parsed, via: 'api-anon' };
+        } catch (anonErr) {
+          if (anonErr.__class !== 'html' && anonErr.__class !== 'json') throw anonErr;
+        }
+      }
+    } catch (e) { /* 忽略继续 */ }
+    // ③ api 带 Token（私有仓库 / 无认证被拦回退）
+    if (token) {
+      try {
+        const got = await withRetry(function () {
+          return fetchTimeout(
+            apiUrl,
+            { headers: Object.assign({ Authorization: 'Bearer ' + token }, NO_CACHE_HEADERS), redirect: 'manual' },
+            10000
+          ).then(async function (res) {
+            if (!res.ok) throw apiErr('other', '读取远程内容失败（' + res.status + '）');
+            const d = await safeJsonWithCheck(res);
+            return parseRemoteContent(d) || {};
+          });
+        }, 2);
+        if (Object.keys(got).length) return { remote: got, via: 'api-token' };
+      } catch (e) { /* 忽略 */ }
+    }
+    return { remote: {}, via: '' };
+  }
+
   async function syncRemoteContent(manual) {
     const repo = getGitHubRepo();
     if (!repo || !repo.owner || !repo.repo || !repo.jsonPath) {
@@ -1274,45 +1355,8 @@ const DevAdmin = (() => {
     const localPageEdit = read('page_edit', null); // 本地未上传修改 → 同步时以本地为准
     const token = getGitHubToken();
     try {
-      const readUrl = base + '/repos/' + encodeURIComponent(repo.owner) + '/' +
-        encodeURIComponent(repo.repo) + '/contents/' +
-        encodeURIComponent(repo.jsonPath) +
-        '?ref=' + encodeURIComponent(repo.branch || 'main') + '&t=' + Date.now();
-      let remote = {};
-      try {
-        // 无认证优先读取（绕过带认证请求的路径级拦截；私有仓库自动回退带 Token）
-        const anonRes = await fetchTimeout(
-          readUrl,
-          { headers: { 'Accept': 'application/vnd.github+json' }, redirect: 'manual' },
-          10000
-        );
-        if (anonRes.ok) {
-          try {
-            const anonData = await safeJsonWithCheck(anonRes);
-            const parsed = parseRemoteContent(anonData);
-            if (parsed) remote = parsed;
-          } catch (anonErr) {
-            if (anonErr.__class !== 'html' && anonErr.__class !== 'json') throw anonErr;
-          }
-        }
-      } catch (anonErr) {
-        // 网络级异常（net）也进入带 Token 回退尝试；html/json 拦截静默跳过
-        if (anonErr.__class !== 'html' && anonErr.__class !== 'json' && anonErr.__class !== 'net') throw anonErr;
-      }
-      if (!Object.keys(remote).length && token) {
-        const got = await withRetry(function () {
-          return fetchTimeout(
-            readUrl,
-            { headers: Object.assign({ Authorization: 'Bearer ' + token }, NO_CACHE_HEADERS), redirect: 'manual' },
-            10000
-          ).then(async function (res) {
-            if (!res.ok) throw apiErr('other', '同步远程内容失败（' + res.status + '）');
-            const d = await safeJsonWithCheck(res);
-            return parseRemoteContent(d) || {};
-          });
-        }, 2);
-        remote = got;
-      }
+      // v2.4.21 多通道拉取：raw → api 无认证 → api 带 Token（绕过 api.github.com 路径级拦截）
+      const { remote, via } = await fetchRemoteContentMulti(repo, token);
       if (!Object.keys(remote).length) {
         if (manual && typeof Toast !== 'undefined') Toast.show('未能获取远程内容（网络/拦截），已保留本地内容');
         return { ok: false, message: '拉取远程内容失败' };
@@ -1540,7 +1584,7 @@ const DevAdmin = (() => {
   return {
     login, logout, getDevLogin, isDev,
     getGitHubToken, setGitHubToken, getGitHubRepo, setGitHubRepo,
-    pushToGitHub, buildPageContentPayload, refreshPageContentFromRemote, syncRemoteContent,
+    pushToGitHub, buildPageContentPayload, refreshPageContentFromRemote, syncRemoteContent, fetchRemoteContentMulti,
     openLoginModal, openAdminPanel, openBgLockModal, doLogout,
     enterEditMode, exitEditMode, savePageEdits, resetPageEdits, applyPageEdits,
     getPageEdit, setPageEdit, getFontConfig, setFontConfig,

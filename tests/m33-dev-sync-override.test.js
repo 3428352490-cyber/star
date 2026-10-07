@@ -39,12 +39,11 @@ test('M33-4 页面加载后自动静默同步挂载', () => {
   assert.ok(src.includes('}, 1200);'), '缺少延迟挂载块');
 });
 
-test('M33-5 同步链路复用安全通道：无认证优先+带Token回退+域名校验', () => {
+test('M33-5 同步链路复用安全通道：多通道拉取（raw→api无认证→api带Token）+域名校验', () => {
   const src = readAppFile('js/dev-admin.js');
   const seg = src.slice(src.indexOf('async function syncRemoteContent'), src.indexOf('/* ---------- 字体模板'));
-  assert.ok(seg.includes('const anonRes = await fetchTimeout('), '同步流程缺少无认证优先读取');
-  assert.ok(seg.includes("parseRemoteContent(anonData)"), '缺少远程内容解析');
-  assert.ok(seg.includes('await withRetry(function ()'), '缺少带 Token 回退重试');
-  assert.ok(seg.includes("'https://api.github.com'"), '缺少 API 域名常量');
+  assert.ok(seg.includes('await fetchRemoteContentMulti(repo, token)'), '同步流程缺少多通道拉取');
   assert.ok(seg.includes("new HashChangeEvent('hashchange')"), '缺少同步后重渲染派发');
+  assert.ok(src.includes("'https://raw.githubusercontent.com/'"), '缺少 raw 通道域名');
+  assert.ok(src.includes('GitHub API 域名异常，必须使用 api.github.com'), '缺少域名强制校验');
 });
