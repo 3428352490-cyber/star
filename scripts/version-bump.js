@@ -148,10 +148,10 @@ function classifyChanges(changes, opts) {
 
   /* MINOR 线索：新增独立模块 / 新增页面（向下兼容） */
   const minorReasons = [];
-  if (/(新增|新页面|新模块|新功能|独立模块|feature)/i.test(note)) {
-    minorReasons.push('提交说明含新增功能/模块关键词');
-  }
-  const addedJs = changes.files.filter((f) => /\.js$/.test(f.name) && f.added >= 150);
+  /* 新增独立脚本：仅统计业务代码新增（js/ 下），开发工具（scripts/）与测试（tests/）不算新功能模块 */
+  const addedJs = changes.files.filter((f) =>
+    /\.js$/.test(f.name) && !/^(scripts|tests|helpers)\//.test(f.name) && f.added >= 150
+  );
   if (addedJs.length > 0) {
     minorReasons.push('新增独立脚本文件 ' + addedJs.length + ' 个（新模块/新页面逻辑）');
   }
@@ -167,6 +167,11 @@ function classifyChanges(changes, opts) {
   if (!hasMajor && total >= 800) {
     minorReasons.push('改动规模中等（约 ' + total + ' 行）');
   }
+  /* note 关键词仅作弱线索：需配合真实新模块文件或中等规模才触发 MINOR（防误判工具/文案改动） */
+  const noteHasFeature = /(新增|新页面|新模块|新功能|独立模块|feature)/i.test(note);
+  if (noteHasFeature && (addedJs.length > 0 || total >= 800)) {
+    minorReasons.push('提交说明含新增功能关键词，且检测到独立模块/中等规模改动');
+  }
 
   /* 判定：MAJOR 权重最高 → MINOR → PATCH 兜底 */
   let type = 'patch';
@@ -176,6 +181,9 @@ function classifyChanges(changes, opts) {
     type = 'minor';
   } else if (total > 0) {
     reasons.push('小改动 / bug 修复 / 文案或素材微调（约 ' + total + ' 行，' + changes.files.length + ' 个文件）');
+    if (noteHasFeature) {
+      reasons.push('提示：提交说明含「新增」关键词但未检测到独立模块文件/中等规模改动，如需 MINOR 请用 --type=minor 指定');
+    }
   } else {
     reasons.push('未检测到改动（清单为空），默认按 PATCH 处理');
   }
@@ -266,7 +274,7 @@ function writeConfigJs(ann) {
     "      title: '" + ann.title + "',\n" +
     '      notes: [\n' + notesStr + '\n      ],\n' +
     '    },\n';
-  const annRe = /(announcements: \[\s*)/;
+  const annRe = /(announcements: \[\r?\n)/; // 兼容 LF / CRLF 行尾
   if (!annRe.test(src)) throw new Error('config.js 未找到 announcements 数组（结构变化，请人工核对）');
   src = src.replace(annRe, '$1' + entry);
   fs.writeFileSync(FILES.configJs, src, 'utf8');

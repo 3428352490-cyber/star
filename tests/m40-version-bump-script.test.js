@@ -52,8 +52,24 @@ test('M40-4 改动类型自动判定：新增独立脚本（新模块/新页面�
     deletedFiles: [],
   };
   assert.equal(VB.classifyChanges(changes, {}).type, 'minor', '新增独立脚本 → MINOR');
-  const byNote = VB.classifyChanges({ files: [{ name: 'js/app.js', added: 5, deleted: 2 }], totalAdded: 5, totalDeleted: 2, addedFiles: [], deletedFiles: [] }, { note: '新增帖子功能模块' });
-  assert.equal(byNote.type, 'minor', '提交说明含新增功能 → MINOR');
+  // note 关键词弱线索：仅有关键词、无独立模块文件/中等规模 → 不误判 MINOR
+  const byNoteOnly = VB.classifyChanges(
+    { files: [{ name: 'js/app.js', added: 5, deleted: 2 }], totalAdded: 5, totalDeleted: 2, addedFiles: [], deletedFiles: [] },
+    { note: '新增帖子功能模块' }
+  );
+  assert.equal(byNoteOnly.type, 'patch', '仅有新增关键词无文件证据 → 不应误判 MINOR');
+  // note 关键词 + 真实新增业务脚本 → MINOR
+  const byNoteWithFile = VB.classifyChanges(
+    { files: [{ name: 'js/posts-mod.js', added: 260, deleted: 0 }], totalAdded: 260, totalDeleted: 0, addedFiles: ['js/posts-mod.js'], deletedFiles: [] },
+    { note: '新增帖子功能模块' }
+  );
+  assert.equal(byNoteWithFile.type, 'minor', '关键词+新模块文件 → MINOR');
+  // 开发工具脚本（scripts/）不算新功能模块 → PATCH
+  const toolOnly = VB.classifyChanges(
+    { files: [{ name: 'scripts/version-bump.js', added: 470, deleted: 0 }], totalAdded: 470, totalDeleted: 0, addedFiles: ['scripts/version-bump.js'], deletedFiles: [] },
+    { note: '新增版本号自动判定脚本' }
+  );
+  assert.equal(toolOnly.type, 'patch', 'scripts/ 工具脚本不应判 MINOR');
 });
 
 test('M40-5 改动类型自动判定：重构/不兼容/大规模 → MAJOR', () => {
