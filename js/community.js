@@ -444,6 +444,8 @@ const Community = (() => {
    * 底部板块（v2.4.5）：设置入口 + 关于板块（「我的」页静态渲染仅这两栏）
    * 原第三栏「开发者管理面板」卡片已移除；开发者登录态的管理入口改由
    * DevAdmin.applyDevVisibility() 注入的 #dev-admin-panel 提供（仅开发者可见）。
+   * v2.4.24：关于板块新增「覆盖页面」入口（普通用户可用）——将管理面板的
+   * 「同步覆盖」功能合并进来，拉取云端最新内容覆盖到当前页面，无需开发者登录。
    */
   function renderMineLegacy() {
     return '<section class="card card-link" data-route="#/settings">' +
@@ -452,6 +454,7 @@ const Community = (() => {
       '<section class="card"><div class="card-head"><h2>关于</h2></div>' +
         '<div class="setting-row"><div class="setting-title">版本</div><div>v' + esc(SDV_CONFIG.app.version) + '</div></div>' +
         '<button class="row-btn" data-action="check-update"><span>检查更新</span><span>›</span></button>' +
+        '<button class="row-btn" data-action="sync-page-override"><span>覆盖页面</span><span>›</span></button>' +
       '</section>';
   }
 
