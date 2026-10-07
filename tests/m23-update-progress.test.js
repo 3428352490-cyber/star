@@ -31,11 +31,12 @@ test('M23-2 拉取进度弹窗：实时进度条 + 计数文字', () => {
   assert.ok(css.includes('.upd-progress-bar'), '缺少进度条像素样式');
 });
 
-test('M23-3 拉取完成弹窗：更新完成 + 确认按钮关闭', () => {
+test('M23-3 拉取完成弹窗：更新完成 + 自动刷新页面（v2.4.25 起无需手动刷新）', () => {
   const js = readAppFile('js/update.js');
   assert.ok(js.includes('更新完成'), '缺少【更新完成】提示弹窗');
-  assert.ok(js.includes("label: '确认'"), '完成弹窗缺少确认按钮');
-  assert.ok(js.includes('刷新页面即可使用最新内容'), '完成弹窗缺少刷新提示');
+  assert.ok(js.includes("label: '刷新页面'"), '完成弹窗缺少刷新按钮');
+  assert.ok(js.includes('页面即将自动刷新，加载最新内容…'), '完成弹窗缺少自动刷新提示');
+  assert.ok(js.includes('schedulePageReload()'), '缺少自动刷新调度');
 });
 
 test('M23-4 暂不更新逻辑保持不变：仅关闭弹窗，不获取内容，下次仍自动检测', () => {

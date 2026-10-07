@@ -534,16 +534,12 @@ const App = (() => {
         if (typeof Pages !== 'undefined' && Pages.newsToggleMore) { Pages.newsToggleMore(); render(); }
         break;
       case 'check-update':
-        // 【检查更新】备用手动入口：点击执行完整云端版本比对（自动检测同样调用 checkUpdate）
-        if (typeof Updater !== 'undefined' && Updater.checkUpdate) Updater.checkUpdate(true);
-        break;
-      case 'sync-page-override':
-        // v2.4.24 【覆盖页面】普通用户入口：拉取云端最新内容覆盖到当前页面（原管理面板「同步覆盖」合并至此）
+        // 【检查更新】v2.4.25 合并「覆盖页面」功能：先主动拉取云端最新内容覆盖页面状态，
+        // 再执行云端版本比对弹窗（更新完成自动刷新，见 update.js performUpdate）
         if (typeof DevAdmin !== 'undefined' && DevAdmin.syncRemoteContent) {
           DevAdmin.syncRemoteContent(true);
-        } else {
-          Toast.show('同步模块未就绪，请稍后重试');
         }
+        if (typeof Updater !== 'undefined' && Updater.checkUpdate) Updater.checkUpdate(true);
         break;
       case 'nav-save':
         saveQuickNav();

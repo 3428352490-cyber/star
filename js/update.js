@@ -390,9 +390,21 @@ const Updater = (() => {
    * 2) 逐个预取新版核心资源（绕过 HTTP 缓存强拉最新）写入「新版本号」缓存，
    *    单资源失败不中断（记录后继续），全部完成即视为拉取完成；
    * 3) 全部拉取完成后写入已确认版本，弹出【更新完成】确认弹窗——
-   *    点击确认仅关闭弹窗（新版资源已入缓存，下次刷新由新版 SW 接管生效）。
+   *    v2.4.25 修复：更新完成后自动刷新页面加载最新内容（确认按钮同样触发，
+   *    防重复刷新），不再需要用户反复手动刷新。
    * @param {{latestVersion: string, updateDesc: string, downloadUrl: string}} remote 云端版本信息
    */
+  let _updateRefreshScheduled = false; // v2.4.25 更新后自动刷新防重标志
+  function safePageReload() {
+    if (_updateRefreshScheduled) return;
+    _updateRefreshScheduled = true;
+    try { location.reload(); } catch (e) { /* 忽略 */ }
+  }
+  function schedulePageReload(delay) {
+    if (_updateRefreshScheduled) return;
+    _updateRefreshScheduled = true;
+    setTimeout(() => { try { location.reload(); } catch (e) { /* 忽略 */ } }, delay || 2500);
+  }
   async function performUpdate(remote) {
     const total = CORE_ASSETS.length;
     let done = 0;
@@ -438,27 +450,29 @@ const Updater = (() => {
     // 3) 写入已确认版本 → 完成弹窗 → 通知 SW 检查新版本
     setInstalledVersion(remote.latestVersion);
     log('update-done', 'success', '新版资源拉取完成', { remote: remote.latestVersion, total, done });
+    // v2.4.25 修复：更新完成后自动刷新页面，避免用户反复手动刷新
     Modal.show({
       title: '',
       body:
         '<h2 class="upd-title">更新完成</h2>' +
         '<p>新版本 v' + esc(remote.latestVersion) + ' 内容已全部拉取完成。</p>' +
-        '<p class="upd-done-tip">刷新页面即可使用最新内容。</p>',
+        '<p class="upd-done-tip">页面即将自动刷新，加载最新内容…</p>',
       actions: [
         {
-          label: '确认',
+          label: '刷新页面',
           cls: 'btn-primary',
           onClick: () => {
-            // 确认仅关闭完成弹窗；新版资源已预取，下次刷新由新版 SW 生效
-            log('update-done-close', 'success', '更新完成弹窗已关闭', { remote: remote.latestVersion });
+            log('update-done-close', 'success', '更新完成，确认刷新页面', { remote: remote.latestVersion });
+            safePageReload();
           },
         },
       ],
     });
+    schedulePageReload(); // 自动刷新兜底：完成弹窗展示后自动重载（与确认按钮共用防重标志）
     try {
       if (navigator.serviceWorker && navigator.serviceWorker.getRegistration) {
         const reg = await navigator.serviceWorker.getRegistration();
-        if (reg && reg.update) reg.update(); // 让新版 SW 接管，下次刷新生效
+        if (reg && reg.update) reg.update(); // 让新版 SW 接管，刷新后生效
       }
     } catch (e) { /* 通知失败不影响已完成的拉取 */ }
   }
