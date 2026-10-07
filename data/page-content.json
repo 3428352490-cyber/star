@@ -1,11 +1,11 @@
 {
-  "generatedAt": "2026-10-07T17:22:03.646Z",
+  "generatedAt": "2026-10-07T17:23:09.247Z",
   "pageEdit": {
     "/home::0": {
-      "text": "星露谷",
-      "fontFamily": "monospace",
-      "fontSize": 38,
-      "weight": 400
+      "text": "欢迎来到星露谷",
+      "fontFamily": "\"Microsoft YaHei\", system-ui",
+      "fontSize": 30,
+      "weight": 700
     }
   },
   "fontConfig": {
