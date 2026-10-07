@@ -151,7 +151,7 @@ const DevAdmin = (() => {
           const got = await safeJsonWithCheck(fileRes);
           sha = (got && got.sha) || '';
         } catch (ge) {
-          if (ge.__class === 'html') return { ok: false, message: 'GitHub API 请求异常（网络拦截/域名错误）：返回 HTML 而非 JSON，请确认请求域名为 api.github.com 且网络可用' };
+          if (ge.__class === 'html') return { ok: false, message: 'GitHub API 请求异常（网络拦截/域名错误）：返回 HTML 而非 JSON。请检查：① Token 是否有效且具备 contents 权限 ② 手机网络能否直连 api.github.com（VPN/代理可能拦截） ③ 是否触发 GitHub 限流（稍后再试）' };
           if (ge.__class === 'json') return { ok: false, message: '获取文件失败：本地 JSON 格式错误，无法解析响应内容' };
           throw ge;
         }
@@ -184,7 +184,7 @@ const DevAdmin = (() => {
         try {
           putData = await safeJsonWithCheck(putRes);
         } catch (pe) {
-          if (pe.__class === 'html') return { ok: false, message: 'GitHub API 请求异常（网络拦截/域名错误）：返回 HTML 而非 JSON，请确认请求域名为 api.github.com 且网络可用' };
+          if (pe.__class === 'html') return { ok: false, message: 'GitHub API 请求异常（网络拦截/域名错误）：返回 HTML 而非 JSON。请检查：① Token 是否有效且具备 contents 权限 ② 手机网络能否直连 api.github.com（VPN/代理可能拦截） ③ 是否触发 GitHub 限流（稍后再试）' };
           if (pe.__class === 'json') return { ok: false, message: '提交失败：本地 JSON 格式错误，无法解析响应内容' };
           throw pe;
         }
@@ -881,7 +881,7 @@ const DevAdmin = (() => {
       try {
         data = await safeJsonWithCheck(res);
       } catch (re) {
-        if (re.__class === 'html') return { ok: false, message: 'GitHub API 请求异常（网络拦截/域名错误）：返回 HTML 而非 JSON，请确认请求域名为 api.github.com 且网络可用' };
+        if (re.__class === 'html') return { ok: false, message: 'GitHub API 请求异常（网络拦截/域名错误）：返回 HTML 而非 JSON。请检查：① Token 是否有效且具备 contents 权限 ② 手机网络能否直连 api.github.com（VPN/代理可能拦截） ③ 是否触发 GitHub 限流（稍后再试）' };
         if (re.__class === 'json') return { ok: false, message: '刷新远程业务数据失败：本地 JSON 格式错误，无法解析响应内容' };
         throw re;
       }
