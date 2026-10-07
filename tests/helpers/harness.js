@@ -17,6 +17,7 @@ const APP_FILES = [
   'js/router.js',
   'js/review-log.js', 'js/self-check.js', 'js/security-guard.js',
   'js/update.js', 'js/app.js',
+  'js/dev-admin.js',
 ];
 
 function fakeEl(id) {

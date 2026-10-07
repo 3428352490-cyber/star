@@ -440,13 +440,14 @@ const Community = (() => {
       '<span class="stat-num">' + num + '</span><span class="stat-label">' + label + '</span></button>';
   }
 
-  /** 底部板块（v2.4.2+）：设置 / 管理后台 整卡可点击（无内部跳转文字），关于板块保留 */
-  function renderMineLegacy(t) {
+  /**
+   * 底部板块（v2.4.5）：设置入口 + 关于板块（「我的」页静态渲染仅这两栏）
+   * 原第三栏「开发者管理面板」卡片已移除；开发者登录态的管理入口改由
+   * DevAdmin.applyDevVisibility() 注入的 #dev-admin-panel 提供（仅开发者可见）。
+   */
+  function renderMineLegacy() {
     return '<section class="card card-link" data-route="#/settings">' +
         '<div class="card-head"><h2>设置</h2><span class="row-arrow">›</span></div>' +
-      '</section>' +
-      '<section class="card card-link" data-action="open-admin">' +
-        '<div class="card-head"><h2>管理后台</h2><span class="row-arrow">›</span></div>' +
       '</section>' +
       '<section class="card"><div class="card-head"><h2>关于</h2></div>' +
         '<div class="setting-row"><div class="setting-title">版本</div><div>v' + esc(SDV_CONFIG.app.version) + '</div></div>' +
@@ -464,24 +465,36 @@ const Community = (() => {
    * ============================================================ */
   function renderLoginEntry() {
     const me = CommunityAPI.getProfile();
-    return '<button class="login-entry-card" data-action="open-login">' +
+    const isDevNow = (typeof DevAdmin !== 'undefined') ? DevAdmin.isDev() : false;
+    if (isDevNow) {
+      const devLogin = DevAdmin.getDevLogin() || {};
+      return '<button class="login-entry-card dev-mode-card" data-action="dev-open-admin">' +
+          '<span class="login-entry-avatar">' + avatarOf(me, 'md') + '</span>' +
+          '<span class="login-entry-text">' + esc(devLogin.user || '已登录') + '</span>' +
+          '<span class="login-entry-dev-tag">已登录</span>' +
+        '</button>' +
+        '<p class="login-entry-hint">点击可进入管理面板</p>' +
+        renderMineLegacy();
+    }
+    return '<button class="login-entry-card" data-action="dev-open-admin">' +
         '<span class="login-entry-avatar">' + avatarOf(me, 'md') + '</span>' +
-        '<span class="login-entry-text">' + esc(me.nick) + '</span>' +
+        '<span class="login-entry-text">登录</span>' +
         '<span class="login-entry-arrow">›</span>' +
       '</button>' +
-      '<p class="login-entry-hint">登录后查看你的获赞、关注与帖子</p>' +
-      renderMineLegacy(mineTheme());
+      '<p class="login-entry-hint">点击登录，进入个人主页</p>' +
+      renderMineLegacy();
   }
 
   function renderMyProfile() {
-    // v2.4.1：无登录记录 → 未登录视图（游客登录后才能进入个人主页）
-    if (!CommunityAPI.getLoginState()) return renderLoginEntry();
+    // 游客未登录 且 非开发者 → 未登录视图；游客已登录 或 开发者已登录 → 个人主页
+    const guestLogged = CommunityAPI.getLoginState();
+    const isDevNow = (typeof DevAdmin !== 'undefined') ? DevAdmin.isDev() : false;
+    if (!guestLogged && !isDevNow) return renderLoginEntry();
 
     const me = CommunityAPI.getProfile();
     const likes = CommunityAPI.countAuthorLikes(me.id);
     const cnt = CommunityAPI.followCounts();
 
-    // 标签栏内容（作品 / 收藏 / 喜欢）
     const list = _mineTab === 'posts' ? CommunityAPI.fetchMyPosts()
       : _mineTab === 'favorites' ? CommunityAPI.fetchMyFavorites()
       : CommunityAPI.fetchMyLikes();
@@ -494,6 +507,10 @@ const Community = (() => {
       '<button class="tab-btn' + (_mineTab === k ? ' on' : '') + '" data-action="profile-tab" data-tab="' + k + '">' + label + '</button>'
     ).join('') + '</div>';
 
+    const devBadge = isDevNow
+      ? '<span class="dev-badge" title="开发者模式已开启">开发者</span>'
+      : '';
+
     return '<div class="profile-banner"></div>' +
       '<section class="card profile-main">' +
         '<div class="profile-avatar" data-avatar-user="' + esc(me.id) + '" title="我的主页">' + avatarOf(me, 'xl') + '</div>' +
@@ -503,13 +520,13 @@ const Community = (() => {
           statCell(cnt.following, '关注', 'following') +
           statCell(cnt.followers, '粉丝', 'followers') +
         '</div>' +
-        '<div class="profile-name">' + esc(me.nick) + '</div>' +
+        '<div class="profile-name">' + esc(me.nick) + ' ' + devBadge + '</div>' +
         '<p class="profile-bio">' + (me.bio ? esc(me.bio) : '这个人很懒，还没有填写简介') + '</p>' +
         '<button class="btn btn-primary profile-edit-btn" data-action="edit-profile">编辑主页</button>' +
       '</section>' +
       tabBar +
       '<section class="card profile-tab-body">' + tabBody + '</section>' +
-      renderMineLegacy(mineTheme());
+      renderMineLegacy();
   }
 
   /* ============================================================

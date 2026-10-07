@@ -44,8 +44,18 @@
     return 'assets/bg/' + season + '-' + period + '.png';
   }
 
+  /**
+   * 开发者权限判定：DevAdmin.isDev() 为 true 时开发者模式生效。
+   * 未登录（访客态）下，即便 localStorage 中存在旧的锁定值，也一律视为自动模式，
+   * 避免访客态意外读取到残留锁定导致背景被异常锁死。
+   */
+  function isDevAvailable() {
+    return typeof DevAdmin !== 'undefined' && DevAdmin.isDev();
+  }
+
   function readLock() {
     if (!BG.isLocal) return null;
+    if (!isDevAvailable()) return null; // 方案A：访客态忽略一切锁定
     try {
       var raw = localStorage.getItem(BG.lockKey);
       return raw ? JSON.parse(raw) : null;
@@ -56,7 +66,14 @@
 
   function writeLock(lock) {
     if (!BG.isLocal) return;
-    try { localStorage.setItem(BG.lockKey, JSON.stringify(lock)); } catch (e) { /* 忽略 */ }
+    if (!isDevAvailable()) return; // 方案A：访客态禁止写入锁定
+    try {
+      localStorage.setItem(BG.lockKey, JSON.stringify(lock));
+      // 通知 DevAdmin 侧刷新面板状态（若存在）
+      if (typeof window !== 'undefined' && window.dispatchEvent) {
+        window.dispatchEvent(new CustomEvent('sdv-bg-lock-change', { detail: { locked: !!(lock && lock.locked) } }));
+      }
+    } catch (e) { /* 忽略 */ }
   }
 
   /* ---------------- 背景层 ---------------- */
@@ -153,54 +170,24 @@
     applyBg(buildUrl(season, period));
   }
 
-  /* ---------------- 调试面板（仅 localhost 可见） ---------------- */
-
-  function buildDebugPanel() {
-    if (!BG.isLocal) return; // 线上普通用户看不到开关，只能自动模式
-    if (document.getElementById('bg-debug-panel')) return;
-    var panel = document.createElement('div');
-    panel.id = 'bg-debug-panel';
-    panel.className = 'bg-debug-panel';
-    panel.innerHTML =
-      '<h4>背景调试</h4>' +
-      '<label>季节 <select id="bg-season">' +
-      '<option value="spring">春</option><option value="summer">夏</option>' +
-      '<option value="autumn">秋</option><option value="winter">冬</option>' +
-      '</select></label>' +
-      '<label>时段 <select id="bg-period">' +
-      '<option value="morning">清晨</option><option value="day">白天</option>' +
-      '<option value="dusk">黄昏</option><option value="night">夜晚</option>' +
-      '</select></label>' +
-      '<button type="button" id="bg-lock-btn">锁定当前</button>' +
-      '<button type="button" id="bg-auto-btn">恢复自动</button>';
-    document.body.appendChild(panel);
-
-    var seasonSel = document.getElementById('bg-season');
-    var periodSel = document.getElementById('bg-period');
-    var lock = readLock();
-    if (lock && lock.locked) {
-      seasonSel.value = lock.season;
-      periodSel.value = lock.period;
-    }
-    var applyLock = function () {
-      writeLock({ locked: true, season: seasonSel.value, period: periodSel.value });
-      check();
-    };
-    document.getElementById('bg-lock-btn').addEventListener('click', applyLock);
-    document.getElementById('bg-auto-btn').addEventListener('click', function () {
-      writeLock({ locked: false });
-      check();
-    });
-    seasonSel.addEventListener('change', applyLock);
-    periodSel.addEventListener('change', applyLock);
-  }
-
-  /* ---------------- 启动 ---------------- */
+  /* ---------------- 启动（外显浮动调试表格窗口已移除） ----------------
+   * 背景锁定功能保留：由 DevAdmin 管理面板「打开背景锁定窗口」入口弹窗（openBgLockModal）
+   * 唤起，写读锁定值逻辑 readLock/writeLock/check 完全不变；
+   * 此模块不再渲染任何页面上的直接外显锁定表格窗口。 */
 
   function start() {
     ensureLayer();
     check();                    // 页面打开立即执行一次背景判断
-    buildDebugPanel();
+    // 监听 DevAdmin 登录态变化：登出 → 清除残留锁定并恢复自动切换（外显面板已移除，仅做逻辑联动）
+    window.addEventListener('sdv-dev-state-change', function (e) {
+      var dev = e.detail && e.detail.dev;
+      if (!dev) {
+        try { localStorage.removeItem(BG.lockKey); } catch (err) {}
+        check();
+      } else {
+        check();
+      }
+    });
     setInterval(check, BG.checkIntervalMs); // 每 10 分钟自动检测
     document.addEventListener('visibilitychange', function () {
       if (!document.hidden) check(); // 切回前台立即刷新

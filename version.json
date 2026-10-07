@@ -1,5 +1,5 @@
 {
-  "latestVersion": "2.4.4",
-  "updateDesc": "更新弹窗优化：立即更新展示拉取进度并确认完成，版本一致时明确提示已是最新版本",
+  "latestVersion": "2.4.7",
+  "updateDesc": "开发者模式上线：全局编辑工具条 + 文字可视化编辑 + 管理面板精简 + 一键上传GitHub，未登录不影响普通浏览",
   "downloadUrl": "./index.html"
 }

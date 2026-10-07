@@ -1,0 +1,216 @@
+/* ============================================================
+ * DevAdmin 开发者管理系统（v2.4.7）
+ * 沿用现有星露谷像素卡片风格：直角 / 粗像素边框 / 高饱和复古配色
+ * 全局编辑工具条（每页右上角）+ 编辑模式 + 节点文字编辑弹窗 + 管理面板（两块）
+ * ============================================================ */
+
+/* ---------- 开发者登录卡片（我的页未登录/已登录态） ---------- */
+.login-entry-card.dev-mode-card {
+  background: #e8f0d8;
+  border-color: #3a5a2a;
+  box-shadow: 3px 3px 0 rgba(58, 90, 42, 0.35);
+}
+.login-entry-card.dev-mode-card:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 rgba(58, 90, 42, 0.35); }
+.login-entry-dev-tag {
+  display: inline-block; padding: 2px 8px;
+  font-size: 11px; font-weight: 700;
+  background: #6a8a5a; color: #fff;
+  border: 2px solid #3a5a2a;
+}
+
+/* 开发者登录弹窗：表单内加提示小字 */
+.dev-login-form .login-form-hint {
+  font-size: 11px; color: #8a7a5a; line-height: 1.5;
+  padding: 4px 0 0; margin: 0;
+}
+
+/* ---------- 开发者专属管理卡片（我的页底部） ---------- */
+.card.dev-card {
+  border-color: #3a5a2a;
+  box-shadow: inset 0 0 0 2px #fff, 4px 4px 0 rgba(58, 90, 42, 0.35);
+}
+.card.dev-card .card-head h2 { color: #3a5a2a; }
+.dev-badge-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 0 4px;
+  border-top: 1px dashed rgba(58, 42, 26, 0.25);
+  margin-top: 6px;
+}
+.dev-badge {
+  display: inline-block; padding: 3px 10px;
+  font-size: 11px; font-weight: 700;
+  background: #6a8a5a; color: #fff;
+  border: 2px solid #3a5a2a;
+  image-rendering: pixelated;
+}
+.dev-badge-sub { font-size: 12px; color: #5a4a2a; flex: 1; }
+.dev-logout-btn {
+  padding: 4px 10px; font-size: 12px;
+  background: #fdf6e3; color: #3a2a1a;
+  border: 2px solid #3a2a1a; cursor: pointer; font-family: inherit;
+}
+.dev-logout-btn:active { background: #d65a3a; color: #fff; }
+
+/* 我的页个人主页开发者徽章（昵称右侧） */
+.profile-name .dev-badge {
+  margin-left: 6px; font-size: 10px; vertical-align: middle;
+}
+
+/* ============================================================
+ * 全局编辑工具条（每个页面右上角，仅开发者可见）
+ * ============================================================ */
+.dev-edit-toolbar {
+  position: fixed; top: 10px; right: 12px; z-index: 90;
+  display: flex; gap: 6px;
+}
+.dev-edit-toolbar .pixel-btn {
+  padding: 5px 12px; font-size: 12px;
+  background: #6a8a5a; color: #fff;
+  border: 2px solid #3a5a2a;
+  image-rendering: pixelated;
+}
+.dev-edit-toolbar .pixel-btn:active { transform: translate(1px, 1px); }
+.dev-edit-toolbar .dev-edit-save { background: #2e6bd8; border-color: #1d4a9e; }
+.dev-edit-toolbar .dev-edit-reset { background: #d65a3a; border-color: #8a2f1d; }
+
+/* 编辑模式：页面文字板块变为可点击选中态（虚线像素框 + 悬停高亮 + 指针） */
+body.dev-editing #page-container {
+  outline: 2px dashed rgba(106, 138, 90, 0.5);
+  outline-offset: 4px;
+}
+body.dev-editing #page-container .page-header h1,
+body.dev-editing #page-container .card-head h2,
+body.dev-editing #page-container h1,
+body.dev-editing #page-container h2,
+body.dev-editing #page-container h3,
+body.dev-editing #page-container h4,
+body.dev-editing #page-container .tile-label,
+body.dev-editing #page-container .notice-head h3,
+body.dev-editing #page-container .post-nick,
+body.dev-editing #page-container .profile-name,
+body.dev-editing #page-container .profile-bio,
+body.dev-editing #page-container .stat-label,
+body.dev-editing #page-container .setting-title,
+body.dev-editing #page-container .setting-desc,
+body.dev-editing #page-container .empty-sub,
+body.dev-editing #page-container .card-foot,
+body.dev-editing #page-container .conv-nick,
+body.dev-editing #page-container .chat-nick {
+  cursor: pointer;
+  outline: 1px dashed rgba(106, 138, 90, 0.45);
+  outline-offset: 2px;
+  transition: background 0.15s, outline-color 0.15s;
+}
+body.dev-editing #page-container [data-dev-key]:hover,
+body.dev-editing #page-container [data-dev-key]:focus {
+  outline: 2px solid #6a8a5a;
+  background: rgba(106, 138, 90, 0.14);
+}
+
+/* ============================================================
+ * 节点文字编辑弹窗（文本 + 像素字体模板 + 字号 + 实时预览）
+ * ============================================================ */
+.dev-node-edit {
+  display: flex; flex-direction: column; gap: 8px;
+  padding: 10px; background: #fff8e6;
+  border: 2px solid rgba(58, 42, 26, 0.2);
+}
+.dev-node-edit input[type="text"] {
+  width: 100%; box-sizing: border-box;
+  background: #fff; border: 2px solid #3a2a1a; color: #3a2a1a;
+  padding: 6px 8px; font-family: inherit; font-size: 13px;
+}
+.dev-node-preview {
+  margin-top: 4px; padding: 10px;
+  background: #fdf6e3; border: 2px dashed rgba(58, 42, 26, 0.3);
+  min-height: 40px; image-rendering: pixelated;
+  word-break: break-word;
+}
+.dev-size-slider {
+  width: 100%; accent-color: #3a5a2a; cursor: pointer; margin-top: 4px;
+}
+
+/* ============================================================
+ * 开发者管理面板（仅开发者登录态渲染，两大板块）
+ * ============================================================ */
+.admin-panel {
+  border-color: #3a5a2a;
+  background-image: var(--wood-texture);
+}
+.admin-panel .card-head h2 { color: #3a5a2a; text-shadow: 2px 2px 0 rgba(58, 90, 42, 0.3); }
+.admin-panel .card-head { display: flex; align-items: center; justify-content: space-between; }
+
+.admin-block {
+  padding: 12px 0;
+  border-top: 2px dashed rgba(58, 42, 26, 0.2);
+}
+.admin-block:first-of-type { border-top: none; padding-top: 4px; }
+.admin-block h3 { font-size: 14px; color: #3a5a2a; margin-bottom: 4px; }
+.admin-row-actions {
+  display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px;
+}
+
+/* GitHub 表单区：像素风输入框 */
+.admin-github-form {
+  display: flex; flex-direction: column; gap: 6px;
+  padding: 10px;
+  background: #fdf6e3;
+  border: 2px solid rgba(58, 42, 26, 0.2);
+  margin-top: 8px;
+}
+.admin-github-form .form-label { font-size: 11px; color: #5a4a2a; }
+.admin-github-form input {
+  width: 100%; box-sizing: border-box;
+  background: #fff8e6; border: 2px solid #3a2a1a; color: #3a2a1a;
+  padding: 7px 9px; font-family: inherit; font-size: 13px;
+}
+.admin-github-form input[type="password"] { letter-spacing: 1px; }
+.admin-github-status { font-size: 12px; color: #5a4a2a; margin-top: 8px; }
+.admin-github-hint {
+  font-size: 11px; color: #8a7a5a; margin-top: 6px; line-height: 1.5;
+  padding: 6px 8px;
+  background: rgba(232, 193, 74, 0.18);
+  border-left: 3px solid #e8c14a;
+}
+
+/* ---------- 一键上传GitHub按钮（像素风，主操作色） ---------- */
+.btn-upload {
+  background: #6a8a5a; color: #fff;
+  border: 2px solid #3a5a2a;
+  font-size: 13px; padding: 7px 14px;
+}
+.btn-upload:active { transform: translate(1px, 1px); background: #3a5a2a; }
+
+/* ---------- 一键上传确认弹窗：本次修改内容摘要 ---------- */
+.dev-upload-summary {
+  margin-top: 8px; padding: 8px;
+  background: #fff8e6; border: 2px solid rgba(58, 42, 26, 0.2);
+  display: flex; flex-direction: column; gap: 6px;
+}
+.dev-upload-pre {
+  margin: 0; padding: 8px;
+  background: #fdf6e3; border: 2px solid rgba(58, 42, 26, 0.15);
+  font-family: monospace; font-size: 11px; line-height: 1.6;
+  white-space: pre-wrap; word-break: break-word; max-height: 220px; overflow: auto;
+}
+
+/* ---------- 背景锁定窗口弹窗（chip 选择行） ---------- */
+.bg-lock-form { display: flex; flex-direction: column; gap: 10px; }
+.chip-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.chip-row .chip {
+  flex: none; padding: 6px 12px;
+  background: #fdf6e3; color: #3a2a1a;
+  border: 2px solid #3a2a1a;
+}
+.chip-row .chip.active { background: #6a8a5a; color: #fff; border-color: #3a5a2a; }
+
+/* ============================================================
+ * 权限兜底：游客/未登录隐藏全部开发者入口、编辑控件、一键上传按钮
+ * #dev-admin-panel 与 #dev-edit-toolbar 由 JS 仅 dev 态注入；
+ * CSS 双保险，一旦 DOM 残留也强制隐藏普通用户不可见
+ * ============================================================ */
+body:not(.dev-mode) #dev-admin-panel { display: none !important; }
+body:not(.dev-mode) #dev-edit-toolbar { display: none !important; }
+body:not(.dev-mode) .btn-upload { display: none !important; }
+
+/* 星露谷像素卡片风格保持一致：直角 / 粗像素边框 / 高饱和撞色 */

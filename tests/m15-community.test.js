@@ -116,7 +116,10 @@ test('M15-7 页面骨架：社区列表 / 帖子详情 / 消息页 / 我的子�
   const minePosts = Community.renderMinePosts();
   assert.ok(minePosts.includes('我的帖子'), '我的帖子页骨架缺失');
   API.guestLogin(); // v2.4.1：个人主页需游客登录后可见
-  assert.ok(Pages.mine().includes('open-admin'), '我的页缺少管理后台预留入口');
+  // v2.4.5+：第三栏「开发者管理面板」已删除，游客态底部仅保留设置 + 关于两栏
+  assert.ok(!Pages.mine().includes('dev-card'), '游客态不渲染开发者管理面板卡片（第三栏已删）');
+  assert.ok(Pages.mine().includes('data-route="#/settings"'), '底部保留设置入口');
+  assert.ok(Pages.mine().includes('关于'), '底部保留关于板块');
   assert.ok(Pages.mine().includes('data-action="profile-tab" data-tab="posts"'), '我的页缺少作品标签（v2.4.0 标签栏）');
 });
 

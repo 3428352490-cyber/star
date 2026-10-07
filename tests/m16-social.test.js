@@ -155,9 +155,13 @@ test('M16-13 我的主页渲染：统计行/标签栏/编辑主页 + 底部设�
   assert.ok(!html.includes('主题设置'), '主题设置板块已迁移至设置页');
   assert.ok(html.includes('class="card card-link" data-route="#/settings"'), '设置板块整卡可点击');
   assert.ok(!html.includes('进入设置'), '设置板块已移除内部跳转文字');
-  assert.ok(html.includes('管理后台'), '底部管理后台独立板块');
-  assert.ok(html.includes('class="card card-link" data-action="open-admin"'), '管理后台板块整卡可点击');
-  assert.ok(!html.includes('管理后台（预留）'), '管理后台板块已移除内部跳转文字');
+  // v2.4.5：原「管理后台」占位板块已替换为 DevAdmin 开发者入口（仅开发者登录态渲染 dev-card）
+  // v2.4.5+：第三栏「开发者管理面板」已删除；游客登录（非开发者）不渲染任何开发者板块
+  assert.ok(!html.includes('dev-card'), '游客态不渲染开发者管理面板卡片（第三栏已删）');
+  assert.ok(!html.includes('dev-badge'), '游客态无开发者标识');
+  assert.ok(!html.includes('dev-open-admin'), '游客态页面无开发者入口触发点');
+
+  assert.ok(!html.includes('管理后台（预留）'), '原预留文案已移除（v2.4.5 改为 DevAdmin）');
   assert.ok(!html.includes('更多'), '无更多板块');
   assert.ok(html.includes('关于'), '底部保留关于板块');
   assert.ok(html.includes('data-action="check-update"'), '版本检测保留');

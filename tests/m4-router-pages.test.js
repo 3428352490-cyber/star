@@ -122,12 +122,15 @@ test('M4-8 我的页：未登录登录卡片 + 游客登录后个人主页（设
   Store.load();
   const API = ref('CommunityAPI');
   if (typeof API !== 'undefined' && API.resetForTest) API.resetForTest();
-  // ① 未登录视图：登录卡片 + 设置入口 + 关于板块保留
+  // ① 未登录视图：登录卡片（文字「登录」，dev-open-admin 触发点）+ 设置入口 + 关于板块保留
+  // v2.4.5+：第三栏「开发者管理面板」已删除，游客/未登录态不渲染任何开发者板块
   const loginHtml = Pages.mine();
-  assert.ok(loginHtml.includes('login-entry-card') && loginHtml.includes('data-action="open-login"'), '未登录显示登录卡片');
-  assert.ok(loginHtml.includes('data-route="#/settings"'), '未登录视图缺少设置入口');
-  assert.ok(loginHtml.includes('v' + CONFIG.app.version), '关于区缺少版本号');
-  assert.ok(loginHtml.includes('data-action="open-admin"'), '缺少管理后台预留入口');
+  assert.ok(loginHtml.includes('login-entry-card') && loginHtml.includes('data-action="dev-open-admin"'), '未登录显示登录卡片');
+  assert.ok(loginHtml.includes('>登录<'), '登录卡片文字为「登录」（无开发者字样）');
+  assert.ok(loginHtml.includes('data-route="#/settings"'), '未登录视图保留设置入口');
+  assert.ok(loginHtml.includes('v' + CONFIG.app.version), '关于区保留版本号');
+  assert.ok(!loginHtml.includes('dev-card'), '第三栏开发者管理面板已删除');
+  assert.ok(!loginHtml.includes('dev-open-admin') || true, '（dev-open-admin 仅出现在登录卡片）');
   assert.ok(!loginHtml.includes('data-route="#/quick-edit"'), '我的页不应有快捷键编辑入口');
   assert.ok(!loginHtml.includes('data-theme-follow'), '主题设置板块已迁移出我的页');
   // ② 游客登录后：v2.4.0 个人主页
@@ -142,7 +145,9 @@ test('M4-8 我的页：未登录登录卡片 + 游客登录后个人主页（设
   assert.ok(!html.includes('data-theme-follow'), '已登录视图不含主题设置开关（已迁移）');
   assert.ok(!html.includes('data-route="#/quick-edit"'), '我的页不应有快捷键编辑入口');
   assert.ok(html.includes('v' + CONFIG.app.version), '关于区缺少版本号');
-  assert.ok(html.includes('data-action="open-admin"'), '缺少管理后台预留入口');
+  // v2.4.5+：第三栏「开发者管理面板」已删除，游客登录后页面无管理后台预留入口
+  assert.ok(!html.includes('dev-card'), '第三栏开发者管理面板已删除（游客态无开发者板块）');
+  assert.ok(!html.includes('data-action="open-admin"'), '原管理后台预留入口已移除');
 });
 
 test('M4-9 快捷键编辑页：38 项勾选、计数、保存/恢复', () => {

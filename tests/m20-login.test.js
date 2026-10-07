@@ -24,8 +24,9 @@ test('M20-1 默认未登录：无登录记录时我的页渲染未登录视图�
   assert.equal(API.getLoginState(), null, '默认无登录记录');
   const html = Pages.mine();
   assert.ok(html.includes('login-entry-card'), '未登录视图缺少登录卡片');
-  assert.ok(html.includes('data-action="open-login"'), '登录卡片可点击弹出登录弹窗');
-  assert.ok(html.includes('星露谷村民'), '登录卡片含村民文案');
+  // v2.4.5+：我的页登录卡片文字改为「登录」（去掉开发者字样），点击弹 DevAdmin 登录弹窗
+  assert.ok(html.includes('data-action="dev-open-admin"'), '登录卡片可点击弹出登录弹窗');
+  assert.ok(html.includes('>登录<'), '登录卡片文字为「登录」（无开发者字样）');
   assert.ok(!html.includes('stat-row'), '未登录不应显示统计行');
   assert.ok(!html.includes('data-action="logout"'), '未登录不应有退出按钮');
   assert.ok(html.includes('data-route="#/settings"') && html.includes('关于'), '底部设置入口/关于保留');
