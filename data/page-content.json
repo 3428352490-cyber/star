@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-07T06:08:42.298Z",
+  "generatedAt": "2026-10-07T06:10:03.303Z",
   "announcements": [
     {
       "version": "2.4.9",
@@ -374,7 +374,7 @@
   ],
   "pageEdit": {
     "/home::0": {
-      "text": "测试",
+      "text": "星露谷物语",
       "fontFamily": "\"Press Start 2P\", monospace",
       "fontSize": 14,
       "weight": 400
