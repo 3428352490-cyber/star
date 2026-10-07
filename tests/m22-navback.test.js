@@ -41,7 +41,7 @@ test('M22-1 层级返回：我的→设置→返回我的（不越级跳首页�
   clickNavBack();
   assert.equal(globalThis.location.hash, '#/mine', '返回应回到上一级来源页（我的页）');
   Router.handle();
-  assert.ok(els.get('page-container').innerHTML.includes('登录后查看'), '返回后渲染我的页');
+  assert.ok(els.get('page-container').innerHTML.includes('login-entry-card'), '返回后渲染我的页（未登录视图）');
 });
 
 test('M22-2 空栈兜底：直接进入设置页后返回 → 兜底到我的页而非首页', () => {

@@ -616,7 +616,7 @@ const DevAdmin = (() => {
       /* ---------- ① 一键上传GitHub：把所有本地已保存的页面修改内容一次性提交推送 ---------- */
       '<div class="admin-block" id="admin-block-github">' +
         '<h3>一键上传GitHub</h3>' +
-        '<p class="setting-desc">把本地已保存的全部页面修改内容（文本 / 字体 / 背景锁定 / 公告）一次性提交推送到仓库 main 分支。' +
+        '<p class="setting-desc">把本地已保存的全部页面修改内容（文本 / 字体 / 背景锁定 / 公告缓存）一次性提交推送到仓库 main 分支。' +
           '提交前会弹窗确认本次修改内容，防止误提交。</p>' +
 
         '<div class="admin-github-form">' +
@@ -778,6 +778,11 @@ const DevAdmin = (() => {
             }
             // 上传成功回调：清除本地业务缓存并重新 fetch 远程业务文件，刷新当前页面数据源
             refreshPageContentFromRemote().then(function (rr) {
+              // 触发页面版本检测：拉取远程最新 json 数据，页面内容自动同步更新
+              // （版本一致时静默；云端更高时走既有自动刷新流程）
+              if (rr && rr.ok && typeof Updater !== 'undefined' && Updater.checkUpdate) {
+                Updater.checkUpdate(false);
+              }
               Modal.show({
                 title: '上传成功',
                 body:
@@ -806,16 +811,21 @@ const DevAdmin = (() => {
    * 组装「本地已保存的页面修改内容」：页面文本/字体编辑 + 公告 + 背景锁定（提交到 jsonPath）。
    * 网页端一键上传只提交业务 JSON 数据，不携带、不递增、不写入任何版本相关字段
    * （版本升级仅由电脑本地 Git 推送流程处理，网页上传完全跳过）。
+   * v2.4.13：一键上传只读取「本地 storage 内缓存的待修改数据」——
+   * 不再从页面原始配置（SDV_CONFIG）读取公告，避免把旧原始数据覆盖到远程最新公告。
    */
   function buildPageContentPayload() {
-    const cfg = (typeof SDV_CONFIG !== 'undefined') ? SDV_CONFIG : {};
-    return {
+    const payload = {
       generatedAt: new Date().toISOString(),
-      announcements: cfg.announcements || [],
-      pageEdit: getPageEdit(),      // 本地已保存的页面文本/字体修改
+      pageEdit: getPageEdit(),      // 本地已保存的页面文本/字体修改（localStorage 缓存）
       fontConfig: getFontConfig(),
       backgroundLock: readLockNow(),
     };
+    // 公告：仅当本地存在公告修改缓存时才携带字段（无缓存不覆盖远程公告；
+    // undefined 字段会被 JSON.stringify 自动跳过）
+    const cachedNotice = read('notice_edit', null);
+    if (cachedNotice !== null) payload.announcements = cachedNotice;
+    return payload;
   }
 
   /** 生成「本地已保存的页面修改内容」摘要（确认弹窗展示，防止误提交；不含版本信息） */
@@ -861,11 +871,12 @@ const DevAdmin = (() => {
     const headers = {};
     if (token) headers.Authorization = 'Bearer ' + token;
     try {
-      // ① 清空当前页面该 json 的本地缓存（页面文本/字体编辑 + 字体配置 + 背景锁定）
+      // ① 清空当前页面该 json 的本地缓存（页面文本/字体编辑 + 字体配置 + 背景锁定 + 公告缓存）
       try {
         localStorage.removeItem(NS + 'page_edit');
         localStorage.removeItem(NS + 'font_cfg');
         localStorage.removeItem('sdv_bg_lock');
+        localStorage.removeItem(NS + 'notice_edit');
       } catch (e) { /* 忽略 */ }
 
       // ② 重新 fetch 远程 jsonPath，拉取最新业务内容
