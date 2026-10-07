@@ -1133,6 +1133,23 @@ const DevAdmin = (() => {
     }
     const headers = {};
     if (token) headers.Authorization = 'Bearer ' + token;
+    // v2.4.19：拉取前先快照本地业务缓存——刷新失败时回滚快照，本地修改不丢失（此前先清缓存再拉取，
+    // 拉取失败会把本地修改清空、页面恢复默认，且再次上传时 payload 读空缓存会误覆盖远程修改）
+    const _refreshKeys = [NS + 'page_edit', NS + 'font_cfg', 'sdv_bg_lock', NS + 'notice_edit'];
+    const snapshot = {};
+    try {
+      _refreshKeys.forEach(function (k) { snapshot[k] = localStorage.getItem(k); });
+    } catch (e) { /* 忽略 */ }
+    /** 刷新失败出口：回滚本地缓存快照并返回失败信息（本地修改保留，可稍后重试） */
+    function refreshFail(msg, extra) {
+      try {
+        _refreshKeys.forEach(function (k) {
+          const raw = snapshot[k];
+          if (raw !== null) localStorage.setItem(k, raw); else localStorage.removeItem(k);
+        });
+      } catch (e) { /* 忽略 */ }
+      return Object.assign({ ok: false, message: msg }, extra || {});
+    }
     try {
       // ① 清空当前页面该 json 的本地缓存（页面文本/字体编辑 + 字体配置 + 背景锁定 + 公告缓存）
       try {
@@ -1199,11 +1216,11 @@ const DevAdmin = (() => {
           remote = got;
         }
       } catch (re) {
-        if (re && re.__class === 'html') return { ok: false, message: 'GitHub API 请求异常（网络拦截/域名错误）：返回 HTML 而非 JSON。请检查：① Token 是否有效且具备 contents 权限 ② 手机网络能否直连 api.github.com（VPN/代理可能拦截） ③ 是否触发 GitHub 限流（稍后再试）', diag: { kind: 'html', status: re.status || 0, snippet: re.snippet || '', tip: diagnoseHtml(re.snippet, re.status).tip } };
-        if (re && re.__class === 'token') return { ok: false, message: re.message };
-        if (re && re.__class === 'json') return { ok: false, message: '刷新远程业务数据失败：本地 JSON 格式错误，无法解析响应内容' };
-        if (re && re.__class === 'net') return { ok: false, message: '网络异常（网络拦截/域名错误）：无法连接 GitHub API 刷新远程数据，请检查网络后重试' };
-        return { ok: false, message: '刷新远程业务数据失败：' + ((re && re.message) || '未知错误') };
+        if (re && re.__class === 'html') return refreshFail('GitHub API 请求异常（网络拦截/域名错误）：返回 HTML 而非 JSON。请检查：① Token 是否有效且具备 contents 权限 ② 手机网络能否直连 api.github.com（VPN/代理可能拦截） ③ 是否触发 GitHub 限流（稍后再试）。本地修改已保留，可稍后重试', { diag: { kind: 'html', status: re.status || 0, snippet: re.snippet || '', tip: diagnoseHtml(re.snippet, re.status).tip } });
+        if (re && re.__class === 'token') return refreshFail(re.message);
+        if (re && re.__class === 'json') return refreshFail('刷新远程业务数据失败：本地 JSON 格式错误，无法解析响应内容。本地修改已保留，可稍后重试');
+        if (re && re.__class === 'net') return refreshFail('网络异常（网络拦截/域名错误）：无法连接 GitHub API 刷新远程数据。本地修改已保留，请检查网络后重试');
+        return refreshFail('刷新远程业务数据失败：' + ((re && re.message) || '未知错误') + '。本地修改已保留，可稍后重试');
       }
 
       // ③ 用远程业务数据回写本地缓存并即时重放页面（刷新页面数据源 + UI 渲染）
@@ -1225,10 +1242,10 @@ const DevAdmin = (() => {
       return { ok: true, message: '已刷新远程业务数据，页面已加载最新内容' };
     } catch (e) {
       // 三类异常分类：网络拦截/域名错误(html)、Token权限不足(token)、本地JSON格式错误(json)
-      if (e && e.__class === 'html') return { ok: false, message: '网络拦截/域名错误：GitHub API 返回 HTML 而非 JSON，请确认请求 api.github.com 且网络可用', diag: { kind: 'html', status: e.status || 0, snippet: e.snippet || '', tip: diagnoseHtml(e.snippet, e.status).tip } };
-      if (e && e.__class === 'token') return { ok: false, message: 'Token 权限不足：请检查 GitHub Personal Access Token' };
-      if (e && e.__class === 'json') return { ok: false, message: '本地 JSON 格式错误：' + (e.message || '响应无法解析') };
-      return { ok: false, message: '网络异常（网络拦截/域名错误）：无法连接 GitHub API，请检查网络或确认请求域名为 api.github.com' };
+      if (e && e.__class === 'html') return refreshFail('网络拦截/域名错误：GitHub API 返回 HTML 而非 JSON，请确认请求 api.github.com 且网络可用。本地修改已保留，可稍后重试', { diag: { kind: 'html', status: e.status || 0, snippet: e.snippet || '', tip: diagnoseHtml(e.snippet, e.status).tip } });
+      if (e && e.__class === 'token') return refreshFail('Token 权限不足：请检查 GitHub Personal Access Token。本地修改已保留');
+      if (e && e.__class === 'json') return refreshFail('本地 JSON 格式错误：' + (e.message || '响应无法解析') + '。本地修改已保留');
+      return refreshFail('网络异常（网络拦截/域名错误）：无法连接 GitHub API，请检查网络或确认请求域名为 api.github.com。本地修改已保留');
     }
   }
 
