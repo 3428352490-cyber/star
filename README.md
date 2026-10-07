@@ -2,6 +2,10 @@
 
 星露谷物语跨端攻略助手：电脑端 + 安卓端共用同一套自适应代码（原生 HTML/CSS/JS，零构建）。
 
+> **⚠️ 版本管理与发布规则**：处理版本号、更新公告、发布流程前，**必须先阅读根目录
+> [`VERSION-RULES.md`](VERSION-RULES.md)**（语义化版本算法、改动类型自动判定、四版本文件同步、
+> 推送即升版+公告、推送前确认等规则全集，供后续 AI / 开发者自动读取使用）。
+
 ## 目录结构
 
 ```
@@ -97,7 +101,8 @@ git push -u origin main
 
 - 项目部署在仓库根目录时，`js/config.js` 的 `cloudVersionUrl: 'version.json'` 可直接使用
 - 若部署在子路径或自定义域名，改为完整地址：`https://<用户名>.github.io/<仓库名>/version.json`
-- 更新版本时三处同步：`js/config.js` 的 `app.version`、`sw.js` 的 `CACHE_NAME`、`version.json`（有测试守护）
+- 更新版本时四处同步：`js/config.js` 的 `app.version`、`sw.js` 的 `CACHE_NAME`、`version.json`、`notice.json`（有测试守护）；
+  推荐直接用 `node scripts/version-bump.js --scope=pushed --note="摘要"` 自动完成版本判定 + 四处同步 + 公告生成（规则见 `VERSION-RULES.md`）
 
 ## 版本更新流程（云端源码更新后双端同步）
 
