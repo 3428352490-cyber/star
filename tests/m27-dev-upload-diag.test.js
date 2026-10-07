@@ -29,12 +29,12 @@ test('M27-2 失败弹窗展示诊断区：HTTP 状态 + 内容片段 + 建议', 
   assert.ok(src.includes('replace(/<[^>]*>/g, \' \')'), '缺少 HTML 标签剥离');
 });
 
-test('M27-3 HTML 错误携带诊断细节：状态码 + 内容片段', () => {
+test('M27-3 HTML 错误携带诊断细节：统一 uploadErr 组装（状态码+片段+建议）', () => {
   const src = readAppFile('js/dev-admin.js');
   assert.ok(src.includes('status: res ? res.status : 0'), 'safeJsonWithCheck 缺少状态码附带');
-  assert.ok(src.includes('diag: { kind: \'html\', status: ge.status || 0, snippet: ge.snippet || \'\', tip: diagnoseHtml(ge.snippet, ge.status).tip }'), 'GET 读 sha 分支缺少诊断信息');
-  assert.ok(src.includes('diag: { kind: \'html\', status: pe.status || 0, snippet: pe.snippet || \'\', tip: diagnoseHtml(pe.snippet, pe.status).tip }'), 'PUT 提交分支缺少诊断信息');
-  assert.ok(src.includes('diag: { kind: \'html\', status: re.status || 0, snippet: re.snippet || \'\', tip: diagnoseHtml(re.snippet, re.status).tip }'), 'refresh 重拉分支缺少诊断信息');
+  assert.ok(src.includes("diag: { kind: 'html', status: e.status || 0, snippet: e.snippet || '', tip: diagnoseHtml(e.snippet, e.status).tip }"), 'uploadErr 缺少诊断信息组装');
+  assert.ok(src.includes('return uploadErr(ge)'), 'GET 读 sha 分支未统一走 uploadErr');
+  assert.ok(src.includes('return uploadErr(pe)'), 'PUT 提交分支未统一走 uploadErr');
 });
 
 test('M27-4 诊断区像素样式存在（dev-admin.css）', () => {

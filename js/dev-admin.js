@@ -137,88 +137,196 @@ const DevAdmin = (() => {
     };
 
     try {
-      // ① 读取当前文件内容（获取 sha）
+      // ① 读取当前文件内容（获取 sha；弱网/拦截自动重试，最多 3 次）
       let sha = '';
-      const fileRes = await fetch(
-        base + '/repos/' + encodeURIComponent(repo.owner) + '/' +
-        encodeURIComponent(repo.repo) + '/contents/' +
-        encodeURIComponent(repo.jsonPath) +
-        '?ref=' + encodeURIComponent(repo.branch || 'main') +
-        '&t=' + Date.now(),
-        { headers: Object.assign({}, authHeaders, NO_CACHE_HEADERS), redirect: 'manual' }
-      );
-      if (fileRes.type === 'opaqueredirect' || fileRes.status === 301 || fileRes.status === 302 || fileRes.status === 307 || fileRes.status === 308) {
-        return { ok: false, message: 'GitHub API 重定向（Token 失效或未授权）：请重新生成有 contents 权限的 Token 再试' };
-      }
-      if (fileRes.ok) {
-        try {
-          const got = await safeJsonWithCheck(fileRes);
-          sha = (got && got.sha) || '';
-        } catch (ge) {
-          if (ge.__class === 'html') return { ok: false, message: 'GitHub API 请求异常（网络拦截/域名错误）：返回 HTML 而非 JSON。请检查：① Token 是否有效且具备 contents 权限 ② 手机网络能否直连 api.github.com（VPN/代理可能拦截） ③ 是否触发 GitHub 限流（稍后再试）', diag: { kind: 'html', status: ge.status || 0, snippet: ge.snippet || '', tip: diagnoseHtml(ge.snippet, ge.status).tip } };
-          if (ge.__class === 'json') return { ok: false, message: '获取文件失败：本地 JSON 格式错误，无法解析响应内容' };
-          throw ge;
-        }
-      } else if (fileRes.status === 401 || fileRes.status === 403) {
-        return { ok: false, message: 'Token 权限不足：请检查 GitHub Personal Access Token 是否有效且具备 contents 写权限' };
-      } else if (fileRes.status === 404) {
-        sha = ''; // 文件不存在则直接创建
-      } else {
-        return { ok: false, message: '获取文件失败（' + fileRes.status + '）：请检查 Token 权限与仓库配置' };
+      try {
+        const got = await withRetry(function () {
+          return fetchTimeout(
+            base + '/repos/' + encodeURIComponent(repo.owner) + '/' +
+            encodeURIComponent(repo.repo) + '/contents/' +
+            encodeURIComponent(repo.jsonPath) +
+            '?ref=' + encodeURIComponent(repo.branch || 'main') +
+            '&t=' + Date.now(),
+            { headers: Object.assign({}, authHeaders, NO_CACHE_HEADERS), redirect: 'manual' },
+            15000
+          ).then(async function (fileRes) {
+            if (fileRes.type === 'opaqueredirect' || fileRes.status === 301 || fileRes.status === 302 || fileRes.status === 307 || fileRes.status === 308) {
+              throw apiErr('token', 'GitHub API 重定向（Token 失效或未授权）：请重新生成有 contents 权限的 Token 再试');
+            }
+            if (fileRes.status === 401 || fileRes.status === 403) {
+              throw apiErr('token', 'Token 权限不足：请检查 GitHub Personal Access Token 是否有效且具备 contents 写权限');
+            }
+            if (fileRes.status === 404) return { sha: '' }; // 文件不存在则直接创建
+            if (fileRes.ok) {
+              const got = await safeJsonWithCheck(fileRes);
+              return { sha: (got && got.sha) || '' };
+            }
+            throw apiErr('other', '获取文件失败（' + fileRes.status + '）：请检查 Token 权限与仓库配置');
+          });
+        }, 3);
+        sha = got.sha;
+      } catch (ge) {
+        return uploadErr(ge);
       }
 
-      // ② 提交 / 创建文件
+      // ② 提交 / 创建文件（弱网/拦截自动重试；PUT 幂等，同 sha 重试安全）
       const body = {
         message: note,
         content: btoa(unescape(encodeURIComponent(JSON.stringify(o.payload, null, 2)))),
         branch: repo.branch || 'main',
       };
       if (sha) body.sha = sha;
-      const putRes = await fetch(
-        base + '/repos/' + encodeURIComponent(repo.owner) + '/' +
-        encodeURIComponent(repo.repo) + '/contents/' +
-        encodeURIComponent(repo.jsonPath),
-        { method: 'PUT', headers: Object.assign({}, authHeaders, { 'Content-Type': 'application/json' }), body: JSON.stringify(body), redirect: 'manual' }
-      );
       let putData = {};
-      if (putRes.type === 'opaqueredirect' || putRes.status === 301 || putRes.status === 302 || putRes.status === 307 || putRes.status === 308) {
-        return { ok: false, message: 'GitHub API 重定向（Token 失效或未授权）：请重新生成有 contents 权限的 Token 再试' };
-      }
-      if (putRes.status === 401 || putRes.status === 403) {
-        return { ok: false, message: 'Token 权限不足：请检查 GitHub Personal Access Token 是否有效且具备 contents 写权限' };
-      }
-      if (putRes.ok || putRes.status === 422 || putRes.status === 409) {
-        try {
-          putData = await safeJsonWithCheck(putRes);
-        } catch (pe) {
-          if (pe.__class === 'html') return { ok: false, message: 'GitHub API 请求异常（网络拦截/域名错误）：返回 HTML 而非 JSON。请检查：① Token 是否有效且具备 contents 权限 ② 手机网络能否直连 api.github.com（VPN/代理可能拦截） ③ 是否触发 GitHub 限流（稍后再试）', diag: { kind: 'html', status: pe.status || 0, snippet: pe.snippet || '', tip: diagnoseHtml(pe.snippet, pe.status).tip } };
-          if (pe.__class === 'json') return { ok: false, message: '提交失败：本地 JSON 格式错误，无法解析响应内容' };
-          throw pe;
+      try {
+        const pr = await withRetry(function () {
+          return fetchTimeout(
+            base + '/repos/' + encodeURIComponent(repo.owner) + '/' +
+            encodeURIComponent(repo.repo) + '/contents/' +
+            encodeURIComponent(repo.jsonPath),
+            { method: 'PUT', headers: Object.assign({}, authHeaders, { 'Content-Type': 'application/json' }), body: JSON.stringify(body), redirect: 'manual' },
+            15000
+          ).then(async function (putRes) {
+            if (putRes.type === 'opaqueredirect' || putRes.status === 301 || putRes.status === 302 || putRes.status === 307 || putRes.status === 308) {
+              throw apiErr('token', 'GitHub API 重定向（Token 失效或未授权）：请重新生成有 contents 权限的 Token 再试');
+            }
+            if (putRes.status === 401 || putRes.status === 403) {
+              throw apiErr('token', 'Token 权限不足：请检查 GitHub Personal Access Token 是否有效且具备 contents 写权限');
+            }
+            if (putRes.ok || putRes.status === 422 || putRes.status === 409) {
+              let pd = {};
+              try { pd = await safeJsonWithCheck(putRes); } catch (pe) { throw pe; }
+              return { res: putRes, data: pd };
+            }
+            return { res: putRes, data: {} };
+          });
+        }, 3);
+        putData = pr.data;
+        if (pr.res.ok) {
+          return { ok: true, message: '提交成功：' + note, commitUrl: putData.commit && putData.commit.url };
         }
+        // ③ 区分错误类型（401/403 Token 权限不足已前置处理）
+        if (pr.res.status === 409) {
+          return { ok: false, message: '文件冲突：远程文件已被修改，请刷新后重试，不会损坏仓库原有文件', raw: JSON.stringify(putData) };
+        }
+        if (pr.res.status === 422) {
+          return { ok: false, message: '提交内容无效（' + (putData.message || '') + '）', raw: JSON.stringify(putData) };
+        }
+        return { ok: false, message: '提交失败（' + pr.res.status + '）：' + (putData.message || '未知错误'), raw: JSON.stringify(putData) };
+      } catch (pe) {
+        return uploadErr(pe);
       }
-      if (putRes.ok) {
-        return { ok: true, message: '提交成功：' + note, commitUrl: putData.commit && putData.commit.url };
-      }
-      // ③ 区分错误类型（401/403 Token 权限不足已前置处理）
-      if (putRes.status === 409) {
-        return { ok: false, message: '文件冲突：远程文件已被修改，请刷新后重试，不会损坏仓库原有文件', raw: JSON.stringify(putData) };
-      }
-      if (putRes.status === 422) {
-        return { ok: false, message: '提交内容无效（' + (putData.message || '') + '）', raw: JSON.stringify(putData) };
-      }
-      return { ok: false, message: '提交失败（' + putRes.status + '）：' + (putData.message || '未知错误'), raw: JSON.stringify(putData) };
     } catch (e) {
-      // 三类异常分类提示：网络拦截/域名错误(html)、Token权限不足(token)、本地JSON格式错误(json)
-      if (e && e.__class === 'html') return { ok: false, message: '网络拦截/域名错误：GitHub API 返回 HTML 而非 JSON，请确认请求 api.github.com 且网络可用', diag: { kind: 'html', status: e.status || 0, snippet: e.snippet || '', tip: diagnoseHtml(e.snippet, e.status).tip } };
-      if (e && e.__class === 'token') return { ok: false, message: 'Token 权限不足：请检查 GitHub Personal Access Token' };
-      if (e && e.__class === 'json') return { ok: false, message: '本地 JSON 格式错误：' + (e.message || '响应无法解析') };
-      // 原生 fetch 网络异常（TypeError: Failed to fetch / NetworkError）：归入「网络拦截/域名错误」类
-      return { ok: false, message: '网络异常（网络拦截/域名错误）：无法连接 GitHub API，请检查网络或确认请求域名为 api.github.com' };
+      // 兜底异常分类：网络拦截/域名错误(html)、Token权限不足(token)、本地JSON格式错误(json)、网络异常(net)
+      return uploadErr(e);
     }
   }
 
   async function safeJson(res) {
     try { return await res.json(); } catch (e) { return {}; }
+  }
+
+  /**
+   * 备用上传通道 · 基础设施 1：带超时的 fetch（v2.4.15）。
+   * AbortController 中断弱网下的挂起请求；超时视为网络异常（可自动重试）。
+   * 说明：GitHub contents API 无官方备用域名，第三方 CORS 代理会泄露 Token，
+   * 故以「超时 + 自动重试 + 连通自检」作为备用通道，不接入任何代理。
+   */
+  function fetchTimeout(url, opts, ms) {
+    const ctl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+    const timer = ctl ? setTimeout(function () { try { ctl.abort(); } catch (e) {} }, ms || 15000) : null;
+    const merged = ctl ? Object.assign({}, opts || {}, { signal: ctl.signal }) : (opts || {});
+    return fetch(url, merged).then(function (res) {
+      if (timer) clearTimeout(timer);
+      return res;
+    }, function (err) {
+      if (timer) clearTimeout(timer);
+      const e = new Error('网络超时或连接中断：' + ((err && err.name === 'AbortError') ? '请求超时' : '无法连接'));
+      e.__class = 'net';
+      throw e;
+    });
+  }
+
+  /**
+   * 备用上传通道 · 基础设施 2：通用自动重试（最多 attempts 次，间隔递增）。
+   * 可重试错误：网络异常(net) / HTML 拦截(html) / JSON 格式错误(json)；
+   * Token 失效(token) 与业务状态码错误不重试（避免无意义循环）。
+   */
+  async function withRetry(asyncFn, attempts) {
+    let lastErr;
+    const max = Math.max(1, attempts || 3);
+    for (let i = 0; i < max; i++) {
+      try {
+        return await asyncFn(i);
+      } catch (e) {
+        lastErr = e;
+        const cls = e && e.__class;
+        if (cls !== 'net' && cls !== 'html' && cls !== 'json') throw e;
+        if (i < max - 1) {
+          await new Promise(function (r) { setTimeout(r, 600 * (i + 1)); });
+        }
+      }
+    }
+    throw lastErr;
+  }
+
+  /** 上传异常统一映射（v2.4.15）：网络异常/HTML拦截/Token/JSON格式/其他 → 失败结果（含诊断信息） */
+  function uploadErr(e) {
+    const cls = e && e.__class;
+    if (cls === 'html') {
+      return { ok: false, message: 'GitHub API 请求异常（网络拦截/域名错误）：返回 HTML 而非 JSON。请检查：① Token 是否有效且具备 contents 权限 ② 手机网络能否直连 api.github.com（VPN/代理可能拦截） ③ 是否触发 GitHub 限流（稍后再试）', diag: { kind: 'html', status: e.status || 0, snippet: e.snippet || '', tip: diagnoseHtml(e.snippet, e.status).tip } };
+    }
+    if (cls === 'token') return { ok: false, message: e.message };
+    if (cls === 'json') return { ok: false, message: '本地 JSON 格式错误：' + (e.message || '响应无法解析') };
+    if (cls === 'net') return { ok: false, message: '网络异常（网络拦截/域名错误）：无法连接 GitHub API，已自动重试，请检查网络或确认请求域名为 api.github.com' };
+    return { ok: false, message: (e && e.message) || '上传失败' };
+  }
+
+  /**
+   * 网络连通自检（v2.4.15）：请求 api.github.com/rate_limit（无需 Token 即可返回 JSON），
+   * 判定当前网络能否直连 GitHub API —— 失败弹窗内点击「检测网络」按钮触发。
+   */
+  async function checkGitHubConnectivity() {
+    try {
+      const res = await fetchTimeout(
+        'https://api.github.com/rate_limit',
+        { headers: { 'Accept': 'application/vnd.github+json' }, redirect: 'manual' },
+        10000
+      );
+      const ct = String((res.headers && res.headers.get && res.headers.get('Content-Type')) || '').toLowerCase();
+      const text = String(await res.text() || '');
+      const looksHtml = /<\s*!doctype|<\s*html/i.test(text);
+      if (looksHtml || /html/.test(ct)) {
+        return { ok: false, kind: 'html', status: res.status, snippet: text.slice(0, 200) };
+      }
+      return { ok: true, kind: 'json', status: res.status };
+    } catch (e) {
+      return { ok: false, kind: (e && e.__class === 'net') ? 'net' : 'err', status: 0, message: (e && e.message) || '检测失败' };
+    }
+  }
+
+  /** 失败弹窗「检测网络」按钮：执行自检并即时展示结果 */
+  async function runNetCheck() {
+    const btn = document.querySelector('[data-action="dev-net-check"]');
+    const out = document.getElementById('dev-net-result');
+    if (!out) return;
+    if (btn) { btn.disabled = true; btn.textContent = '检测中…'; }
+    out.textContent = '正在检测网络连通性…';
+    out.className = 'dev-net-result';
+    const r = await checkGitHubConnectivity();
+    if (btn) { btn.disabled = false; btn.textContent = '检测网络'; }
+    if (r.ok) {
+      out.textContent = '✓ 可直连 api.github.com（返回 JSON），当前网络可上传，请直接重试';
+      out.className = 'dev-net-result ok';
+    } else if (r.kind === 'html') {
+      out.textContent = '✗ 仍被拦截（返回 HTML）：当前网络无法直连 api.github.com，请切换网络（Wi-Fi / 手机流量 / 代理节点）后重试';
+      out.className = 'dev-net-result bad';
+    } else if (r.kind === 'net') {
+      out.textContent = '✗ 网络不可达或请求超时：请检查网络连接后重试';
+      out.className = 'dev-net-result bad';
+    } else {
+      out.textContent = '✗ 检测失败：' + ((r && r.message) || '未知错误');
+      out.className = 'dev-net-result bad';
+    }
   }
 
   /** 构造带异常分类标记的错误（供外层 try-catch 区分三类异常）
@@ -261,15 +369,18 @@ const DevAdmin = (() => {
   function uploadFailDiagHtml(r) {
     const d = r && r.diag;
     if (!d) return '';
-    // 内容片段去 HTML 标签压缩为纯文本（前 100 字符）
+    // 内容片段去 HTML 标签压缩为纯文本（前 200 字符）；过短内容提示疑似空白拦截页
     const clean = String(d.snippet || '')
       .replace(/<[^>]*>/g, ' ')
       .replace(/\s+/g, ' ')
       .trim()
-      .slice(0, 100);
+      .slice(0, 200);
+    const shown = clean.length >= 5
+      ? clean
+      : (d.snippet ? '（返回内容过短，疑似空白拦截页）' : '（空）');
     return '<div class="dev-upload-diag">' +
       '<p><b>HTTP 状态</b>：' + esc(d.status || '-') + '</p>' +
-      '<p><b>返回内容片段</b>：' + esc(clean || '（空）') + '</p>' +
+      '<p><b>返回内容片段</b>：' + esc(shown) + '</p>' +
       '<p><b>建议</b>：' + esc(d.tip || '') + '</p>' +
       '</div>';
   }
@@ -716,6 +827,9 @@ const DevAdmin = (() => {
       case 'dev-push-github':
         pushGitHubWithConfirm();
         break;
+      case 'dev-net-check':
+        runNetCheck();
+        break;
       /* ---------- 全局编辑工具条动作 ---------- */
       case 'dev-edit-enter':
         enterEditMode();
@@ -816,6 +930,10 @@ const DevAdmin = (() => {
                 body:
                   '<p>' + esc(r.message) + '</p>' +
                   uploadFailDiagHtml(r) +
+                  '<div class="dev-net-check-row">' +
+                    '<button class="btn btn-primary dev-net-btn" data-action="dev-net-check">检测网络</button>' +
+                    '<span id="dev-net-result" class="dev-net-result"></span>' +
+                  '</div>' +
                   (r.commitUrl ? '<p class="setting-desc"><a href="' + esc(r.commitUrl) + '" target="_blank" rel="noopener">' + esc(r.commitUrl) + '</a></p>' : '') +
                   '<p class="setting-desc">上传失败不会损坏仓库原有文件。</p>',
                 actions: [{ label: '知道了', cls: 'btn-primary' }],

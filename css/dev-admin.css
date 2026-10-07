@@ -204,6 +204,16 @@ body.dev-editing #page-container [data-dev-key]:focus {
 .dev-upload-diag p { margin: 4px 0; line-height: 1.6; word-break: break-all; }
 .dev-upload-diag b { color: var(--accent, #a44); }
 
+/* ---------- 失败弹窗网络连通自检：检测按钮 + 即时结果 ---------- */
+.dev-net-check-row {
+  margin-top: 12px;
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+}
+.dev-net-btn { flex: none; min-width: 96px; }
+.dev-net-result { font-size: 12px; color: #3a2a1a; line-height: 1.6; word-break: break-all; }
+.dev-net-result.ok { color: #3a7a3a; }
+.dev-net-result.bad { color: #a44; }
+
 /* ---------- 背景锁定窗口弹窗（chip 选择行） ---------- */
 .bg-lock-form { display: flex; flex-direction: column; gap: 10px; }
 .chip-row { display: flex; gap: 6px; flex-wrap: wrap; }
