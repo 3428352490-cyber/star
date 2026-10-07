@@ -1197,7 +1197,19 @@ const DevAdmin = (() => {
             try { remote = JSON.parse(rawText); } catch (e) { remote = {}; }
           }
         }
-      } catch (e) { /* raw 失败继续走 api 通道 */ }
+      } catch (e) { /* raw 失败继续走同源通道 */ }
+      // v2.4.23 同源相对路径（应用自身源站：GitHub Pages 部署文件；手机端必通兜底）
+      if (!Object.keys(remote).length) {
+        try {
+          const sameRes = await fetchTimeout('data/page-content.json?t=' + Date.now(), { cache: 'no-store' }, 15000);
+          if (sameRes && sameRes.ok) {
+            const sameText = await sameRes.text();
+            if (sameText && sameText.trim().charAt(0) === '{') {
+              try { remote = JSON.parse(sameText); } catch (e) { remote = {}; }
+            }
+          }
+        } catch (e) { /* 同源失败继续走 api 通道 */ }
+      }
       try {
         // 0) 无认证优先读取（公开仓库可直接读最新内容）
         const anonRes = await fetchTimeout(
@@ -1288,10 +1300,12 @@ const DevAdmin = (() => {
    * @param {boolean} manual 手动触发（管理面板「同步覆盖」按钮）时为 true，成功/失败均提示
    */
   /**
-   * v2.4.21 多通道拉取远程 page-content.json：
+   * v2.4.21 多通道拉取远程 page-content.json（v2.4.23 增补同源通道）：
    * ① raw.githubusercontent.com 优先——普通 HTTPS CDN 路径，可绕过 api.github.com 的路径级拦截
    *   （部分网络/代理只拦 api.github.com 的 /repos/.../contents/ 路径，raw 域名通常放行）；
-   * ② api.github.com 无认证（公开仓库）；③ api.github.com 带 Token（私有仓库/回退）。
+   * ② 应用自身源站同源路径 ./data/page-content.json（GitHub Pages 项目部署文件；
+   *   应用能打开必能拉到同源数据，绕过一切跨域/路径拦截——手机端最可靠兜底）；
+   * ③ api.github.com 无认证（公开仓库）；④ api.github.com 带 Token（私有仓库/回退）。
    * @param {object} repo 仓库配置 { owner, repo, branch, jsonPath }
    * @param {string} token GitHub Token（可为空）
    * @returns {Promise<{remote: object, via: string}>} remote 为空表示全部通道失败
@@ -1317,8 +1331,21 @@ const DevAdmin = (() => {
           }
         }
       }
-    } catch (e) { /* raw 失败继续走 api 通道 */ }
-    // ② api 无认证（公开仓库）
+    } catch (e) { /* raw 失败继续走同源通道 */ }
+    // ② 同源相对路径（应用自身源站：GitHub Pages 部署文件；手机端必通兜底）
+    try {
+      const sameRes = await fetchTimeout('data/page-content.json?t=' + Date.now(), { cache: 'no-store' }, 10000);
+      if (sameRes && sameRes.ok) {
+        const text = await sameRes.text();
+        if (text && text.trim().charAt(0) === '{') {
+          const parsed = JSON.parse(text);
+          if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+            return { remote: parsed, via: 'same-origin' };
+          }
+        }
+      }
+    } catch (e) { /* 同源失败继续走 api 通道 */ }
+    // ③ api 无认证（公开仓库）
     try {
       const anonRes = await fetchTimeout(
         apiUrl,
@@ -1335,7 +1362,7 @@ const DevAdmin = (() => {
         }
       }
     } catch (e) { /* 忽略继续 */ }
-    // ③ api 带 Token（私有仓库 / 无认证被拦回退）
+    // ④ api 带 Token（私有仓库 / 无认证被拦回退）
     if (token) {
       try {
         const got = await withRetry(function () {
