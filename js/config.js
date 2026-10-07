@@ -10,7 +10,7 @@
 const SDV_CONFIG = {
   app: {
     name: '星露谷攻略',
-    version: '2.4.11',
+    version: '2.4.12',
     /**
      * 云端版本清单地址（GitHub Pages 部署后替换为实际地址）：
      * 例如 'https://你的用户名.github.io/仓库名/version.json'
@@ -56,6 +56,17 @@ const SDV_CONFIG = {
 
   /** 软件公告（公告页渲染；新版本发布时向数组头部追加条目） */
   announcements: [
+    {
+      version: '2.4.12',
+      date: '2026-10-07',
+      title: '一键上传修复：Token 失效精准提示',
+      notes: [
+        '一键上传GitHub请求加 redirect:manual，不再跟随重定向到登录页',
+        '识别 301/302/307/308 重定向为「Token 失效或未授权」精准弹窗提示',
+        '修复 Token 失效被误报为「网络拦截/域名错误」的误判',
+        'GET 读 sha / PUT 提交 / refresh 重拉三处请求同步加固',
+      ],
+    },
     {
       version: '2.4.11',
       date: '2026-10-07',

@@ -1,5 +1,5 @@
 {
-  "latestVersion": "2.4.11",
-  "updateDesc": "网页一键上传仅提交业务数据并带网页提交关键词跳过版本bump；新增GitHub Actions commit消息过滤规则，网页/一键提交不再自动递增版本",
+  "latestVersion": "2.4.12",
+  "updateDesc": "一键上传GitHub请求加redirect:manual,识别301/302重定向为Token失效精准提示,不再误报网络拦截/域名错误",
   "downloadUrl": "./index.html"
 }

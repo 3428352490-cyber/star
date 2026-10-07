@@ -1,10 +1,10 @@
 {
-  "version": "2.4.11",
-  "title": "星露谷攻略 v2.4.11 更新",
+  "version": "2.4.12",
+  "title": "星露谷攻略 v2.4.12 更新",
   "items": [
-    "网页一键上传GitHub仅提交业务JSON数据（data/page-content.json），带「网页提交」关键词",
-    "新增GitHub Actions commit消息过滤规则：含「一键上传/网页提交」的提交自动跳过版本bump",
-    "修复一键上传仅版本号入库、业务内容未同步的BUG，提交成功后自动刷新远程业务数据源",
-    "网页上传不再改动版本号与version.json，电脑端Git版本升级流程保持不变"
+    "一键上传GitHub请求加 redirect:manual，不再跟随重定向到登录页",
+    "识别 301/302/307/308 重定向为「Token 失效或未授权」精准弹窗提示",
+    "修复 Token 失效被误报为「网络拦截/域名错误」的误判",
+    "GET 读 sha / PUT 提交 / refresh 重拉三处请求同步加固"
   ]
 }
