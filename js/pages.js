@@ -64,8 +64,7 @@ const Pages = (() => {
           '<div class="quick-nav-grid">' + cells.join('') + '</div></section>' +
         '</div>' +
         '<div>' +
-          '<section class="card"><div class="card-head"><h2>功能专区</h2></div>' +
-          '<div class="home-cards home-cards-sm">' + cards + '</div></section>' +
+          '<div class="home-cards home-cards-sm">' + cards + '</div>' +
         '</div>' +
       '</section>' +
       (typeof Community !== 'undefined' ? Community.renderHomeBlock() : '');

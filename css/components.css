@@ -80,10 +80,22 @@
 @media (min-width: 640px) { .codex-grid { grid-template-columns: repeat(4, 1fr); } }
 .tile-codex { padding: 10px 4px; }
 
-/* ---- 首页四大卡片 ---- */
-.home-cards { display: grid; grid-template-columns: 1fr; gap: 10px; }
-@media (min-width: 640px) { .home-cards { grid-template-columns: 1fr 1fr; } }
-.home-card { display: block; text-align: left; width: 100%; }
+/* ---- 首页四大卡片（四宫格 2×2：窄屏到宽屏均保持两列，卡片独立组件、间距均匀） ---- */
+.home-cards {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);   /* 固定 2×2 四宫格 */
+  gap: 12px;                               /* 卡片间均匀间距 */
+  align-items: stretch;
+}
+.home-card {
+  display: block;
+  text-align: left;
+  width: 100%;
+  margin-bottom: 0;                        /* 覆盖 .card 的下边距，间距统一由 gap 控制 */
+  padding: 14px 12px;                      /* 卡片内边距（适配 2 列窄卡片） */
+  border-radius: 12px;                     /* 四角圆角圆弧（仅首页功能卡片；保留 .card 像素粗边框/内描边/硬阴影） */
+  overflow: hidden;                        /* 圆角裁剪内部内容，避免溢出直角 */
+}
 .home-card h3 { font-size: 15px; margin-bottom: 4px; color: var(--accent); }
 .home-card p { font-size: 12px; color: var(--text-dim); }
 
