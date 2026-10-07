@@ -109,13 +109,15 @@ test('验收7 38 模块 + 4 卡片入口均可进入占位页并返回', () => {
   }
 });
 
-test('验收8 图鉴 38 分类；宽屏 6 列 / 手机 3 列', () => {
+test('验收8 图鉴 38 分类；固定 4 列网格（分组排版）', () => {
   const html = Pages.codex();
   assert.equal(count(html, 'class="tile tile-codex"'), 38);
   const layout = readAppFile('css/layout.css');
   const comp = readAppFile('css/components.css');
-  assert.ok(layout.includes('repeat(6, 1fr)'), '宽屏 6 列缺失');
-  assert.ok(comp.includes('repeat(3, 1fr)'), '手机 3 列缺失');
+  assert.ok(comp.includes('grid-template-columns: repeat(4, 1fr);'), '图鉴网格应为固定 4 列');
+  const codexRule = comp.slice(comp.indexOf('.codex-grid'), comp.indexOf('.codex-grid') + 200);
+  assert.ok(!codexRule.includes('repeat(3, 1fr)'), '图鉴网格 3 列规则已移除');
+  assert.ok(!layout.includes('repeat(6, 1fr)'), '旧的宽屏 6 列规则已移除');
 });
 
 test('验收9 搜索「村民」命中结果并可点击进入', () => {

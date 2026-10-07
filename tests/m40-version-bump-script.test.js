@@ -84,6 +84,13 @@ test('M40-5 改动类型自动判定：重构/不兼容/大规模 → MAJOR', ()
     { note: '底层架构重构，数据不兼容旧版' }
   );
   assert.equal(byNote.type, 'major', '提交说明含重构/不兼容 → MAJOR');
+  // 弱关键词「重构」仅指 UI/排版重构且无规模证据 → 不误判 MAJOR（PATCH + 提示）
+  const uiRefactor = VB.classifyChanges(
+    { files: [{ name: 'js/pages.js', added: 40, deleted: 6 }], totalAdded: 40, totalDeleted: 6, addedFiles: [], deletedFiles: [] },
+    { note: '图鉴页面排版重构' }
+  );
+  assert.equal(uiRefactor.type, 'patch', '排版重构（无大规模证据）不应误判 MAJOR');
+  assert.ok(uiRefactor.reasons.some((r) => r.includes('--type=major')), '应提示可用 --type=major 强制指定');
 });
 
 test('M40-6 更新公告生成：类型标题 + 摘要条目', () => {

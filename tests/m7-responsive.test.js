@@ -12,16 +12,19 @@ test('M7-1 宽屏双栏：1024px 断点完整规则', () => {
   assert.ok(mediaStart >= 0, '缺少 1024px 断点');
   const block = css.slice(mediaStart);
   assert.ok(block.includes('grid-template-columns: 1fr 1fr'), '首页缺少双栏');
-  assert.ok(block.includes('.codex-grid { grid-template-columns: repeat(6, 1fr); }'), '图鉴宽屏 6 列缺失');
   assert.ok(block.includes('.check-grid { grid-template-columns: repeat(4, 1fr); }'), '勾选宽屏 4 列缺失');
   assert.ok(block.includes('gap: 18px'), '双栏间距缺失');
+  // 图鉴网格固定 4 列（宽屏不再变 6 列），规则位于 components.css 基础样式
+  const comp = readAppFile('css/components.css');
+  assert.ok(comp.includes('grid-template-columns: repeat(4, 1fr);'), '图鉴网格应为固定 4 列');
+  assert.ok(!block.includes('repeat(6, 1fr)'), '图鉴宽屏 6 列覆盖已移除（固定 4 列）');
 });
 
 test('M7-2 手机竖屏单列：默认块级布局', () => {
   const layout = readAppFile('css/layout.css');
   const comp = readAppFile('css/components.css');
   assert.ok(layout.includes('.home-grid { display: block; }'), '竖屏首页应为单列');
-  assert.ok(comp.includes('.codex-grid { display: grid; grid-template-columns: repeat(3, 1fr);'), '竖屏图鉴应为 3 列');
+  assert.ok(comp.includes('.codex-grid { display: grid; grid-template-columns: repeat(4, 1fr);'), '图鉴网格固定 4 列（含竖屏）');
 });
 
 test('M7-3 安全区：底部导航适配刘海屏', () => {

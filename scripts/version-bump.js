@@ -136,18 +136,22 @@ function classifyChanges(changes, opts) {
   const note = String(opts.note || opts.commitHint || '');
   const reasons = [];
 
-  /* MAJOR 线索：颠覆性重构 / 不兼容 / 底层大规模改动 */
-  if (/(重构|重写|颠覆|不兼容|breaking|架构|大规模|migration|rewrite)/i.test(note)) {
-    reasons.push('提交说明含重构/不兼容关键词');
-  }
+  /* MAJOR 线索：颠覆性重构 / 不兼容 / 底层大规模改动
+   * 强关键词（不兼容/底层架构/颠覆/大规模）单独即可触发；
+   * 弱关键词（重构/重写）仅是普通 UI 重构，必须配合规模证据（≥3000 行 ≥5 文件 或 大量删除）才触发，
+   * 防止把「排版重构」等小改动误判为 MAJOR。 */
   const total = changes.totalAdded + changes.totalDeleted;
-  if (total >= 3000 && changes.files.length >= 5) {
-    reasons.push('改动规模大（约 ' + total + ' 行，' + changes.files.length + ' 个文件），疑似大规模重构');
+  const hasMajorScale = (total >= 3000 && changes.files.length >= 5) || changes.deletedFiles.length >= 5;
+  const majorStrongWord = /(不兼容|breaking|migration|颠覆|底层架构|大规模)/i.test(note);
+  const majorWeakWord = /(重构|重写|rewrite)/i.test(note);
+  if (hasMajorScale) {
+    reasons.push('改动规模大（约 ' + total + ' 行，' + changes.files.length + ' 个文件）' +
+      (changes.deletedFiles.length >= 5 ? '，删除文件 ' + changes.deletedFiles.length + ' 个' : ''));
   }
-  if (changes.deletedFiles.length >= 5) {
-    reasons.push('删除文件 ' + changes.deletedFiles.length + ' 个，涉及旧结构移除');
+  if (majorStrongWord) {
+    reasons.push('提交说明含不兼容/底层架构等关键词');
   }
-  const hasMajor = reasons.length > 0;
+  const hasMajor = hasMajorScale || majorStrongWord;
 
   /* MINOR 线索：新增独立模块 / 新增页面（向下兼容） */
   const minorReasons = [];
@@ -186,6 +190,9 @@ function classifyChanges(changes, opts) {
     reasons.push('小改动 / bug 修复 / 文案或素材微调（约 ' + total + ' 行，' + changes.files.length + ' 个文件）');
     if (noteHasFeature) {
       reasons.push('提示：提交说明含「新增」关键词但未检测到独立模块文件/中等规模改动，如需 MINOR 请用 --type=minor 指定');
+    }
+    if (majorWeakWord && !hasMajorScale) {
+      reasons.push('提示：提交说明含「重构/重写」但无大规模证据（UI/排版重构属小改动），如需 MAJOR 请用 --type=major 指定');
     }
   } else {
     reasons.push('未检测到改动（清单为空），默认按 PATCH 处理');
