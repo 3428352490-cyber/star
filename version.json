@@ -1,5 +1,5 @@
 {
-  "latestVersion": "2.4.28",
-  "updateDesc": "首页功能专区改四宫格：删除标题与背景容器，4卡片2×2圆角布局",
+  "latestVersion": "2.4.29",
+  "updateDesc": "图鉴物品分类分组排版重构：生产/工艺/收集/战斗/其他5组，每组4列圆角卡片网格",
   "downloadUrl": "./index.html"
 }
