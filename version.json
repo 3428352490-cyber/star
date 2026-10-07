@@ -1,5 +1,5 @@
 {
-  "latestVersion": "2.4.26",
-  "updateDesc": "新增VERSION-RULES.md版本管理规则文档供后续AI自动读取，README与脚本注释同步引用",
+  "latestVersion": "2.4.27",
+  "updateDesc": "移除开发者板块同步覆盖按钮",
   "downloadUrl": "./index.html"
 }
