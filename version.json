@@ -1,5 +1,5 @@
 {
-  "latestVersion": "2.4.9",
-  "updateDesc": "一键上传GitHub仅提交业务数据，跳过版本逻辑；修复版本对比与页面提交BUG，提交成功后自动刷新远程业务数据源",
+  "latestVersion": "2.4.11",
+  "updateDesc": "网页一键上传仅提交业务数据并带网页提交关键词跳过版本bump；新增GitHub Actions commit消息过滤规则，网页/一键提交不再自动递增版本",
   "downloadUrl": "./index.html"
 }

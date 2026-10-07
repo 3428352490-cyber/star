@@ -57,6 +57,17 @@ const SDV_CONFIG = {
   /** 软件公告（公告页渲染；新版本发布时向数组头部追加条目） */
   announcements: [
     {
+      version: '2.4.11',
+      date: '2026-10-07',
+      title: '网页上传版本过滤',
+      notes: [
+        '网页一键上传GitHub仅提交业务JSON数据（data/page-content.json），带「网页提交」关键词',
+        '新增GitHub Actions commit消息过滤规则：含「一键上传/网页提交」的提交自动跳过版本bump',
+        '修复一键上传仅版本号入库、业务内容未同步的BUG，提交成功后自动刷新远程业务数据源',
+        '网页上传不再改动版本号与version.json，电脑端Git版本升级流程保持不变',
+      ],
+    },
+    {
       version: '2.4.9',
       date: '2026-10-07',
       title: '一键上传修复',
