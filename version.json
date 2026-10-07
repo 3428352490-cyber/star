@@ -1,5 +1,5 @@
 {
-  "latestVersion": "2.4.27",
-  "updateDesc": "移除开发者板块同步覆盖按钮",
+  "latestVersion": "2.4.28",
+  "updateDesc": "首页功能专区改四宫格：删除标题与背景容器，4卡片2×2圆角布局",
   "downloadUrl": "./index.html"
 }
