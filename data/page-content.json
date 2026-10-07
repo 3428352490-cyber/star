@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-07T06:10:03.303Z",
+  "generatedAt": "2026-10-07T06:27:34.236Z",
   "announcements": [
     {
       "version": "2.4.9",
@@ -374,10 +374,10 @@
   ],
   "pageEdit": {
     "/home::0": {
-      "text": "星露谷物语",
-      "fontFamily": "\"Press Start 2P\", monospace",
-      "fontSize": 14,
-      "weight": 400
+      "text": "欢迎来到星露谷",
+      "fontFamily": "\"Microsoft YaHei\", system-ui",
+      "fontSize": 26,
+      "weight": 700
     }
   },
   "fontConfig": {
