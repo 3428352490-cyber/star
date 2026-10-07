@@ -194,6 +194,16 @@ body.dev-editing #page-container [data-dev-key]:focus {
   white-space: pre-wrap; word-break: break-word; max-height: 220px; overflow: auto;
 }
 
+/* ---------- 一键上传失败诊断区：HTTP 状态 / 返回片段 / 针对性建议 ---------- */
+.dev-upload-diag {
+  margin-top: 10px; padding: 8px 10px;
+  background: #fdf6e3; border: 2px solid rgba(138, 66, 40, 0.45);
+  border-radius: var(--radius);
+  font-size: 12px; color: #3a2a1a;
+}
+.dev-upload-diag p { margin: 4px 0; line-height: 1.6; word-break: break-all; }
+.dev-upload-diag b { color: var(--accent, #a44); }
+
 /* ---------- 背景锁定窗口弹窗（chip 选择行） ---------- */
 .bg-lock-form { display: flex; flex-direction: column; gap: 10px; }
 .chip-row { display: flex; gap: 6px; flex-wrap: wrap; }

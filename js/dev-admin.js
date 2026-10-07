@@ -155,7 +155,7 @@ const DevAdmin = (() => {
           const got = await safeJsonWithCheck(fileRes);
           sha = (got && got.sha) || '';
         } catch (ge) {
-          if (ge.__class === 'html') return { ok: false, message: 'GitHub API 请求异常（网络拦截/域名错误）：返回 HTML 而非 JSON。请检查：① Token 是否有效且具备 contents 权限 ② 手机网络能否直连 api.github.com（VPN/代理可能拦截） ③ 是否触发 GitHub 限流（稍后再试）' };
+          if (ge.__class === 'html') return { ok: false, message: 'GitHub API 请求异常（网络拦截/域名错误）：返回 HTML 而非 JSON。请检查：① Token 是否有效且具备 contents 权限 ② 手机网络能否直连 api.github.com（VPN/代理可能拦截） ③ 是否触发 GitHub 限流（稍后再试）', diag: { kind: 'html', status: ge.status || 0, snippet: ge.snippet || '', tip: diagnoseHtml(ge.snippet, ge.status).tip } };
           if (ge.__class === 'json') return { ok: false, message: '获取文件失败：本地 JSON 格式错误，无法解析响应内容' };
           throw ge;
         }
@@ -191,7 +191,7 @@ const DevAdmin = (() => {
         try {
           putData = await safeJsonWithCheck(putRes);
         } catch (pe) {
-          if (pe.__class === 'html') return { ok: false, message: 'GitHub API 请求异常（网络拦截/域名错误）：返回 HTML 而非 JSON。请检查：① Token 是否有效且具备 contents 权限 ② 手机网络能否直连 api.github.com（VPN/代理可能拦截） ③ 是否触发 GitHub 限流（稍后再试）' };
+          if (pe.__class === 'html') return { ok: false, message: 'GitHub API 请求异常（网络拦截/域名错误）：返回 HTML 而非 JSON。请检查：① Token 是否有效且具备 contents 权限 ② 手机网络能否直连 api.github.com（VPN/代理可能拦截） ③ 是否触发 GitHub 限流（稍后再试）', diag: { kind: 'html', status: pe.status || 0, snippet: pe.snippet || '', tip: diagnoseHtml(pe.snippet, pe.status).tip } };
           if (pe.__class === 'json') return { ok: false, message: '提交失败：本地 JSON 格式错误，无法解析响应内容' };
           throw pe;
         }
@@ -209,7 +209,7 @@ const DevAdmin = (() => {
       return { ok: false, message: '提交失败（' + putRes.status + '）：' + (putData.message || '未知错误'), raw: JSON.stringify(putData) };
     } catch (e) {
       // 三类异常分类提示：网络拦截/域名错误(html)、Token权限不足(token)、本地JSON格式错误(json)
-      if (e && e.__class === 'html') return { ok: false, message: '网络拦截/域名错误：GitHub API 返回 HTML 而非 JSON，请确认请求 api.github.com 且网络可用' };
+      if (e && e.__class === 'html') return { ok: false, message: '网络拦截/域名错误：GitHub API 返回 HTML 而非 JSON，请确认请求 api.github.com 且网络可用', diag: { kind: 'html', status: e.status || 0, snippet: e.snippet || '', tip: diagnoseHtml(e.snippet, e.status).tip } };
       if (e && e.__class === 'token') return { ok: false, message: 'Token 权限不足：请检查 GitHub Personal Access Token' };
       if (e && e.__class === 'json') return { ok: false, message: '本地 JSON 格式错误：' + (e.message || '响应无法解析') };
       // 原生 fetch 网络异常（TypeError: Failed to fetch / NetworkError）：归入「网络拦截/域名错误」类
@@ -231,6 +231,50 @@ const DevAdmin = (() => {
   }
 
   /**
+   * HTML 响应根因诊断（v2.4.14）：按返回内容特征区分拦截页/登录页/限流页/404，
+   * 给出针对性操作建议，帮助开发者一次性定位上传失败原因。
+   * @param {string} snippet 返回内容片段
+   * @param {number} status HTTP 状态码
+   * @returns {{kind: string, tip: string}} 诊断结果
+   */
+  function diagnoseHtml(snippet, status) {
+    const s = String(snippet || '').toLowerCase();
+    const st = String(status || '');
+    if (s.includes('sign in') || s.includes('log in') || s.includes('login')) {
+      return { kind: 'token', tip: '返回的是 GitHub 登录页：Token 失效或未授权，请重新生成具备 contents 写权限的 Personal Access Token 后重试' };
+    }
+    if (s.includes('rate limit') || s.includes('api rate limit') || st === '429') {
+      return { kind: 'limit', tip: '返回的是限流页：短时间请求过于频繁，请等待片刻后重试' };
+    }
+    if (st === '404') {
+      return { kind: 'notfound', tip: '返回 404：请检查仓库名称 / 分支 / 文件路径（owner / repo / jsonPath）配置是否正确' };
+    }
+    return { kind: 'network', tip: '疑似网络拦截页：请切换网络（Wi-Fi / 手机流量 / 代理节点）重试，确认设备能直连 api.github.com' };
+  }
+
+  /**
+   * 组装上传失败诊断区 HTML（状态码 + 返回内容片段 + 针对性建议），
+   * 供失败弹窗展示；无诊断信息时返回空字符串。
+   * @param {{message:string, diag?:{kind:string,status:number,snippet:string,tip:string}}} r 上传失败结果
+   * @returns {string} 诊断区 HTML
+   */
+  function uploadFailDiagHtml(r) {
+    const d = r && r.diag;
+    if (!d) return '';
+    // 内容片段去 HTML 标签压缩为纯文本（前 100 字符）
+    const clean = String(d.snippet || '')
+      .replace(/<[^>]*>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 100);
+    return '<div class="dev-upload-diag">' +
+      '<p><b>HTTP 状态</b>：' + esc(d.status || '-') + '</p>' +
+      '<p><b>返回内容片段</b>：' + esc(clean || '（空）') + '</p>' +
+      '<p><b>建议</b>：' + esc(d.tip || '') + '</p>' +
+      '</div>';
+  }
+
+  /**
    * 健壮响应解析（响应预处理）：先校验响应头 Content-Type。
    * - HTML 类型（如误请求到 github.com 网页域名、限流重定向页）：直接 throw apiErr('html')，
    *   不再执行 JSON 解析；
@@ -244,8 +288,8 @@ const DevAdmin = (() => {
     const snippet = text.slice(0, 200);
     const looksHtml = /<\s*!doctype|<\s*html/i.test(snippet);
     if (looksHtml || /html/.test(ct)) {
-      // HTML 响应：直接抛出，禁止走 JSON 解析
-      throw apiErr('html', 'GitHub API 返回 HTML 而非 JSON（网络拦截或域名错误，请确认请求的是 api.github.com）', { snippet: snippet, contentType: ct });
+      // HTML 响应：直接抛出，禁止走 JSON 解析（附带状态码与内容片段供诊断）
+      throw apiErr('html', 'GitHub API 返回 HTML 而非 JSON（网络拦截或域名错误，请确认请求的是 api.github.com）', { snippet: snippet, contentType: ct, status: res ? res.status : 0 });
     }
     if (text) {
       try {
@@ -769,7 +813,9 @@ const DevAdmin = (() => {
             if (!r.ok) {
               Modal.show({
                 title: '上传失败',
-                body: '<p>' + esc(r.message) + '</p>' +
+                body:
+                  '<p>' + esc(r.message) + '</p>' +
+                  uploadFailDiagHtml(r) +
                   (r.commitUrl ? '<p class="setting-desc"><a href="' + esc(r.commitUrl) + '" target="_blank" rel="noopener">' + esc(r.commitUrl) + '</a></p>' : '') +
                   '<p class="setting-desc">上传失败不会损坏仓库原有文件。</p>',
                 actions: [{ label: '知道了', cls: 'btn-primary' }],
@@ -788,7 +834,8 @@ const DevAdmin = (() => {
                 body:
                   '<p>' + esc(r.message) + '</p>' +
                   (r.commitUrl ? '<p class="setting-desc"><a href="' + esc(r.commitUrl) + '" target="_blank" rel="noopener">' + esc(r.commitUrl) + '</a></p>' : '') +
-                  '<p class="setting-desc">' + esc(rr.message || '已提交业务数据到远程仓库') + '</p>',
+                  '<p class="setting-desc">' + esc(rr.message || '已提交业务数据到远程仓库') + '</p>' +
+                  uploadFailDiagHtml(rr),
                 actions: [{ label: '知道了', cls: 'btn-primary' }],
               });
             }).catch(function () {
@@ -797,7 +844,8 @@ const DevAdmin = (() => {
                 body:
                   '<p>' + esc(r.message) + '</p>' +
                   (r.commitUrl ? '<p class="setting-desc"><a href="' + esc(r.commitUrl) + '" target="_blank" rel="noopener">' + esc(r.commitUrl) + '</a></p>' : '') +
-                  '<p class="setting-desc">刷新远程业务数据失败，请稍后手动检查更新。</p>',
+                  '<p class="setting-desc">刷新远程业务数据失败，请稍后手动检查更新。</p>' +
+                  uploadFailDiagHtml(r),
                 actions: [{ label: '知道了', cls: 'btn-primary' }],
               });
             });
@@ -902,7 +950,7 @@ const DevAdmin = (() => {
       try {
         data = await safeJsonWithCheck(res);
       } catch (re) {
-        if (re.__class === 'html') return { ok: false, message: 'GitHub API 请求异常（网络拦截/域名错误）：返回 HTML 而非 JSON。请检查：① Token 是否有效且具备 contents 权限 ② 手机网络能否直连 api.github.com（VPN/代理可能拦截） ③ 是否触发 GitHub 限流（稍后再试）' };
+        if (re.__class === 'html') return { ok: false, message: 'GitHub API 请求异常（网络拦截/域名错误）：返回 HTML 而非 JSON。请检查：① Token 是否有效且具备 contents 权限 ② 手机网络能否直连 api.github.com（VPN/代理可能拦截） ③ 是否触发 GitHub 限流（稍后再试）', diag: { kind: 'html', status: re.status || 0, snippet: re.snippet || '', tip: diagnoseHtml(re.snippet, re.status).tip } };
         if (re.__class === 'json') return { ok: false, message: '刷新远程业务数据失败：本地 JSON 格式错误，无法解析响应内容' };
         throw re;
       }
@@ -934,7 +982,7 @@ const DevAdmin = (() => {
       return { ok: true, message: '已刷新远程业务数据，页面已加载最新内容' };
     } catch (e) {
       // 三类异常分类：网络拦截/域名错误(html)、Token权限不足(token)、本地JSON格式错误(json)
-      if (e && e.__class === 'html') return { ok: false, message: '网络拦截/域名错误：GitHub API 返回 HTML 而非 JSON，请确认请求 api.github.com 且网络可用' };
+      if (e && e.__class === 'html') return { ok: false, message: '网络拦截/域名错误：GitHub API 返回 HTML 而非 JSON，请确认请求 api.github.com 且网络可用', diag: { kind: 'html', status: e.status || 0, snippet: e.snippet || '', tip: diagnoseHtml(e.snippet, e.status).tip } };
       if (e && e.__class === 'token') return { ok: false, message: 'Token 权限不足：请检查 GitHub Personal Access Token' };
       if (e && e.__class === 'json') return { ok: false, message: '本地 JSON 格式错误：' + (e.message || '响应无法解析') };
       return { ok: false, message: '网络异常（网络拦截/域名错误）：无法连接 GitHub API，请检查网络或确认请求域名为 api.github.com' };
