@@ -134,8 +134,20 @@ jobs:
               *) ONLY_VERSION_FILES=false ;;
             esac
           done
+          # ---- 新增：commit 消息过滤（网页上传/一键提交跳过版本 bump）----
+          # 网页端一键上传 GitHub 的 commit 描述自动带「网页提交」关键词，
+          # 本地手动含「一键上传」的提交同样视为业务数据提交——
+          # 直接跳过版本 bump，机器人不再自动递增、不生成 version.json 提交。
+          SKIP_WEB_UPLOAD=false
+          if [ "$BEFORE" != "0000000000000000000000000000000000" ]; then
+            MSGS=$(git log --format=%s "$BEFORE..$AFTER" || true)
+            if echo "$MSGS" | grep -Eq "一键上传|网页提交"; then
+              SKIP_WEB_UPLOAD=true
+            fi
+          fi
           echo "only_version_files=$ONLY_VERSION_FILES" >> "$GITHUB_OUTPUT"
           echo "release_changed=$RELEASE_CHANGED" >> "$GITHUB_OUTPUT"
+          echo "skip_web_upload=$SKIP_WEB_UPLOAD" >> "$GITHUB_OUTPUT"
           echo "changed_files=$CHANGED"
 
       # ---------------------------------------------------------------
@@ -144,7 +156,7 @@ jobs:
       # version.json / notice.json 保持不动（发布版本由开发者管理，触发弹窗）。
       # ---------------------------------------------------------------
       - name: Bump patch version
-        if: steps.detect.outputs.only_version_files == 'false' && steps.detect.outputs.release_changed == 'false'
+        if: steps.detect.outputs.only_version_files == 'false' && steps.detect.outputs.release_changed == 'false' && steps.detect.outputs.skip_web_upload == 'false'
         run: |
           node - <<'EOF'
           const fs = require('fs');
@@ -168,7 +180,7 @@ jobs:
       # version.json / notice.json 不参与自动提交，由开发者管理）
       # ---------------------------------------------------------------
       - name: Commit and push
-        if: steps.detect.outputs.only_version_files == 'false' && steps.detect.outputs.release_changed == 'false'
+        if: steps.detect.outputs.only_version_files == 'false' && steps.detect.outputs.release_changed == 'false' && steps.detect.outputs.skip_web_upload == 'false'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"

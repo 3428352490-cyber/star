@@ -101,8 +101,12 @@ const DevAdmin = (() => {
    */
   async function pushToGitHub(opts) {
     const o = opts || {};
-    const note = String(o.note || '').trim() ||
-      'chore(content): auto update ' + new Date().toISOString();
+    // 网页上传 commit 描述强制带「网页提交」关键词，触发 .github/workflows 过滤规则：
+    // Actions 检测到该关键词会跳过版本 bump，机器人不再自动递增、不生成 version.json 提交。
+    const rawNote = String(o.note || '').trim();
+    const note = rawNote
+      ? ('网页提交: ' + rawNote)
+      : 'chore(网页提交): auto update ' + new Date().toISOString();
     const token = getGitHubToken();
     if (!token) return { ok: false, message: '请先填写 GitHub Token' };
 
