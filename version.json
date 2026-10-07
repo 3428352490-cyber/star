@@ -1,5 +1,5 @@
 {
-  "latestVersion": "2.4.12",
-  "updateDesc": "一键上传GitHub请求加redirect:manual,识别301/302重定向为Token失效精准提示,不再误报网络拦截/域名错误",
+  "latestVersion": "2.4.13",
+  "updateDesc": "一键上传读取本地缓存改造：上传待修改数据而非页面旧内容，成功后自动同步刷新，失败保留数据可重试",
   "downloadUrl": "./index.html"
 }
