@@ -683,7 +683,7 @@ const DevAdmin = (() => {
       stored[key] = _draftEdits[key];
       applied.push(key);
     });
-    setPageEdit(stored);
+    setPageEdit(stored, true); // v2.4.22 保存草稿 → 标记未上传（_dirty），同步时本地优先
     applyPageEdits(); // 实时预览
     if (typeof window !== 'undefined' && window.dispatchEvent) {
       window.dispatchEvent(new CustomEvent('sdv-page-edit-change', { detail: { applied: applied } }));
@@ -710,7 +710,17 @@ const DevAdmin = (() => {
 
   /** 读取本地已保存的页面修改（跨端同步共用同一份 localStorage） */
   function getPageEdit() { return read('page_edit', null) || {}; }
-  function setPageEdit(v) { write('page_edit', v || {}); }
+  /** 写入本地页面修改缓存。
+   * v2.4.22：dirty=true 表示「本地未上传修改」——sync 同步时以本地为准不被远程覆盖；
+   * 上传成功 / 同步覆盖 / 重置后写入不含 _dirty 的新值，自动清除未上传标记，
+   * 避免「旧同步残留缓存被误当未上传草稿保护，导致云端内容永远不覆盖页面」。 */
+  function setPageEdit(v, dirty) {
+    let val = v || {};
+    if (dirty) {
+      try { val = JSON.parse(JSON.stringify(val)); val._dirty = true; } catch (e) { /* 忽略 */ }
+    }
+    write('page_edit', val);
+  }
 
   /** 把本地已保存的页面修改应用到当前渲染的页面（实时预览 / 重进页面时重放） */
   function applyPageEdits() {
@@ -1083,8 +1093,12 @@ const DevAdmin = (() => {
     const font = read('font_cfg', null);
     const bg = read('sdv_bg_lock', null);
     const notice = read('notice_edit', null);
-    // 本地有缓存 → 覆盖；无缓存 → 保留远程原值（未修改字段不丢失）
-    if (edit !== null) payload.pageEdit = edit;
+    // 本地有缓存 → 覆盖（剥离未上传标记 _dirty，避免污染远程数据）；无缓存 → 保留远程原值（未修改字段不丢失）
+    if (edit !== null) {
+      const pe = JSON.parse(JSON.stringify(edit));
+      delete pe._dirty; // v2.4.22 上传载荷不含未上传标记
+      payload.pageEdit = pe;
+    }
     else if (base.pageEdit !== undefined) payload.pageEdit = base.pageEdit;
     if (font !== null) payload.fontConfig = font;
     else if (base.fontConfig !== undefined) payload.fontConfig = base.fontConfig;
@@ -1352,7 +1366,9 @@ const DevAdmin = (() => {
       if (manual && typeof Toast !== 'undefined') Toast.show('GitHub API 域名异常，必须使用 api.github.com');
       return { ok: false, message: 'GitHub API 域名异常，必须使用 api.github.com' };
     }
-    const localPageEdit = read('page_edit', null); // 本地未上传修改 → 同步时以本地为准
+    // v2.4.22 本地未上传标记（_dirty）→ 同步时本地优先；旧同步残留缓存（无 _dirty）会被远程覆盖
+    const localPageEdit = read('page_edit', null);
+    const localDirty = localPageEdit !== null && localPageEdit._dirty === true;
     const token = getGitHubToken();
     try {
       // v2.4.21 多通道拉取：raw → api 无认证 → api 带 Token（绕过 api.github.com 路径级拦截）
@@ -1361,8 +1377,8 @@ const DevAdmin = (() => {
         if (manual && typeof Toast !== 'undefined') Toast.show('未能获取远程内容（网络/拦截），已保留本地内容');
         return { ok: false, message: '拉取远程内容失败' };
       }
-      // 应用远程内容：本地无未上传修改时覆盖 pageEdit；字体/公告直接同步
-      if (localPageEdit === null && remote.pageEdit) setPageEdit(remote.pageEdit);
+      // 应用远程内容：本地存在「未上传修改」（_dirty）时以本地为准；否则远程覆盖并清除未上传标记
+      if (!localDirty && remote.pageEdit) setPageEdit(remote.pageEdit);
       if (remote.fontConfig) setFontConfig(remote.fontConfig);
       if (remote.announcements && Array.isArray(remote.announcements) && typeof SDV_CONFIG !== 'undefined') {
         SDV_CONFIG.announcements = remote.announcements;

@@ -19,10 +19,10 @@ test('M33-1 同步覆盖函数存在并导出', () => {
   assert.ok(src.includes('refreshPageContentFromRemote, syncRemoteContent'), '导出列表缺少 syncRemoteContent');
 });
 
-test('M33-2 本地优先规则：本地有未上传修改时不被远程覆盖', () => {
+test('M33-2 本地优先规则：本地有未上传修改（_dirty）时不被远程覆盖', () => {
   const src = readAppFile('js/dev-admin.js');
-  assert.ok(src.includes('const localPageEdit = read(\'page_edit\', null)'), '缺少本地修改检测');
-  assert.ok(src.includes('if (localPageEdit === null && remote.pageEdit) setPageEdit(remote.pageEdit)'), '缺少本地优先覆盖判断');
+  assert.ok(src.includes("const localDirty = localPageEdit !== null && localPageEdit._dirty === true"), '缺少 dirty 判断');
+  assert.ok(src.includes('if (!localDirty && remote.pageEdit) setPageEdit(remote.pageEdit)'), '缺少本地优先覆盖判断');
 });
 
 test('M33-3 管理面板新增「同步覆盖」按钮与动作接线', () => {

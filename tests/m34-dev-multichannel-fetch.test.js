@@ -41,9 +41,9 @@ test('M34-4 sync 与 refresh 均使用多通道拉取', () => {
   assert.ok(rawCount >= 3, 'raw 域名引用不足（应同时出现在 helper 与 refresh）');
 });
 
-test('M34-5 原逻辑不变：域名校验 + 本地优先 + 静默失败', () => {
+test('M34-5 原逻辑不变：域名校验 + 本地优先（_dirty）+ 静默失败', () => {
   const src = readAppFile('js/dev-admin.js');
   assert.ok(src.includes('GitHub API 域名异常，必须使用 api.github.com'), '缺少域名强制校验');
-  assert.ok(src.includes('if (localPageEdit === null && remote.pageEdit) setPageEdit(remote.pageEdit)'), '缺少本地优先规则');
+  assert.ok(src.includes('if (!localDirty && remote.pageEdit) setPageEdit(remote.pageEdit)'), '缺少本地优先规则');
   assert.ok(src.includes('new HashChangeEvent(\'hashchange\')'), '缺少同步后重渲染派发');
 });
