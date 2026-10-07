@@ -95,6 +95,7 @@ const DevAdmin = (() => {
   }
 
   /** 无缓存请求头：绕过浏览器与 GitHub Pages CDN 缓存，确保读取 data/page-content.json 总是拿最新内容 */
+  /** 无缓存请求头：绕过浏览器与 GitHub Pages CDN 缓存，确保读取 data/page-content.json 总是拿最新内容 */
   const NO_CACHE_HEADERS = {
     'Cache-Control': 'no-cache, no-store, must-revalidate',
     'Pragma': 'no-cache',
@@ -144,8 +145,11 @@ const DevAdmin = (() => {
         encodeURIComponent(repo.jsonPath) +
         '?ref=' + encodeURIComponent(repo.branch || 'main') +
         '&t=' + Date.now(),
-        { headers: Object.assign({}, authHeaders, NO_CACHE_HEADERS) }
+        { headers: Object.assign({}, authHeaders, NO_CACHE_HEADERS), redirect: 'manual' }
       );
+      if (fileRes.type === 'opaqueredirect' || fileRes.status === 301 || fileRes.status === 302 || fileRes.status === 307 || fileRes.status === 308) {
+        return { ok: false, message: 'GitHub API 重定向（Token 失效或未授权）：请重新生成有 contents 权限的 Token 再试' };
+      }
       if (fileRes.ok) {
         try {
           const got = await safeJsonWithCheck(fileRes);
@@ -174,9 +178,12 @@ const DevAdmin = (() => {
         base + '/repos/' + encodeURIComponent(repo.owner) + '/' +
         encodeURIComponent(repo.repo) + '/contents/' +
         encodeURIComponent(repo.jsonPath),
-        { method: 'PUT', headers: Object.assign({}, authHeaders, { 'Content-Type': 'application/json' }), body: JSON.stringify(body) }
+        { method: 'PUT', headers: Object.assign({}, authHeaders, { 'Content-Type': 'application/json' }), body: JSON.stringify(body), redirect: 'manual' }
       );
       let putData = {};
+      if (putRes.type === 'opaqueredirect' || putRes.status === 301 || putRes.status === 302 || putRes.status === 307 || putRes.status === 308) {
+        return { ok: false, message: 'GitHub API 重定向（Token 失效或未授权）：请重新生成有 contents 权限的 Token 再试' };
+      }
       if (putRes.status === 401 || putRes.status === 403) {
         return { ok: false, message: 'Token 权限不足：请检查 GitHub Personal Access Token 是否有效且具备 contents 写权限' };
       }
@@ -868,8 +875,11 @@ const DevAdmin = (() => {
         encodeURIComponent(repo.jsonPath) +
         '?ref=' + encodeURIComponent(repo.branch || 'main') +
         '&t=' + Date.now(),
-        { headers: Object.assign({}, headers, NO_CACHE_HEADERS) }
+        { headers: Object.assign({}, headers, NO_CACHE_HEADERS), redirect: 'manual' }
       );
+      if (res.type === 'opaqueredirect' || res.status === 301 || res.status === 302 || res.status === 307 || res.status === 308) {
+        return { ok: false, message: 'GitHub API 重定向（Token 失效或未授权）：请重新生成有 contents 权限的 Token 再试' };
+      }
       if (res.status === 401 || res.status === 403) {
         return { ok: false, message: 'Token 权限不足：请检查 GitHub Personal Access Token 是否有效' };
       }
