@@ -690,12 +690,35 @@ const DevAdmin = (() => {
           const note = ((document.getElementById('gh-push-note') || {}).value || '').trim();
           pushToGitHub({ note: note, payload: payload }).then(function (r) {
             if (typeof Modal !== 'undefined') Modal.close();
-            Modal.show({
-              title: r.ok ? '上传成功' : '上传失败',
-              body: '<p>' + esc(r.message) + '</p>' +
-                (r.commitUrl ? '<p class="setting-desc"><a href="' + esc(r.commitUrl) + '" target="_blank" rel="noopener">' + esc(r.commitUrl) + '</a></p>' : '') +
-                (r.ok ? '' : '<p class="setting-desc">上传失败不会损坏仓库原有文件。</p>'),
-              actions: [{ label: '知道了', cls: 'btn-primary' }],
+            if (!r.ok) {
+              Modal.show({
+                title: '上传失败',
+                body: '<p>' + esc(r.message) + '</p>' +
+                  (r.commitUrl ? '<p class="setting-desc"><a href="' + esc(r.commitUrl) + '" target="_blank" rel="noopener">' + esc(r.commitUrl) + '</a></p>' : '') +
+                  '<p class="setting-desc">上传失败不会损坏仓库原有文件。</p>',
+                actions: [{ label: '知道了', cls: 'btn-primary' }],
+              });
+              return;
+            }
+            // 上传成功回调：清除本地业务缓存并重新 fetch 远程业务文件，刷新当前页面数据源
+            refreshPageContentFromRemote().then(function (rr) {
+              Modal.show({
+                title: '上传成功',
+                body:
+                  '<p>' + esc(r.message) + '</p>' +
+                  (r.commitUrl ? '<p class="setting-desc"><a href="' + esc(r.commitUrl) + '" target="_blank" rel="noopener">' + esc(r.commitUrl) + '</a></p>' : '') +
+                  '<p class="setting-desc">' + esc(rr.message || '已提交业务数据到远程仓库') + '</p>',
+                actions: [{ label: '知道了', cls: 'btn-primary' }],
+              });
+            }).catch(function () {
+              Modal.show({
+                title: '上传成功',
+                body:
+                  '<p>' + esc(r.message) + '</p>' +
+                  (r.commitUrl ? '<p class="setting-desc"><a href="' + esc(r.commitUrl) + '" target="_blank" rel="noopener">' + esc(r.commitUrl) + '</a></p>' : '') +
+                  '<p class="setting-desc">刷新远程业务数据失败，请稍后手动检查更新。</p>',
+                actions: [{ label: '知道了', cls: 'btn-primary' }],
+              });
             });
           });
         } },
@@ -703,12 +726,15 @@ const DevAdmin = (() => {
     });
   }
 
-  /** 组装「本地已保存的页面修改内容」：页面文本/字体编辑 + 公告 + 背景锁定（提交到 jsonPath） */
+  /**
+   * 组装「本地已保存的页面修改内容」：页面文本/字体编辑 + 公告 + 背景锁定（提交到 jsonPath）。
+   * 网页端一键上传只提交业务 JSON 数据，不携带、不递增、不写入任何版本相关字段
+   * （版本升级仅由电脑本地 Git 推送流程处理，网页上传完全跳过）。
+   */
   function buildPageContentPayload() {
     const cfg = (typeof SDV_CONFIG !== 'undefined') ? SDV_CONFIG : {};
     return {
       generatedAt: new Date().toISOString(),
-      appVersion: cfg.app ? cfg.app.version : '',
       announcements: cfg.announcements || [],
       pageEdit: getPageEdit(),      // 本地已保存的页面文本/字体修改
       fontConfig: getFontConfig(),
@@ -716,12 +742,11 @@ const DevAdmin = (() => {
     };
   }
 
-  /** 生成「本地已保存的页面修改内容」摘要（确认弹窗展示，防止误提交） */
+  /** 生成「本地已保存的页面修改内容」摘要（确认弹窗展示，防止误提交；不含版本信息） */
   function describePageContent(payload) {
     try {
       const lines = [];
       lines.push('生成时间：' + payload.generatedAt);
-      lines.push('版本：' + (payload.appVersion || '-'));
       const editKeys = Object.keys(payload.pageEdit || {});
       lines.push('页面文本/字体修改：' + (editKeys.length ? editKeys.length + ' 处' : '无'));
       editKeys.slice(0, 20).forEach(function (k) {
@@ -738,6 +763,66 @@ const DevAdmin = (() => {
       return lines.join('\n');
     } catch (e) {
       return JSON.stringify(payload, null, 2);
+    }
+  }
+
+  /**
+   * 提交成功后刷新业务数据源：清除本地业务缓存并重新 fetch 远程 jsonPath，
+   * 让当前页面立刻加载远程最新业务内容（修复"仅本地内存保存、其他浏览器看不到"BUG）。
+   * 只处理业务 JSON 文件，绝不触碰 version.json 或任何版本变量。
+   * @returns {Promise<{ok:boolean, message:string}>}
+   */
+  async function refreshPageContentFromRemote() {
+    const repo = getGitHubRepo();
+    const token = getGitHubToken();
+    if (!repo || !repo.owner || !repo.repo || !repo.jsonPath) {
+      return { ok: false, message: '仓库配置缺失，无法刷新远程业务数据' };
+    }
+    const base = 'https://api.github.com';
+    const headers = {};
+    if (token) headers.Authorization = 'Bearer ' + token;
+    try {
+      // ① 清除本地业务修改缓存（页面文本/字体编辑 + 背景锁定），保留公告由远程驱动
+      try {
+        localStorage.removeItem(NS + 'page_edit');
+        localStorage.removeItem('sdv_bg_lock');
+      } catch (e) { /* 忽略 */ }
+
+      // ② 重新 fetch 远程 jsonPath，拉取最新业务内容
+      const res = await fetch(
+        base + '/repos/' + encodeURIComponent(repo.owner) + '/' +
+        encodeURIComponent(repo.repo) + '/contents/' +
+        encodeURIComponent(repo.jsonPath) +
+        '?ref=' + encodeURIComponent(repo.branch || 'main'),
+        { headers: headers }
+      );
+      if (!res.ok) {
+        const err = await safeJson(res);
+        return { ok: false, message: '刷新远程业务数据失败（' + res.status + '）：' + (err.message || '请检查 Token 权限') };
+      }
+      const data = await res.json();
+      // 解码 base64 内容
+      let content = '';
+      if (data.content) {
+        try {
+          content = decodeURIComponent(escape(atob(data.content.replace(/\n/g, ''))));
+        } catch (e) { content = ''; }
+      }
+      let remote = {};
+      if (content) {
+        try { remote = JSON.parse(content); } catch (e) { remote = {}; }
+      }
+
+      // ③ 用远程业务数据回写本地缓存并即时重放页面
+      if (remote.pageEdit) setPageEdit(remote.pageEdit);
+      if (remote.fontConfig) setFontConfig(remote.fontConfig);
+      if (typeof applyPageEdits === 'function') applyPageEdits();
+      if (typeof window !== 'undefined' && window.dispatchEvent) {
+        window.dispatchEvent(new CustomEvent('sdv-page-edit-change', { detail: { applied: ['refresh-from-remote'] } }));
+      }
+      return { ok: true, message: '已刷新远程业务数据，页面已加载最新内容' };
+    } catch (e) {
+      return { ok: false, message: '刷新网络异常：' + (e && e.message ? e.message : e) };
     }
   }
 
@@ -941,7 +1026,7 @@ const DevAdmin = (() => {
   return {
     login, logout, getDevLogin, isDev,
     getGitHubToken, setGitHubToken, getGitHubRepo, setGitHubRepo,
-    pushToGitHub, buildPageContentPayload,
+    pushToGitHub, buildPageContentPayload, refreshPageContentFromRemote,
     openLoginModal, openAdminPanel, openBgLockModal, doLogout,
     enterEditMode, exitEditMode, savePageEdits, resetPageEdits, applyPageEdits,
     getPageEdit, setPageEdit, getFontConfig, setFontConfig,
