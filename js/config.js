@@ -10,7 +10,7 @@
 const SDV_CONFIG = {
   app: {
     name: '星露谷攻略',
-    version: '2.4.20',
+    version: '2.4.21',
     /**
      * 云端版本清单地址（GitHub Pages 部署后替换为实际地址）：
      * 例如 'https://你的用户名.github.io/仓库名/version.json'
@@ -56,6 +56,16 @@ const SDV_CONFIG = {
 
   /** 软件公告（公告页渲染；新版本发布时向数组头部追加条目） */
   announcements: [
+    {
+      version: '2.4.21',
+      date: '2026-10-07',
+      title: '一键上传多通道同步',
+      notes: [
+        '修复其他网页更改无法覆盖：同步拉取新增 raw.githubusercontent.com 优先通道，绕过网络对 api.github.com 的路径级拦截',
+        '页面自动同步 / 上传后刷新 / 手动同步覆盖全部走多通道（raw → API 无认证 → API 带 Token）',
+        '云端最新内容打开页面即可覆盖显示，跨设备同步稳定可靠',
+      ],
+    },
     {
       version: '2.4.20',
       date: '2026-10-07',

@@ -1,5 +1,5 @@
 {
-  "latestVersion": "2.4.20",
-  "updateDesc": "一键上传同步覆盖：页面打开自动拉取云端最新内容并覆盖显示，管理面板新增「同步覆盖」按钮，其他设备也能看到最新修改",
+  "latestVersion": "2.4.21",
+  "updateDesc": "一键上传多通道同步：同步拉取新增 raw.githubusercontent.com 优先通道，绕过 api.github.com 路径级拦截，云端内容打开页面即可覆盖显示",
   "downloadUrl": "./index.html"
 }
