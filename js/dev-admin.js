@@ -862,6 +862,7 @@ const DevAdmin = (() => {
 
         '<div class="admin-row-actions">' +
           '<button class="btn" data-action="dev-save-github-config">保存仓库配置</button>' +
+          '<button class="btn" data-action="dev-sync-remote" title="拉取远程 page-content.json 并覆盖应用到当前页面（本地未上传修改不受影响）">同步覆盖</button>' +
           '<button class="btn btn-primary btn-upload" data-action="dev-push-github">一键上传GitHub</button>' +
         '</div>' +
         '<p class="admin-github-status" id="gh-status">当前 Token：' +
@@ -897,6 +898,9 @@ const DevAdmin = (() => {
         break;
       case 'dev-push-github':
         pushGitHubWithConfirm();
+        break;
+      case 'dev-sync-remote':
+        syncRemoteContent(true); // v2.4.20 手动同步覆盖：拉取远程内容并覆盖到页面
         break;
       case 'dev-net-check':
         runNetCheck();
@@ -1249,6 +1253,86 @@ const DevAdmin = (() => {
     }
   }
 
+  /**
+   * v2.4.20 同步覆盖：拉取远程 page-content.json 并应用到本地页面（跨设备内容同步）。
+   *  - 本地已有「未上传」的页面修改缓存 → 以本地为准（同步不覆盖未上传修改，避免丢失）；
+   *  - 本地无缓存 → 用远程内容覆盖（pageEdit/字体配置/公告）并重渲染页面；
+   *  - 静默失败：网络被拦/超时不影响页面正常使用（自动同步场景）；手动触发时 Toast 提示结果。
+   * @param {boolean} manual 手动触发（管理面板「同步覆盖」按钮）时为 true，成功/失败均提示
+   */
+  async function syncRemoteContent(manual) {
+    const repo = getGitHubRepo();
+    if (!repo || !repo.owner || !repo.repo || !repo.jsonPath) {
+      if (manual && typeof Toast !== 'undefined') Toast.show('仓库配置缺失，无法同步远程内容');
+      return { ok: false, message: '仓库配置缺失' };
+    }
+    const base = 'https://api.github.com';
+    if (!/^https:\/\/api\.github\.com$/.test(base)) {
+      if (manual && typeof Toast !== 'undefined') Toast.show('GitHub API 域名异常，必须使用 api.github.com');
+      return { ok: false, message: 'GitHub API 域名异常，必须使用 api.github.com' };
+    }
+    const localPageEdit = read('page_edit', null); // 本地未上传修改 → 同步时以本地为准
+    const token = getGitHubToken();
+    try {
+      const readUrl = base + '/repos/' + encodeURIComponent(repo.owner) + '/' +
+        encodeURIComponent(repo.repo) + '/contents/' +
+        encodeURIComponent(repo.jsonPath) +
+        '?ref=' + encodeURIComponent(repo.branch || 'main') + '&t=' + Date.now();
+      let remote = {};
+      try {
+        // 无认证优先读取（绕过带认证请求的路径级拦截；私有仓库自动回退带 Token）
+        const anonRes = await fetchTimeout(
+          readUrl,
+          { headers: { 'Accept': 'application/vnd.github+json' }, redirect: 'manual' },
+          10000
+        );
+        if (anonRes.ok) {
+          try {
+            const anonData = await safeJsonWithCheck(anonRes);
+            const parsed = parseRemoteContent(anonData);
+            if (parsed) remote = parsed;
+          } catch (anonErr) {
+            if (anonErr.__class !== 'html' && anonErr.__class !== 'json') throw anonErr;
+          }
+        }
+      } catch (anonErr) {
+        // 网络级异常（net）也进入带 Token 回退尝试；html/json 拦截静默跳过
+        if (anonErr.__class !== 'html' && anonErr.__class !== 'json' && anonErr.__class !== 'net') throw anonErr;
+      }
+      if (!Object.keys(remote).length && token) {
+        const got = await withRetry(function () {
+          return fetchTimeout(
+            readUrl,
+            { headers: Object.assign({ Authorization: 'Bearer ' + token }, NO_CACHE_HEADERS), redirect: 'manual' },
+            10000
+          ).then(async function (res) {
+            if (!res.ok) throw apiErr('other', '同步远程内容失败（' + res.status + '）');
+            const d = await safeJsonWithCheck(res);
+            return parseRemoteContent(d) || {};
+          });
+        }, 2);
+        remote = got;
+      }
+      if (!Object.keys(remote).length) {
+        if (manual && typeof Toast !== 'undefined') Toast.show('未能获取远程内容（网络/拦截），已保留本地内容');
+        return { ok: false, message: '拉取远程内容失败' };
+      }
+      // 应用远程内容：本地无未上传修改时覆盖 pageEdit；字体/公告直接同步
+      if (localPageEdit === null && remote.pageEdit) setPageEdit(remote.pageEdit);
+      if (remote.fontConfig) setFontConfig(remote.fontConfig);
+      if (remote.announcements && Array.isArray(remote.announcements) && typeof SDV_CONFIG !== 'undefined') {
+        SDV_CONFIG.announcements = remote.announcements;
+      }
+      if (typeof applyPageEdits === 'function') applyPageEdits();
+      if (window && window.dispatchEvent) window.dispatchEvent(new HashChangeEvent('hashchange'));
+      if (manual && typeof Toast !== 'undefined') Toast.show('已同步远程内容并覆盖到页面');
+      return { ok: true, message: '已同步远程内容并覆盖到页面' };
+    } catch (e) {
+      if (manual && typeof Toast !== 'undefined') Toast.show('同步失败：' + ((e && e.message) || '网络异常') + '。已保留本地内容');
+      return { ok: false, message: '同步失败：' + ((e && e.message) || '网络异常') };
+    }
+  }
+
   /* ---------- 字体模板 / 字号配置（页面默认字体，编辑弹窗内切换） ---------- */
   /** 内置多套像素字体模板（沿用 Press Start 2P + 系统等宽像素风） */
   const FONT_TEMPLATES = [
@@ -1438,6 +1522,13 @@ const DevAdmin = (() => {
     }
     // 首屏重放本地已保存的页面修改
     setTimeout(function () { applyPageEdits(); }, 0);
+    // v2.4.20 页面加载后静默同步远程内容（跨设备覆盖：其他端上传的修改自动生效）。
+    // 本地有未上传修改时以本地为准，不被覆盖；网络被拦/超时静默跳过，不影响正常使用。
+    setTimeout(function () {
+      if (typeof syncRemoteContent === 'function') {
+        syncRemoteContent(false).catch(function () { /* 静默 */ });
+      }
+    }, 1200);
   }
 
   if (document.readyState === 'loading') {
@@ -1449,7 +1540,7 @@ const DevAdmin = (() => {
   return {
     login, logout, getDevLogin, isDev,
     getGitHubToken, setGitHubToken, getGitHubRepo, setGitHubRepo,
-    pushToGitHub, buildPageContentPayload, refreshPageContentFromRemote,
+    pushToGitHub, buildPageContentPayload, refreshPageContentFromRemote, syncRemoteContent,
     openLoginModal, openAdminPanel, openBgLockModal, doLogout,
     enterEditMode, exitEditMode, savePageEdits, resetPageEdits, applyPageEdits,
     getPageEdit, setPageEdit, getFontConfig, setFontConfig,
