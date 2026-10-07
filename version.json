@@ -1,5 +1,5 @@
 {
-  "latestVersion": "2.4.7",
-  "updateDesc": "开发者模式上线：全局编辑工具条 + 文字可视化编辑 + 管理面板精简 + 一键上传GitHub，未登录不影响普通浏览",
+  "latestVersion": "2.4.9",
+  "updateDesc": "一键上传GitHub仅提交业务数据，跳过版本逻辑；修复版本对比与页面提交BUG，提交成功后自动刷新远程业务数据源",
   "downloadUrl": "./index.html"
 }
