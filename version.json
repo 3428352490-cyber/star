@@ -1,5 +1,5 @@
 {
-  "latestVersion": "2.4.14",
-  "updateDesc": "一键上传失败诊断增强：失败弹窗展示HTTP状态码与返回内容片段，自动区分Token失效/限流/配置错误/网络拦截根因",
+  "latestVersion": "2.4.15",
+  "updateDesc": "一键上传备用通道与网络自检：请求超时+自动重试最多3次，失败弹窗新增检测网络按钮，片段显示优化",
   "downloadUrl": "./index.html"
 }
