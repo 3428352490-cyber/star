@@ -25,11 +25,11 @@ test('M33-2 本地优先规则：本地有未上传修改（_dirty）时不被�
   assert.ok(src.includes('if (!localDirty && remote.pageEdit) setPageEdit(remote.pageEdit)'), '缺少本地优先覆盖判断');
 });
 
-test('M33-3 管理面板新增「同步覆盖」按钮与动作接线', () => {
+test('M33-3 管理面板同步覆盖按钮已移除，动作分支与逻辑保留', () => {
   const src = readAppFile('js/dev-admin.js');
-  assert.ok(src.includes('data-action="dev-sync-remote"'), '缺少同步覆盖按钮');
-  assert.ok(src.includes("case 'dev-sync-remote'"), '缺少同步覆盖动作分支');
-  assert.ok(src.includes('syncRemoteContent(true)'), '缺少手动触发调用');
+  assert.ok(!src.includes('data-action="dev-sync-remote"'), '同步覆盖按钮应已从管理面板移除');
+  assert.ok(src.includes("case 'dev-sync-remote'"), '同步覆盖动作分支保留');
+  assert.ok(src.includes('syncRemoteContent(true)'), '同步覆盖调用保留（检查更新入口仍使用）');
 });
 
 test('M33-4 页面加载后自动静默同步挂载', () => {

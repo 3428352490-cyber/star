@@ -872,7 +872,6 @@ const DevAdmin = (() => {
 
         '<div class="admin-row-actions">' +
           '<button class="btn" data-action="dev-save-github-config">保存仓库配置</button>' +
-          '<button class="btn" data-action="dev-sync-remote" title="拉取远程 page-content.json 并覆盖应用到当前页面（本地未上传修改不受影响）">同步覆盖</button>' +
           '<button class="btn btn-primary btn-upload" data-action="dev-push-github">一键上传GitHub</button>' +
         '</div>' +
         '<p class="admin-github-status" id="gh-status">当前 Token：' +
