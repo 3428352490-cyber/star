@@ -126,6 +126,10 @@ const DevAdmin = (() => {
     }
 
     const base = 'https://api.github.com';
+    // 校验 API 域名必须为 api.github.com，防止误请求到网页域名（github.com 等返回 HTML）
+    if (!/^https:\/\/api\.github\.com$/.test(base)) {
+      return { ok: false, message: 'GitHub API 域名异常，必须使用 api.github.com' };
+    }
     const authHeaders = {
       'Authorization': 'Bearer ' + token,
       'Accept': 'application/vnd.github+json',
@@ -143,8 +147,14 @@ const DevAdmin = (() => {
         { headers: Object.assign({}, authHeaders, NO_CACHE_HEADERS) }
       );
       if (fileRes.ok) {
-        const fileData = await fileRes.json();
-        sha = fileData.sha || '';
+        const got = await safeJsonWithCheck(fileRes);
+        if (got.html) {
+          return { ok: false, message: 'GitHub API 请求异常：返回 HTML 而非 JSON，请检查 Token 权限或网络（可能误请求到网页域名）', raw: got.snippet };
+        }
+        if (got.badJson) {
+          return { ok: false, message: '获取文件失败：JSON 格式错误，无法解析响应内容', raw: got.snippet };
+        }
+        sha = (got.data && got.data.sha) || '';
       } else if (fileRes.status === 404) {
         sha = ''; // 文件不存在则直接创建
       } else {
@@ -169,7 +179,14 @@ const DevAdmin = (() => {
         encodeURIComponent(repo.jsonPath),
         { method: 'PUT', headers: Object.assign({}, authHeaders, { 'Content-Type': 'application/json' }), body: JSON.stringify(body) }
       );
-      const putData = await safeJson(putRes);
+      const putGot = await safeJsonWithCheck(putRes);
+      const putData = putGot.data;
+      if (putGot.html) {
+        return { ok: false, message: 'GitHub API 请求异常：返回 HTML 而非 JSON，请检查 Token 权限或网络（可能误请求到网页域名）', raw: putGot.snippet };
+      }
+      if (putGot.badJson) {
+        return { ok: false, message: '提交失败：JSON 格式错误，无法解析响应内容', raw: putGot.snippet };
+      }
       if (putRes.ok) {
         return { ok: true, message: '提交成功：' + note, commitUrl: putData.commit && putData.commit.url };
       }
@@ -191,6 +208,34 @@ const DevAdmin = (() => {
 
   async function safeJson(res) {
     try { return await res.json(); } catch (e) { return {}; }
+  }
+
+  /**
+   * 健壮响应解析：先校验响应是否为 JSON 内容类型。
+   * - JSON：正常解析并返回对象；
+   * - HTML/非 JSON（如 GitHub API 异常返回的重定向页、误请求到网页域名）：
+   *   不抛 JSON 解析异常，返回 { __html: true, snippet }，由调用方区分「API返回HTML」报错；
+   * - 解析失败（JSON 格式错误）：返回 { __badJson: true, snippet }。
+   * 返回结构：{ data, html, badJson, snippet, contentType }
+   */
+  async function safeJsonWithCheck(res) {
+    const ct = String((res && res.headers && res.headers.get && res.headers.get('Content-Type')) || '').toLowerCase();
+    let text = '';
+    try { text = await res.text(); } catch (e) { text = ''; }
+    const snippet = text.slice(0, 200);
+    const looksHtml = /<\s*!doctype|<\s*html/i.test(snippet);
+    if (looksHtml || /html/.test(ct)) {
+      return { data: {}, html: true, badJson: false, snippet: snippet, contentType: ct };
+    }
+    if (text) {
+      try {
+        const data = JSON.parse(text);
+        return { data: data, html: false, badJson: false, snippet: snippet, contentType: ct };
+      } catch (e) {
+        return { data: {}, html: false, badJson: true, snippet: snippet, contentType: ct };
+      }
+    }
+    return { data: {}, html: false, badJson: false, snippet: snippet, contentType: ct };
   }
 
   /* ============================================================
@@ -791,6 +836,9 @@ const DevAdmin = (() => {
       return { ok: false, message: '仓库配置缺失，无法刷新远程业务数据' };
     }
     const base = 'https://api.github.com';
+    if (!/^https:\/\/api\.github\.com$/.test(base)) {
+      return { ok: false, message: 'GitHub API 域名异常，必须使用 api.github.com' };
+    }
     const headers = {};
     if (token) headers.Authorization = 'Bearer ' + token;
     try {
@@ -814,10 +862,17 @@ const DevAdmin = (() => {
         const err = await safeJson(res);
         return { ok: false, message: '刷新远程业务数据失败（' + res.status + '）：' + (err.message || '请检查 Token 权限') };
       }
-      const data = await res.json();
+      const gotData = await safeJsonWithCheck(res);
+      if (gotData.html) {
+        return { ok: false, message: 'GitHub API 请求异常：返回 HTML 而非 JSON，请检查 Token 权限或网络（可能误请求到网页域名）' };
+      }
+      if (gotData.badJson) {
+        return { ok: false, message: '刷新远程业务数据失败：JSON 格式错误，无法解析响应内容' };
+      }
+      const data = gotData.data;
       // 解码 base64 内容
       let content = '';
-      if (data.content) {
+      if (data && data.content) {
         try {
           content = decodeURIComponent(escape(atob(data.content.replace(/\n/g, ''))));
         } catch (e) { content = ''; }
