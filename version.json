@@ -1,5 +1,5 @@
 {
-  "latestVersion": "2.4.21",
-  "updateDesc": "一键上传多通道同步：同步拉取新增 raw.githubusercontent.com 优先通道，绕过 api.github.com 路径级拦截，云端内容打开页面即可覆盖显示",
+  "latestVersion": "2.4.22",
+  "updateDesc": "云端内容覆盖修复：本地页面修改新增「未上传」标记，仅未上传修改优先保留，其余情况云端最新内容打开页面即可覆盖显示",
   "downloadUrl": "./index.html"
 }
