@@ -1,5 +1,19 @@
 {
-  "generatedAt": "2026-10-07T12:23:41.247765Z",
+  "generatedAt": "2026-10-07T12:32:39.223Z",
+  "pageEdit": {
+    "/home::0": {
+      "text": "星露谷",
+      "fontFamily": "monospace",
+      "fontSize": 38,
+      "weight": 400
+    }
+  },
+  "fontConfig": {
+    "template": "px-retro",
+    "fontSize": 14,
+    "weight": 400
+  },
+  "backgroundLock": null,
   "announcements": [
     {
       "version": "2.4.9",
@@ -371,12 +385,5 @@
         "本地设置保存，重启不丢失"
       ]
     }
-  ],
-  "pageEdit": {},
-  "fontConfig": {
-    "template": "px-retro",
-    "fontSize": 14,
-    "weight": 400
-  },
-  "backgroundLock": null
+  ]
 }
