@@ -137,8 +137,9 @@ const DevAdmin = (() => {
     };
 
     try {
-      // ① 读取当前文件内容（获取 sha；弱网/拦截自动重试，最多 3 次）
+      // ① 读取当前文件内容（获取 sha 与远程基底；弱网/拦截自动重试，最多 3 次）
       let sha = '';
+      let remoteBase = null; // 远程现有 page-content.json（供上传载荷增量合并，v2.4.18）
       try {
         // 0) 无认证优先读取（v2.4.16）：公开仓库无需 Token 即可读取 sha，
         //    可绕过部分网络/代理对「带认证请求」的路径级拦截规则；
@@ -156,6 +157,8 @@ const DevAdmin = (() => {
           try {
             const anonData = await safeJsonWithCheck(anonRes);
             if (anonData && anonData.sha) sha = anonData.sha;
+            const parsed = parseRemoteContent(anonData);
+            if (parsed) remoteBase = parsed;
           } catch (anonErr) {
             // 无认证读取异常（HTML 拦截 / JSON 异常）不阻塞，继续走带 Token 流程
             if (anonErr.__class !== 'html' && anonErr.__class !== 'json') throw anonErr;
@@ -175,24 +178,27 @@ const DevAdmin = (() => {
               if (fileRes.status === 401 || fileRes.status === 403) {
                 throw apiErr('token', 'Token 权限不足：请检查 GitHub Personal Access Token 是否有效且具备 contents 写权限');
               }
-              if (fileRes.status === 404) return { sha: '' }; // 文件不存在则直接创建
+              if (fileRes.status === 404) return { sha: '', base: null }; // 文件不存在则直接创建
               if (fileRes.ok) {
                 const got = await safeJsonWithCheck(fileRes);
-                return { sha: (got && got.sha) || '' };
+                return { sha: (got && got.sha) || '', base: parseRemoteContent(got) };
               }
               throw apiErr('other', '获取文件失败（' + fileRes.status + '）：请检查 Token 权限与仓库配置');
             });
           }, 3);
           sha = got.sha;
+          if (got.base) remoteBase = got.base;
         }
       } catch (ge) {
         return uploadErr(ge);
       }
 
       // ② 提交 / 创建文件（弱网/拦截自动重试；PUT 幂等，同 sha 重试安全）
+      //    载荷 = 远程基底 + 本地缓存增量合并（无本地修改的字段保留远程原值，防止覆盖远程公告等数据）
+      const payload = buildPageContentPayload(remoteBase);
       const body = {
         message: note,
-        content: btoa(unescape(encodeURIComponent(JSON.stringify(o.payload, null, 2)))),
+        content: btoa(unescape(encodeURIComponent(JSON.stringify(payload, null, 2)))),
         branch: repo.branch || 'main',
       };
       if (sha) body.sha = sha;
@@ -1045,17 +1051,43 @@ const DevAdmin = (() => {
    * v2.4.13：一键上传只读取「本地 storage 内缓存的待修改数据」——
    * 不再从页面原始配置（SDV_CONFIG）读取公告，避免把旧原始数据覆盖到远程最新公告。
    */
-  function buildPageContentPayload() {
-    const payload = {
-      generatedAt: new Date().toISOString(),
-      pageEdit: getPageEdit(),      // 本地已保存的页面文本/字体修改（localStorage 缓存）
-      fontConfig: getFontConfig(),
-      backgroundLock: readLockNow(),
-    };
-    // 公告：仅当本地存在公告修改缓存时才携带字段（无缓存不覆盖远程公告；
-    // undefined 字段会被 JSON.stringify 自动跳过）
-    const cachedNotice = read('notice_edit', null);
-    if (cachedNotice !== null) payload.announcements = cachedNotice;
+  /**
+   * 解码 GitHub contents API 返回的 base64 内容并解析为 JSON（v2.4.18）。
+   * 用于上传前读取远程现有 page-content.json 作为合并基底。
+   * @param {object|null} data contents API 响应（含 content base64）
+   * @returns {object|null} 解析后的 JSON；无内容/解析失败返回 null
+   */
+  function parseRemoteContent(data) {
+    let content = '';
+    if (data && data.content) {
+      try { content = decodeURIComponent(escape(atob(String(data.content).replace(/\n/g, '')))); } catch (e) { content = ''; }
+    }
+    if (!content) return null;
+    try { return JSON.parse(content); } catch (e) { return null; }
+  }
+
+  /**
+   * 生成本次上传的 page-content.json 载荷（v2.4.18 增量合并版）：
+   * 以远程现有内容为基底，仅用本地缓存覆盖「确有修改」的字段；
+   * 无本地修改的字段保留远程原值——修复此前「本地缓存缺失字段 → PUT 全量覆盖 → 远程公告等数据被删」的问题。
+   * @param {object|null} remote 远程现有 JSON（读取失败/首次上传时传 null 或 {}）
+   */
+  function buildPageContentPayload(remote) {
+    const base = (remote && typeof remote === 'object') ? remote : {};
+    const payload = { generatedAt: new Date().toISOString() };
+    const edit = read('page_edit', null);
+    const font = read('font_cfg', null);
+    const bg = read('sdv_bg_lock', null);
+    const notice = read('notice_edit', null);
+    // 本地有缓存 → 覆盖；无缓存 → 保留远程原值（未修改字段不丢失）
+    if (edit !== null) payload.pageEdit = edit;
+    else if (base.pageEdit !== undefined) payload.pageEdit = base.pageEdit;
+    if (font !== null) payload.fontConfig = font;
+    else if (base.fontConfig !== undefined) payload.fontConfig = base.fontConfig;
+    if (bg !== null) payload.backgroundLock = bg;
+    else if (base.backgroundLock !== undefined) payload.backgroundLock = base.backgroundLock;
+    if (notice !== null) payload.announcements = notice;
+    else if (base.announcements !== undefined) payload.announcements = base.announcements;
     return payload;
   }
 

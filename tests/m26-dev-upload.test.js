@@ -22,10 +22,10 @@ before(resetLocal);
 
 test('M26-1 一键上传读取本地缓存公告：有本地公告缓存时携带，无缓存时不携带', () => {
   resetLocal();
-  // 无公告缓存：payload 不携带 announcements 字段（不覆盖远程公告）
+  // 无公告缓存且无远程基底：payload 不携带 announcements 字段（增量合并：不凭空生成也不删远程数据）
   let payload = DevAdmin.buildPageContentPayload();
-  assert.ok(!('announcements' in payload), '无本地公告缓存时不应携带 announcements（避免旧数据覆盖远程）');
-  assert.ok(payload.pageEdit !== undefined && payload.fontConfig !== undefined, '页面文本/字体修改应始终从本地缓存读取');
+  assert.ok(!('announcements' in payload), '无本地公告缓存且无远程基底时不应携带 announcements');
+  assert.ok(!('pageEdit' in payload) && !('fontConfig' in payload), '无本地缓存且无远程基底时不应携带 pageEdit/fontConfig（增量合并语义）');
   // 写入本地公告修改缓存：payload 应携带缓存值（而非页面原始 SDV_CONFIG）
   const cached = [{ version: '9.9.9', title: '本地公告草稿', notes: ['x'] }];
   localStorage.setItem(NS + 'notice_edit', JSON.stringify(cached));
