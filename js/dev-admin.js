@@ -898,8 +898,18 @@ const DevAdmin = (() => {
         '<p class="admin-github-hint">导出用法：网络无法直连 api.github.com（一键上传被拦截）时，点击「导出JSON下载」得到 JSON 文件，' +
           '到 GitHub 网页 github.com/' + esc(repo.owner || '…') + '/' + esc(repo.repo || '…') + ' → data 目录 → 编辑/上传文件，覆盖 ' +
           esc(repo.jsonPath || 'data/page-content.json') + '，效果等同（文件以「网页提交」开头可被 Actions 过滤，不会乱升版本）。</p>' +
+        /* v2.5.7 树叶飘落动画开关（全局特效，开发者可控制） */
+        '<div class="setting-row leaf-anim-row">' +
+          '<div><div class="setting-title">树叶飘落动画</div><div class="setting-desc">全局像素树叶特效（开发调试开关，默认开启）</div></div>' +
+          '<label class="switch"><input type="checkbox" data-leaf-anim-switch' + (isLeafAnimOn() ? ' checked' : '') + '><span class="slider"></span></label>' +
+        '</div>' +
       '</div>' +
     '</section>';
+  }
+
+  /** v2.5.7 树叶动画开关状态（localStorage 'sdv-leaf-anim'，默认开） */
+  function isLeafAnimOn() {
+    try { return localStorage.getItem('sdv-leaf-anim') !== 'off'; } catch (e) { return true; }
   }
 
   /** 管理员面板内的交互处理 */
@@ -1523,6 +1533,17 @@ const DevAdmin = (() => {
         handleAction(act, t);
       }
     }, true); // capture 阶段优先消费
+
+    // v2.5.7 树叶飘落动画开关：面板 checkbox 变更 → 写入 localStorage + 即时启停 LeafFX
+    document.addEventListener('change', function (e) {
+      const t = e.target;
+      if (t && t.matches && t.matches('[data-leaf-anim-switch]')) {
+        try { localStorage.setItem('sdv-leaf-anim', t.checked ? 'on' : 'off'); } catch (err) { /* 忽略 */ }
+        if (typeof window.LeafFX !== 'undefined') {
+          if (t.checked) window.LeafFX.start(); else window.LeafFX.stop();
+        }
+      }
+    });
 
     // 路由渲染后：进入「我的」页补渲染管理员面板；重放本地已保存的页面修改；刷新工具条
     if (typeof window !== 'undefined') {
