@@ -1,5 +1,5 @@
 {
-  "latestVersion": "2.5.0",
-  "updateDesc": "背景锁定配置独立JSON同步上传：一键上传同时提交页面内容与背景锁定两份文件",
+  "latestVersion": "2.5.1",
+  "updateDesc": "修复：背景锁定线上失效——开发者登录后本地与线上均可锁定季节/时段背景",
   "downloadUrl": "./index.html"
 }
