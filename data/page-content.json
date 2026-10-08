@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-08T19:04:00.503Z",
+  "generatedAt": "2026-10-08T19:13:52.824Z",
   "pageEdit": {
     "/home::0": {
       "text": "老乡！欢迎来到星露谷！",
@@ -384,5 +384,10 @@
         "本地设置保存，重启不丢失"
       ]
     }
-  ]
+  ],
+  "backgroundLock": {
+    "locked": true,
+    "season": "winter",
+    "period": "morning"
+  }
 }
