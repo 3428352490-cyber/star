@@ -16,11 +16,11 @@
   --farm-brown: #5B3A1E;             /* 深棕（外层粗描边） */
   --farm-beige: #F0E3C2;             /* 米卡其（页面底色） */
 
-  --bg: #F0E3C2;                     /* 页面底色：米卡其 */
-  --bg-deep: #E5D2A6;                /* 内嵌块底：深一档卡其 */
-  --card-bg: #FAF0D6;                /* 卡片纯色块底：亮米卡其 */
+  --bg: #EFE0BA;                     /* 页面底色：浅橙黄褐（参考图同款米黄底） */
+  --bg-deep: #E4D0A0;                /* 内嵌块底：深一档黄褐 */
+  --card-bg: #F4E6C2;                /* 卡片纯色块底：暖浅黄褐色（参考图卡片底） */
   --card-border: rgba(74, 47, 22, 0.35);
-  --nav-bg: #E9D7AE;                 /* 底部导航块底：卡其 */
+  --nav-bg: #E8D4A4;                 /* 底部导航块底：黄褐 */
   --text: #3A2A1A;                   /* 深棕近黑文字 */
   --text-dim: rgba(58, 42, 26, 0.62);
   --accent: #E05A33;                 /* 暖番茄红（主操作/强调） */
@@ -29,25 +29,25 @@
   --danger: #C24E2C;                 /* 砖红 */
   --shadow: #4A3018;                 /* 硬像素阴影（纯色深棕，无模糊） */
   --tile-border: #5B3A1E;
-  --tile-light: #FFF8E6;
+  --tile-light: #FBEED0;
   --tile-dark: #8A6A3A;
   --radius: 2px;                     /* 像素小圆角：锐利像素感，非平滑大圆角 */
 
-  /* 像素纹理（兼容旧变量名，值为 16px 米卡其双色点阵） */
-  --wood-plank: #FAF0D6;
+  /* 像素纹理（兼容旧变量名，值为 16px 黄褐双色点阵） */
+  --wood-plank: #F4E6C2;
   --wood-frame: #5B3A1E;             /* 外层粗像素描边：深棕 */
   --wood-mid: #7A5A32;
   --wood-border: #5B3A1E;
-  --wood-light: #FFF4DC;             /* 内层浅色描边：浅米 */
-  --wood-dark: #8A6A3A;              /* 暗部：卡其棕 */
+  --wood-light: #FBEED0;             /* 内层浅色描边：浅暖米 */
+  --wood-dark: #8A6A3A;              /* 暗部：黄褐棕 */
   --wood-frame-edge: #E8C14A;        /* 外缘点缀：暖黄 */
-  --wood-texture: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16'><rect width='16' height='16' fill='%23faf0d6'/><rect x='0' y='0' width='8' height='8' fill='%23efdfb8'/><rect x='8' y='8' width='8' height='8' fill='%23efdfb8'/></svg>");
+  --wood-texture: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16'><rect width='16' height='16' fill='%23f4e6c2'/><rect x='0' y='0' width='8' height='8' fill='%23ead9ae'/><rect x='8' y='8' width='8' height='8' fill='%23ead9ae'/></svg>");
 
-  /* 像素农场对话框（米卡其面板 + 双层棕框 + 浅米内描边） */
-  --dialog-bg: #FAF0D6;
+  /* 像素农场对话框（暖浅黄褐面板 + 双层棕框 + 浅暖米内描边） */
+  --dialog-bg: #F4E6C2;
   --dialog-border: #5B3A1E;
-  --dialog-light: #FFF4DC;           /* 内描边：浅米 */
-  --dialog-dark: #8A6A3A;            /* 暗部：卡其棕 */
+  --dialog-light: #FBEED0;           /* 内描边：浅暖米 */
+  --dialog-dark: #8A6A3A;            /* 暗部：黄褐棕 */
   --dialog-text: #3A2A1A;
   --dialog-text-dim: rgba(58, 42, 26, 0.7);
 }
