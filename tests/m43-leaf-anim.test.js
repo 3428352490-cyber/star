@@ -22,16 +22,20 @@ test('M43-1 index.html 引入 leaf.css 与 leaf.js（位于背景脚本之后）
   assert.ok(iLeaf > iBg, 'leaf.js 应在 background.js 之后加载（可读取 DevAdmin 开关状态）');
 });
 
-test('M43-2 leaf.css 层级与交互：背景之上、UI之下、不遮挡、像素硬边', () => {
+test('M43-2 leaf.css 层级与交互：覆盖板块内容、不拦截点击、像素硬边', () => {
   const css = readAppFile('css/leaf.css');
-  assert.ok(css.includes('z-index: 0'), '树叶层应位于背景(-1)之上、内容(1)之下');
-  assert.ok(css.includes('pointer-events: none'), '应不拦截任何点击/触摸');
+  assert.ok(css.includes('z-index: 40'), '树叶层应覆盖板块/卡片（内容1之上）且低于模态弹窗');
+  assert.ok(css.includes('pointer-events: none'), '应不拦截任何点击/触摸（透过树叶可正常操作）');
   assert.ok(css.includes('position: fixed'), '应为固定定位');
   assert.ok(css.includes('pixelated'), '应为像素硬边渲染');
 });
 
-test('M43-3 leaf.js 季节配色与冬季不加载（保留下雪等原有效果）', () => {
+test('M43-3 leaf.js 星露谷同款双叶组合掩码（两套 32x20，左大右小）+ 季节配色与冬季不加载', () => {
   const src = readAppFile('js/leaf.js');
+  assert.ok(src.includes("c.width = 32; c.height = 20;"), '双叶掩码应为 32x20 像素');
+  assert.ok(src.includes("MASKS = ["), '双叶掩码模板缺失');
+  assert.ok(src.includes('合叶：两片在底部交汇成柄'), '第一套双叶造型（合叶）缺失');
+  assert.ok(src.includes('双叶：两片独立椭圆并排'), '第二套双叶造型（双叶）缺失');
   assert.ok(src.includes("season === 'winter'"), '冬季应不加载树叶');
   assert.ok(src.includes("COLORS = {"), '季节配色表缺失');
   assert.ok(src.includes("spring: ['#8fd14f', '#b5e76e']"), '春季嫩绿配色缺失');
