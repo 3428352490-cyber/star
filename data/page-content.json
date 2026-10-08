@@ -1,11 +1,11 @@
 {
-  "generatedAt": "2026-10-07T18:19:15.652Z",
+  "generatedAt": "2026-10-08T18:41:24.866Z",
   "pageEdit": {
     "/home::0": {
-      "text": "老乡！欢迎来到星露谷！",
-      "fontFamily": "\"Microsoft YaHei\", system-ui",
-      "fontSize": 22,
-      "weight": 700
+      "text": "欢迎来到星露谷！",
+      "fontFamily": "\"Press Start 2P\", monospace",
+      "fontSize": 14,
+      "weight": 400
     }
   },
   "fontConfig": {
@@ -13,7 +13,6 @@
     "fontSize": 14,
     "weight": 400
   },
-  "backgroundLock": null,
   "announcements": [
     {
       "version": "2.4.9",
