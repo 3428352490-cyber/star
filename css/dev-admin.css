@@ -248,7 +248,7 @@ body:not(.dev-mode) .btn-upload { display: none !important; }
 .dev-node-edit input[type="text"],
 input[type="text"], input[type="password"], input[type="search"],
 input[type="email"], input[type="number"], input[type="tel"], textarea {
-  border: 3px solid var(--wood-frame);             /* 外层粗深棕描边 */
+  border: 3px solid var(--wood-frame);             /* 外层深棕木框 */
   border-radius: var(--radius);                    /* 像素小圆角 */
-  box-shadow: inset 0 0 0 2px var(--wood-light);   /* 内层浅色描边 */
+  box-shadow: inset 0 0 0 1px var(--wood-mid), inset 0 0 0 3px var(--wood-light);  /* 木纹中棕层 + 内层浅色描边 */
 }
