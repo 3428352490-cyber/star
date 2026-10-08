@@ -9,8 +9,8 @@
  * · 兜底：图片加载失败 → 背景层保持透明，沿用原本背景样式，页面不崩坏
  * · 过渡：双图层交叉淡入淡出 0.8s
  * · 刷新：打开立即检测一次；每 10 分钟检测一次；切回前台立即检测
- * · 手动调试开关：仅 localhost/127.0.0.1 可见，锁定季节/时段覆盖自动判定；
- *   线上普通用户不可见，只能使用自动模式
+ * · 手动调试开关：仅开发者登录后可见（本地 localhost 与线上 GitHub Pages 一致生效），
+ *   锁定季节/时段覆盖自动判定；访客（未登录）只能使用自动模式
  * ============================================================
  */
 (function () {
@@ -54,8 +54,7 @@
   }
 
   function readLock() {
-    if (!BG.isLocal) return null;
-    if (!isDevAvailable()) return null; // 方案A：访客态忽略一切锁定
+    if (!isDevAvailable()) return null; // 方案A：访客态忽略一切锁定（开发者登录后本地/线上均生效，v2.5.1）
     try {
       var raw = localStorage.getItem(BG.lockKey);
       return raw ? JSON.parse(raw) : null;
@@ -65,7 +64,6 @@
   }
 
   function writeLock(lock) {
-    if (!BG.isLocal) return;
     if (!isDevAvailable()) return; // 方案A：访客态禁止写入锁定
     try {
       localStorage.setItem(BG.lockKey, JSON.stringify(lock));
