@@ -10,7 +10,7 @@
 const SDV_CONFIG = {
   app: {
     name: '星露谷攻略',
-    version: '2.5.3',
+    version: '2.5.4',
     /**
      * 云端版本清单地址（GitHub Pages 部署后替换为实际地址）：
      * 例如 'https://你的用户名.github.io/仓库名/version.json'
@@ -56,6 +56,15 @@ const SDV_CONFIG = {
 
   /** 软件公告（公告页渲染；新版本发布时向数组头部追加条目） */
   announcements: [
+    {
+      version: '2.5.4',
+      date: '2026-10-09',
+      title: '补丁更新',
+      notes: [
+        '修复：恢复自动切换后上传无法覆盖远程背景锁定——恢复自动与远程拉取统一保留locked:false覆盖标记',
+        '小改动与问题修复，优化使用体验',
+      ],
+    },
     {
       version: '2.5.3',
       date: '2026-10-09',
