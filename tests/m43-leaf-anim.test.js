@@ -30,12 +30,14 @@ test('M43-2 leaf.css 层级与交互：覆盖板块内容、不拦截点击、�
   assert.ok(css.includes('pixelated'), '应为像素硬边渲染');
 });
 
-test('M43-3 leaf.js 星露谷同款双叶组合掩码（两套 32x20，左大右小）+ 季节配色与冬季不加载', () => {
+test('M43-3 leaf.js 星露谷同款双叶组合掩码（两套 32x20，左片月牙右片小叶）+ 叶脉双色 + 季节配色与冬季不加载', () => {
   const src = readAppFile('js/leaf.js');
-  assert.ok(src.includes("c.width = 32; c.height = 20;"), '双叶掩码应为 32x20 像素');
-  assert.ok(src.includes("MASKS = ["), '双叶掩码模板缺失');
-  assert.ok(src.includes('合叶：两片在底部交汇成柄'), '第一套双叶造型（合叶）缺失');
-  assert.ok(src.includes('双叶：两片独立椭圆并排'), '第二套双叶造型（双叶）缺失');
+  assert.ok(src.includes('c.width = 32; c.height = 20;'), '双叶掩码应为 32x20 像素');
+  assert.ok(src.includes('MASKS = ['), '双叶掩码模板缺失');
+  assert.ok(src.includes('合叶：左片月牙'), '第一套双叶造型（合叶）缺失');
+  assert.ok(src.includes('双叶：左片月牙'), '第二套双叶造型（双叶）缺失');
+  assert.ok(src.includes("'2'=深色叶脉"), '深色叶脉双色渲染缺失');
+  assert.ok(src.includes('function darken'), '叶脉加深函数缺失');
   assert.ok(src.includes("season === 'winter'"), '冬季应不加载树叶');
   assert.ok(src.includes("COLORS = {"), '季节配色表缺失');
   assert.ok(src.includes("spring: ['#8fd14f', '#b5e76e']"), '春季嫩绿配色缺失');
