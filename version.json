@@ -1,5 +1,5 @@
 {
-  "latestVersion": "2.4.32",
-  "updateDesc": "全站UI重构：像素复古农场风格，双层像素边框暖调田园配色",
+  "latestVersion": "2.5.0",
+  "updateDesc": "背景锁定配置独立JSON同步上传：一键上传同时提交页面内容与背景锁定两份文件",
   "downloadUrl": "./index.html"
 }
