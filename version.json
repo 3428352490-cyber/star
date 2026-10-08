@@ -1,5 +1,5 @@
 {
-  "latestVersion": "2.5.1",
-  "updateDesc": "修复：背景锁定线上失效——开发者登录后本地与线上均可锁定季节/时段背景",
+  "latestVersion": "2.5.2",
+  "updateDesc": "删除背景锁定上传模块：一键上传仅提交页面内容JSON，背景锁定保留本地功能；新增导出JSON下载兜底通道",
   "downloadUrl": "./index.html"
 }
