@@ -81,7 +81,7 @@
 .codex-group { margin-bottom: 16px; }
 .codex-group:last-child { margin-bottom: 0; }
 .codex-group-title { margin: 0 0 10px; padding-left: 2px; font-size: 13px; font-weight: 400; color: #999; }
-.tile-codex { padding: 10px 4px; border-radius: 10px; }  /* 圆角卡片，保留 .tile 像素边框/内描边/硬阴影 */
+.tile-codex { aspect-ratio: 1 / 1; padding: 10px 4px; border-radius: 10px; }  /* 正方形圆角卡片，保留 .tile 像素边框/内描边/硬阴影 */
 
 /* ---- 首页四大卡片（四宫格 2×2：窄屏到宽屏均保持两列，卡片独立组件、间距均匀） ---- */
 .home-cards {
