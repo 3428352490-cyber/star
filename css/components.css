@@ -78,10 +78,12 @@
 /* ---- 图鉴分类网格：固定 4 列（窄屏到宽屏均 4 列，卡片均匀间距、不溢出） ---- */
 .codex-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
 /* ---- 图鉴分组：浅灰轻量分组标题 + 下方 4 列卡片网格 ---- */
-.codex-group { margin-bottom: 16px; }
+.codex-group { max-width: 760px; margin: 0 auto 16px; }  /* 宽屏限宽居中，卡片不过大；窄屏自动全宽 */
 .codex-group:last-child { margin-bottom: 0; }
 .codex-group-title { margin: 0 0 10px; padding-left: 2px; font-size: 13px; font-weight: 400; color: #999; }
 .tile-codex { aspect-ratio: 1 / 1; padding: 10px 4px; border-radius: 10px; }  /* 正方形圆角卡片，保留 .tile 像素边框/内描边/硬阴影 */
+/* 图鉴分类卡片：取消按压位移/亮度特效（点击直接跳转，无按压反馈） */
+.tile-codex:active { transform: none; box-shadow: inset 0 0 0 3px var(--wood-light), 5px 5px 0 var(--shadow); }
 
 /* ---- 首页四大卡片（四宫格 2×2：窄屏到宽屏均保持两列，卡片独立组件、间距均匀） ---- */
 .home-cards {

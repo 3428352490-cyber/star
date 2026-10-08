@@ -70,7 +70,7 @@ const Pages = (() => {
       (typeof Community !== 'undefined' ? Community.renderHomeBlock() : '');
   }
 
-  /** 图鉴：物品分类分组排版（分组标题 + 4 列卡片网格：生产/工艺/收集/战斗/其他） */
+  /** 图鉴：物品分类分组排版（无顶部标题板块；分组标题 + 4 列正方形圆角卡片） */
   function codex() {
     const codexGroups = [
       { name: '生产', keys: ['crops', 'seeds', 'artisan', 'cooking', 'animalProducts', 'animals', 'farm', 'trees'] },
@@ -79,7 +79,7 @@ const Pages = (() => {
       { name: '战斗', keys: ['equipment', 'monsters', 'accessories'] },
       { name: '其他', keys: ['villagers', 'calendar', 'filter', 'calculator', 'weather', 'special', 'quests', 'furniture', 'wallpaper', 'flooring', 'hats', 'shirts', 'pants', 'areas', 'wallet'] },
     ];
-    const blocks = codexGroups.map((g) =>
+    return codexGroups.map((g) =>
       '<div class="codex-group">' +
         '<h3 class="codex-group-title">' + esc(g.name) + '</h3>' +
         '<div class="codex-grid">' +
@@ -90,9 +90,6 @@ const Pages = (() => {
         '</div>' +
       '</div>'
     ).join('');
-    return '<section class="card"><div class="card-head"><h2>物品分类</h2><span class="card-sub">' + SDV_CONFIG.modules.length + ' 类</span></div>' +
-      blocks +
-      '<p class="card-foot">分类条目与详情二期填充；当前为分类框架。</p></section>';
   }
 
   /** 搜索：搜索框 + 搜索按钮 + 结果区 */

@@ -74,10 +74,10 @@ test('M4-4 首页：四大卡片与信息卡占位', () => {
   assert.ok(!html.includes('云端更新'), '首页不应有云端更新入口');
 });
 
-test('M4-5 图鉴：38 分类网格复用模块数组', () => {
+test('M4-5 图鉴：38 分类网格复用模块数组（无顶部标题板块）', () => {
   const html = Pages.codex();
   assert.equal(count(html, 'class="tile tile-codex"'), 38, '分类瓦片应为 38');
-  assert.ok(html.includes('38 类'), '分类计数未渲染');
+  assert.ok(!html.includes('物品分类'), '顶部「物品分类」标题板块已移除');
   assert.ok(html.includes('墙纸') && html.includes('秘密纸条') && html.includes('下装'), '关键分类缺失');
 });
 

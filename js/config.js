@@ -10,7 +10,7 @@
 const SDV_CONFIG = {
   app: {
     name: '星露谷攻略',
-    version: '2.4.30',
+    version: '2.4.31',
     /**
      * 云端版本清单地址（GitHub Pages 部署后替换为实际地址）：
      * 例如 'https://你的用户名.github.io/仓库名/version.json'
@@ -56,6 +56,15 @@ const SDV_CONFIG = {
 
   /** 软件公告（公告页渲染；新版本发布时向数组头部追加条目） */
   announcements: [
+    {
+      version: '2.4.31',
+      date: '2026-10-08',
+      title: '图鉴页面优化',
+      notes: [
+        '图鉴页删除顶部「物品分类」标题板块，取消卡片按压特效',
+        '修复电脑端卡片过大：分组容器限宽760px居中，卡片尺寸更协调',
+      ],
+    },
     {
       version: '2.4.30',
       date: '2026-10-08',
