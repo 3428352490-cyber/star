@@ -557,10 +557,7 @@ const Community = (() => {
         '</div>' +
         '<div class="setting-row">' +
           '<div><div class="setting-title">手动主题</div><div class="setting-desc">手动切换时自动关闭「跟随系统」</div></div>' +
-          '<div class="theme-switch-btns">' +
-            '<button class="chip' + (!t.followSystem && t.manual === 'light' ? ' active' : '') + '" data-theme-manual="light">浅色</button>' +
-            '<button class="chip' + (!t.followSystem && t.manual === 'dark' ? ' active' : '') + '" data-theme-manual="dark">深色</button>' +
-          '</div>' +
+          '<label class="switch"><input type="checkbox" data-theme-manual-switch' + (t.manual === 'dark' ? ' checked' : '') + '><span class="slider"></span></label>' +
         '</div>' +
       '</section>' +
       '<section class="card"><div class="card-head"><h2>账号</h2></div>' + account + '</section>';

@@ -17,7 +17,8 @@
  * 管理面板「一键上传GitHub」：
  * - Token 存 localStorage；把本地已保存的页面修改内容一次性提交到 main 分支（仅 page-content.json）
  * - 提交前弹确认弹窗展示本次修改摘要，防止误提交；不损坏仓库原有文件
- * - v2.5.2：背景锁定为本地功能，不再随页面上传（上传模块已删除）；
+ * - v2.5.3：背景锁定配置内嵌 page-content.json 的 backgroundLock 字段随单文件上传同步
+ *   （单文件单次提交，避免独立文件请求翻倍被网络拦截）；远程拉取时自动应用，多设备锁定同步；
  *   网络无法直连 api.github.com 时可「导出JSON下载」→ GitHub 网页端手动上传覆盖
  *
  * 跨端同步：本地修改存 localStorage（sdv-guide:devadmin:page_edit），
@@ -872,8 +873,8 @@ const DevAdmin = (() => {
       /* ---------- ① 一键上传GitHub：把所有本地已保存的页面修改内容一次性提交推送 ---------- */
       '<div class="admin-block" id="admin-block-github">' +
         '<h3>一键上传GitHub</h3>' +
-        '<p class="setting-desc">把本地已保存的页面修改内容（文本 / 字体 / 公告缓存）提交到仓库 main 分支的页面内容 JSON（' + esc(repo.jsonPath || 'data/page-content.json') + '）。' +
-          '提交前会弹窗确认本次修改内容，防止误提交。背景锁定为本地功能，不再随页面上传。</p>' +
+        '<p class="setting-desc">把本地已保存的页面修改内容（文本 / 字体 / 公告缓存）与背景锁定配置，一并提交到仓库 main 分支的页面内容 JSON（' + esc(repo.jsonPath || 'data/page-content.json') + '）。' +
+          '背景锁定以 backgroundLock 字段内嵌同步，单文件单次提交。提交前会弹窗确认本次修改内容，防止误提交。</p>' +
 
         '<div class="admin-github-form">' +
           '<label class="form-label">仓库 Owner</label>' +
@@ -898,7 +899,7 @@ const DevAdmin = (() => {
         '<p class="admin-github-status" id="gh-status">当前 Token：' +
           (hasToken ? '已保存' : '未配置') + '（本地存储，仅用于 GitHub API）</p>' +
         '<p class="admin-github-hint">提示：仅支持页面内容 JSON（page-content.json）数据提交；图片资源请前往 GitHub 网页端手动上传，不会通过此功能写入仓库。</p>' +
-        '<p class="admin-github-hint">导出用法：网络无法直连 api.github.com（一键上传被拦截）时，点击「导出JSON下载」得到 JSON 文件，' +
+        '<p class="admin-github-hint">导出用法：网络无法直连 api.github.com（一键上传被拦截）时，点击「导出JSON下载」得到 JSON 文件（含背景锁定配置），' +
           '到 GitHub 网页 github.com/' + esc(repo.owner || '…') + '/' + esc(repo.repo || '…') + ' → data 目录 → 编辑/上传文件，覆盖 ' +
           esc(repo.jsonPath || 'data/page-content.json') + '，效果等同（文件以「网页提交」开头可被 Actions 过滤，不会乱升版本）。</p>' +
       '</div>' +
@@ -1114,7 +1115,8 @@ const DevAdmin = (() => {
    * 生成本次上传的 page-content.json 载荷（v2.4.18 增量合并版）：
    * 以远程现有内容为基底，仅用本地缓存覆盖「确有修改」的字段；
    * 无本地修改的字段保留远程原值——修复此前「本地缓存缺失字段 → PUT 全量覆盖 → 远程公告等数据被删」的问题。
-   * v2.5.2：背景锁定为本地功能，不再随页面上传（上传模块已删除），本载荷始终不含背景锁定相关字段。
+   * v2.5.3：背景锁定配置内嵌为 backgroundLock 字段随本文件上传（单文件、单次提交，
+   * 避免独立文件导致的请求翻倍被网络拦截；远程拉取时同步应用，恢复多设备锁定同步）。
    * @param {object|null} remote 远程现有 JSON（读取失败/首次上传时传 null 或 {}）
    */
   function buildPageContentPayload(remote) {
@@ -1134,6 +1136,23 @@ const DevAdmin = (() => {
     else if (base.fontConfig !== undefined) payload.fontConfig = base.fontConfig;
     if (notice !== null) payload.announcements = notice;
     else if (base.announcements !== undefined) payload.announcements = base.announcements;
+    // 背景锁定（v2.5.3 内嵌合并）：本地有锁定/恢复自动标记 → 写入 backgroundLock；
+    // 本地无缓存 → 保留远程原值（未修改不丢失）
+    let bg = null;
+    try {
+      const raw = localStorage.getItem('sdv_bg_lock');
+      if (raw) { try { bg = JSON.parse(raw); } catch (e) { bg = null; } }
+    } catch (e) { bg = null; }
+    if (bg !== null && bg && bg.locked) {
+      payload.backgroundLock = { locked: true };
+      if (bg.season) payload.backgroundLock.season = bg.season;
+      if (bg.period) payload.backgroundLock.period = bg.period;
+    } else if (bg !== null && bg) {
+      // 本地为「恢复自动」标记（locked=false）：显式写 locked:false 覆盖远程锁定
+      payload.backgroundLock = { locked: false };
+    } else if (base.backgroundLock !== undefined) {
+      payload.backgroundLock = base.backgroundLock;
+    }
     return payload;
   }
 
@@ -1153,6 +1172,18 @@ const DevAdmin = (() => {
       if (editKeys.length > 20) lines.push('  … 其余 ' + (editKeys.length - 20) + ' 处省略');
       lines.push('默认字体：' + ((payload.fontConfig || {}).template || '-') + ' / ' + ((payload.fontConfig || {}).fontSize || 14) + 'px');
       lines.push('公告：' + ((payload.announcements || []).length) + ' 条');
+      // v2.5.3 背景锁定内嵌字段摘要
+      const bg = payload.backgroundLock;
+      if (bg && bg.locked) {
+        const seasonNames = { spring: '春', summer: '夏', autumn: '秋', winter: '冬' };
+        const periodNames = { morning: '清晨', day: '白天', dusk: '黄昏', night: '夜晚' };
+        lines.push('背景锁定：锁定（' + (seasonNames[bg.season] || bg.season || '-') + ' · ' +
+          (periodNames[bg.period] || bg.period || '-') + '）');
+      } else if (bg) {
+        lines.push('背景锁定：自动模式');
+      } else {
+        lines.push('背景锁定：未修改');
+      }
       return lines.join('\n');
     } catch (e) {
       return JSON.stringify(payload, null, 2);
@@ -1163,7 +1194,7 @@ const DevAdmin = (() => {
    * 导出本地修改数据为 JSON（page-content.json）——v2.5.2 兜底通道：
    * 网络无法直连 api.github.com（一键上传被拦）时，下载到本地后前往 GitHub 网页端手动上传覆盖，
    * 走 github.com 域名（不受 api.github.com 拦截影响），效果与一键上传等同。
-   * 载荷构建逻辑与一键上传完全一致（buildPageContentPayload），
+   * 载荷构建逻辑与一键上传完全一致（buildPageContentPayload，含 backgroundLock 内嵌字段），
    * 不携带版本字段（网页端过滤规则：提交备注以「网页提交」开头不会被 Actions 升版）。
    * @returns {Array<{name:string, data:object}>} 待下载文件清单
    */
@@ -1193,6 +1224,30 @@ const DevAdmin = (() => {
     });
     if (typeof Toast !== 'undefined') Toast.show('已导出 ' + files.length + ' 个 JSON 文件，请前往 GitHub 网页端手动上传覆盖');
     return { ok: true, files: files.map(function (f) { return f.name; }) };
+  }
+
+  /**
+   * v2.5.3 应用远程背景锁定配置（内嵌于 page-content.json 的 backgroundLock 字段，多设备同步）：
+   * 远程锁定 → 写入本地 sdv_bg_lock（锁定生效）；远程恢复自动/空 → 清除本地锁定；
+   * 派发 sdv-dev-state-change 通知 background.js 立即重判背景。
+   * @param {object} remote 远程页面内容 JSON
+   */
+  function applyRemoteBackgroundLock(remote) {
+    const b = remote && remote.backgroundLock;
+    if (b === undefined || b === null) return; // 远程无该字段：保留本地现状
+    try {
+      if (b && b.locked) {
+        const lock = { locked: true };
+        if (b.season) lock.season = b.season;
+        if (b.period) lock.period = b.period;
+        localStorage.setItem('sdv_bg_lock', JSON.stringify(lock));
+      } else {
+        localStorage.removeItem('sdv_bg_lock');
+      }
+    } catch (e) { /* 忽略 */ }
+    if (typeof window !== 'undefined' && window.dispatchEvent) {
+      window.dispatchEvent(new CustomEvent('sdv-dev-state-change', { detail: { dev: isDev() } }));
+    }
   }
 
   /**
@@ -1331,11 +1386,12 @@ const DevAdmin = (() => {
       // ③ 用远程业务数据回写本地缓存并即时重放页面（刷新页面数据源 + UI 渲染）
       if (remote.pageEdit) setPageEdit(remote.pageEdit);
       if (remote.fontConfig) setFontConfig(remote.fontConfig);
-      // 远程公告数据若存在，同步进页面数据源（SDV_CONFIG.announcements），供公告页重渲染
-      if (remote.announcements && Array.isArray(remote.announcements) && typeof SDV_CONFIG !== 'undefined') {
-        SDV_CONFIG.announcements = remote.announcements;
-      }
+      // v2.5.4 修复：不再用远程 page-content.json 的 announcements 覆盖 config.js 内置版本公告——
+      // 远程文件残留旧版网页公告数据（如 v2.4.9），覆盖后刷新页面会从最新公告回退到旧公告；
+      // 版本更新公告以 config.js（version-bump 自动维护）为唯一权威数据源。
       if (typeof applyPageEdits === 'function') applyPageEdits();
+      // ③b v2.5.3 应用远程背景锁定配置（内嵌 backgroundLock 字段，多设备同步）
+      applyRemoteBackgroundLock(remote);
       if (typeof window !== 'undefined' && window.dispatchEvent) {
         window.dispatchEvent(new CustomEvent('sdv-page-edit-change', { detail: { applied: ['refresh-from-remote'] } }));
         // 通知公告/页面渲染层重新拉取数据源并刷新 UI
@@ -1469,10 +1525,11 @@ const DevAdmin = (() => {
       // 应用远程内容：本地存在「未上传修改」（_dirty）时以本地为准；否则远程覆盖并清除未上传标记
       if (!localDirty && remote.pageEdit) setPageEdit(remote.pageEdit);
       if (remote.fontConfig) setFontConfig(remote.fontConfig);
-      if (remote.announcements && Array.isArray(remote.announcements) && typeof SDV_CONFIG !== 'undefined') {
-        SDV_CONFIG.announcements = remote.announcements;
-      }
+      // v2.5.4 修复：不再用远程 page-content.json 的 announcements 覆盖 config.js 内置版本公告
+      // （远程残留旧公告会导致刷新后公告回退；版本公告以 config.js 为唯一权威）
       if (typeof applyPageEdits === 'function') applyPageEdits();
+      // v2.5.3 应用远程背景锁定配置（内嵌 backgroundLock 字段，多设备同步）
+      applyRemoteBackgroundLock(remote);
       if (window && window.dispatchEvent) window.dispatchEvent(new HashChangeEvent('hashchange'));
       if (manual && typeof Toast !== 'undefined') Toast.show('已同步远程内容并覆盖到页面');
       return { ok: true, message: '已同步远程内容并覆盖到页面' };
@@ -1689,7 +1746,7 @@ const DevAdmin = (() => {
   return {
     login, logout, getDevLogin, isDev,
     getGitHubToken, setGitHubToken, getGitHubRepo, setGitHubRepo,
-    pushToGitHub, buildPageContentPayload, buildExportFiles, exportLocalData, refreshPageContentFromRemote, syncRemoteContent, fetchRemoteContentMulti,
+    pushToGitHub, buildPageContentPayload, buildExportFiles, exportLocalData, applyRemoteBackgroundLock, refreshPageContentFromRemote, syncRemoteContent, fetchRemoteContentMulti,
     openLoginModal, openAdminPanel, openBgLockModal, doLogout,
     enterEditMode, exitEditMode, savePageEdits, resetPageEdits, applyPageEdits,
     getPageEdit, setPageEdit, getFontConfig, setFontConfig,

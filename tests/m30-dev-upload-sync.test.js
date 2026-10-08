@@ -22,7 +22,8 @@ test('M30-2 刷新成功后触发路由重渲染：hashchange 派发使页面显
   assert.ok(src.includes("new HashChangeEvent('hashchange')"), '缺少 hashchange 重渲染派发');
   assert.ok(src.includes('v2.4.17 触发路由重渲染'), '缺少重渲染说明');
   assert.ok(src.includes('仅派发自定义事件无监听方'), '缺少事件无监听方说明');
-  assert.ok(src.includes('SDV_CONFIG.announcements = remote.announcements'), '缺少远程公告数据源同步');
+  assert.ok(!src.includes('SDV_CONFIG.announcements = remote.announcements'), 'v2.5.4 远程公告不应再覆盖 config.js 内置版本公告（旧残留会导致公告回退）');
+  assert.ok(src.includes('config.js 内置版本公告'), '缺少版本公告权威说明');
   assert.ok(src.includes('applyPageEdits'), '缺少文本编辑即时重放');
 });
 

@@ -34,10 +34,10 @@ test('M32-2 失败分支全部经 refreshFail 出口回滚', () => {
   assert.ok(!src.includes("return { ok: false, message: '网络异常（网络拦截/域名错误）：无法连接 GitHub API 刷新远程数据"), 'net 分支仍存在绕过回滚的裸失败返回');
 });
 
-test('M32-3 成功分支保持不变：远程数据回写 + hashchange 重渲染', () => {
+test('M32-3 成功分支保持不变：远程数据回写 + hashchange 重渲染（v2.5.4 远程公告不再覆盖 config 内置）', () => {
   const src = readAppFile('js/dev-admin.js');
   assert.ok(src.includes("if (remote.pageEdit) setPageEdit(remote.pageEdit)"), '缺少远程 pageEdit 回写');
-  assert.ok(src.includes('SDV_CONFIG.announcements = remote.announcements'), '缺少远程公告数据源同步');
+  assert.ok(!src.includes('SDV_CONFIG.announcements = remote.announcements'), 'v2.5.4 远程公告不应再覆盖 config.js 内置版本公告（旧残留会导致公告回退）');
   assert.ok(src.includes("new HashChangeEvent('hashchange')"), '缺少 hashchange 重渲染派发');
   assert.ok(src.includes('return { ok: true, message: \'已刷新远程业务数据'), '成功返回保留');
 });

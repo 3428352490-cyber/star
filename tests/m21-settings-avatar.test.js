@@ -31,7 +31,8 @@ test('M21-1 设置页渲染：主题设置板块迁移完整保留 + 账号板�
   const loggedOut = Community.renderSettings();
   assert.ok(loggedOut.includes('主题设置'), '设置页含主题设置板块');
   assert.ok(loggedOut.includes('data-theme-follow'), '跟随系统开关迁移保留');
-  assert.ok(loggedOut.includes('data-theme-manual="light"') && loggedOut.includes('data-theme-manual="dark"'), '手动主题按钮迁移保留');
+  assert.ok(loggedOut.includes('data-theme-manual-switch'), '手动主题开关（v2.5.5 开关UI）缺失');
+  assert.ok(!loggedOut.includes('data-theme-manual="light"') && !loggedOut.includes('data-theme-manual="dark"'), '旧手动主题方块按钮未移除');
   assert.ok(loggedOut.includes('未登录'), '未登录时账号板块显示未登录');
   assert.ok(!loggedOut.includes('data-action="logout"'), '未登录时无退出按钮');
   assert.ok(loggedOut.includes('data-action="nav-back"'), '设置页含返回按钮');

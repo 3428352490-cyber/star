@@ -37,15 +37,20 @@ test('M5-1 点击 data-route 元素：更新 location.hash', () => {
   assert.equal(globalThis.location.hash, '#/quick-edit', 'hash 未更新');
 });
 
-test('M5-2 手动主题按钮：自动关闭跟随并写入 manual', () => {
+test('M5-2 手动主题开关（v2.5.5 开关UI）：开=深色关=浅色，自动关闭跟随并写入 manual', () => {
   Store.load();
   Theme.setFollowSystem(true);
-  __fireDoc('click', {
-    target: clickTarget({ '[data-theme-manual]': { dataset: { themeManual: 'dark' } } }),
-  });
+  const cb = fakeEl('theme-manual-switch');
+  cb.matches = (sel) => sel === '[data-theme-manual-switch]';
+  cb.checked = true; // 开 → 深色
+  __fireDoc('change', { target: cb });
   assert.equal(Store.getTheme().followSystem, false, '手动切换未关闭跟随');
   assert.equal(Store.getTheme().manual, 'dark');
-  assert.equal(globalThis.document.documentElement.dataset.theme, 'dark', '界面未应用');
+  assert.equal(globalThis.document.documentElement.dataset.theme, 'dark', '界面未应用深色');
+  cb.checked = false; // 关 → 浅色
+  __fireDoc('change', { target: cb });
+  assert.equal(Store.getTheme().manual, 'light', '关闭未切回浅色');
+  assert.equal(globalThis.document.documentElement.dataset.theme, 'light', '界面未应用浅色');
 });
 
 test('M5-3 游客资料卡点击：弹出「个人资料」弹窗（v2.0.0 社区身份）', () => {

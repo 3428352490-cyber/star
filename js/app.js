@@ -129,12 +129,6 @@ const App = (() => {
       if (location.hash !== routeEl.dataset.route) location.hash = routeEl.dataset.route;
       return;
     }
-    const themeBtn = t.closest('[data-theme-manual]');
-    if (themeBtn) {
-      Theme.setManual(themeBtn.dataset.themeManual);
-      render();
-      return;
-    }
 
     /* 快捷键上限：点击已达上限而被禁用的未勾选项 → 弹出提示弹窗（仅提示，不执行新增动作） */
     const navItem = t.closest('.check-item');
@@ -155,6 +149,12 @@ const App = (() => {
     if (!t || typeof t.matches !== 'function') return;
     if (t.matches('[data-theme-follow]')) {
       Theme.setFollowSystem(t.checked);
+      render();
+      return;
+    }
+    // 手动主题开关（v2.5.5：浅色/深色改为与「跟随系统」一致的开关 UI；开=深色、关=浅色）
+    if (t.matches('[data-theme-manual-switch]')) {
+      Theme.setManual(t.checked ? 'dark' : 'light');
       render();
       return;
     }
