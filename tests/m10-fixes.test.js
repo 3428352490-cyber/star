@@ -204,8 +204,8 @@ test('UI 复古 8-bit 红白机像素风格：高饱和撞色+直角纯色粗像
   // 8bit 点阵纹理（纯色块填充）
   assert.ok(base.includes('--wood-texture:') && base.includes('data:image/svg+xml'), '缺少 8bit 点阵纹理');
 
-  // 页面米卡其底色 + 暖调田园主色（暖番茄红）
-  assert.ok(base.includes('--bg: #F0E3C2'), '缺少页面米卡其底色 #F0E3C2');
+  // 页面浅橙黄褐底色 + 暖调田园主色（暖番茄红）
+  assert.ok(base.includes('--bg: #EFE0BA'), '缺少页面浅橙黄褐底色 #EFE0BA');
   assert.ok(base.includes('--accent: #E05A33'), '缺少暖番茄主色 #E05A33');
 
   // 大卡片：纯色块 + 粗像素边框 + 直角（无渐变/无毛玻璃）
