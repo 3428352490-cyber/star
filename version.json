@@ -1,5 +1,5 @@
 {
-  "latestVersion": "2.4.29",
-  "updateDesc": "图鉴物品分类分组排版重构：生产/工艺/收集/战斗/其他5组，每组4列圆角卡片网格",
+  "latestVersion": "2.4.30",
+  "updateDesc": "图鉴分类卡片改正方形圆角：aspect-ratio 1:1，保留分组结构与像素边框",
   "downloadUrl": "./index.html"
 }
