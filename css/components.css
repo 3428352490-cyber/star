@@ -54,18 +54,18 @@
   border-radius: var(--radius);
   overflow: hidden;
 }
-/* 撞色循环：图标格按 红 → 蓝 → 黄 → 砖红 交错，复古游戏色块感 */
-.quick-nav-grid .tile:nth-child(4n+1) .tile-icon { background: var(--nes-red); }
-.quick-nav-grid .tile:nth-child(4n+2) .tile-icon { background: var(--nes-blue); }
-.quick-nav-grid .tile:nth-child(4n+3) .tile-icon { background: var(--nes-yellow); }
-.quick-nav-grid .tile:nth-child(4n+4) .tile-icon { background: var(--nes-brick); }
+/* 暖调循环：图标格按 橄榄绿 → 暖黄 → 砖红 → 卡其棕 交错，农场复古色块感 */
+.quick-nav-grid .tile:nth-child(4n+1) .tile-icon { background: var(--farm-green); }
+.quick-nav-grid .tile:nth-child(4n+2) .tile-icon { background: var(--farm-yellow); }
+.quick-nav-grid .tile:nth-child(4n+3) .tile-icon { background: var(--farm-brick); }
+.quick-nav-grid .tile:nth-child(4n+4) .tile-icon { background: var(--tile-dark); }
 .tile-icon.sm { width: 30px; height: 30px; }
 .tile-icon.big { width: 64px; height: 64px; }
 .tile-img { width: 100%; height: 100%; object-fit: contain; }
 .tile-fallback { font-size: 18px; font-weight: 700; color: #fff; text-shadow: 2px 2px 0 var(--shadow); }
 [data-theme="dark"] .tile-fallback { color: #fff; }
 /* 暖黄块上的文字用深色，保证对比 */
-.quick-nav-grid .tile:nth-child(4n+3) .tile-fallback { color: var(--text); text-shadow: none; }
+.quick-nav-grid .tile:nth-child(4n+2) .tile-fallback { color: var(--text); text-shadow: none; }
 .tile-icon.sm .tile-fallback { font-size: 14px; }
 .tile-icon.big .tile-fallback { font-size: 26px; }
 .tile-label { font-size: 13px; text-align: center; line-height: 1.4; }
@@ -80,7 +80,7 @@
 /* ---- 图鉴分组：浅灰轻量分组标题 + 下方 4 列卡片网格 ---- */
 .codex-group { max-width: 760px; margin: 0 auto 16px; }  /* 宽屏限宽居中，卡片不过大；窄屏自动全宽 */
 .codex-group:last-child { margin-bottom: 0; }
-.codex-group-title { margin: 0 0 10px; padding-left: 2px; font-size: 13px; font-weight: 400; color: #999; }
+.codex-group-title { margin: 0 0 10px; padding-left: 2px; font-size: 13px; font-weight: 400; color: #7A5A32; }
 .tile-codex { aspect-ratio: 1 / 1; padding: 10px 4px; border-radius: 10px; }  /* 正方形圆角卡片，保留 .tile 像素边框/内描边/硬阴影 */
 /* 图鉴分类卡片：取消按压位移/亮度特效（点击直接跳转，无按压反馈） */
 .tile-codex:active { transform: none; box-shadow: inset 0 0 0 3px var(--wood-light), 5px 5px 0 var(--shadow); }
@@ -122,7 +122,7 @@
 }
 .btn-group { display: flex; gap: 10px; margin-top: 12px; }
 
-/* ---- 开关（NES 拨动开关：白块黑框，开启亮蓝） ---- */
+/* ---- 开关（像素农场拨动开关：卡其块棕框，开启橄榄绿） ---- */
 .switch { position: relative; display: inline-block; width: 46px; height: 26px; flex: none; }
 .switch input { position: absolute; opacity: 0; width: 0; height: 0; }
 .switch .slider {
@@ -139,10 +139,10 @@
   border-radius: 0;
   transition: transform 0.15s, background 0.15s;
 }
-.switch input:checked + .slider { background: var(--nes-blue); border-color: var(--wood-frame); }
+.switch input:checked + .slider { background: var(--farm-green); border-color: var(--wood-frame); }
 .switch input:checked + .slider::before { transform: translateX(18px); background: #fff; }
 
-/* ---- 主题切换 chip（NES 双键：白块黑框，激活正红白字） ---- */
+/* ---- 主题切换 chip（像素农场双键：卡其块棕框，激活暖番茄白字） ---- */
 .theme-switch-btns { display: flex; gap: 8px; }
 .chip {
   padding: 6px 14px; font-size: 13px;
@@ -394,7 +394,7 @@
   outline-offset: 2px;
 }
 
-/* ---- 弹窗（NES 对话框：米白面板 + 粗黑框 + 暖黄内描边 + 硬阴影） ---- */
+/* ---- 弹窗（像素农场对话框：米卡其面板 + 双层棕框 + 浅米内描边 + 硬阴影） ---- */
 .modal-mask {
   position: fixed; inset: 0;
   background: rgba(0, 0, 0, 0.5);
@@ -457,7 +457,7 @@
   width: 56px; height: 56px; flex: none;
   border: 3px solid var(--dialog-border);
   border-radius: var(--radius);
-  background: var(--nes-blue);
+  background: var(--farm-green);
   box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.35), 2px 2px 0 var(--dialog-dark);
 }
 .modal-body.avatar .modal-avatar + div { flex: 1; }
@@ -471,7 +471,7 @@
 }
 .modal-actions .btn-text:active { transform: none; box-shadow: none; }
 
-/* ---- Toast（8bit 提示条：米白面板 + 粗黑框 + 撞色描边） ---- */
+/* ---- Toast（像素农场提示条：米卡其面板 + 双层棕框 + 浅米描边） ---- */
 .toast {
   position: fixed; left: 50%; bottom: 96px;
   transform: translateX(-50%);
@@ -512,62 +512,62 @@
 
 
 /* ============================================================
-   8-bit 像素块 UI（.scroll-* 系列）— 纯 CSS 像素块
+   像素块 UI（.scroll-* 系列）— 纯 CSS 像素块
    不用图片素材、不用 border-image，全部由 border + 多层 box-shadow 绘制
-   配色：
-     边框主色  #2B2B2B（深灰粗框）
-     内描边    #E6342C（正红撞色）
-     内底部    #EFE4CC（深米立体）
-     外阴影    #2B2B2B（纯色硬阴影）
-     内侧底色  #FFFDF5（米白块）
-   像素感：直角矩形 + 全部 box-shadow blur=0（硬边，无柔和阴影）
+   配色（像素复古农场）：
+     外层粗描边  var(--wood-frame) 深棕
+     内层浅色描边 var(--wood-light) 浅米
+     内底部    var(--bg-deep) 深一档卡其立体
+     外硬阴影  var(--shadow) 深棕（blur=0）
+     内侧底色  var(--card-bg) 亮米卡其
+   像素感：小圆角 + 全部 box-shadow blur=0（硬边，无柔和阴影）
    硬性要求：全局 image-rendering: pixelated
    ============================================================ */
 
 /* ---- scroll-card：大模块卡片（快捷功能、功能专区等） ---- */
 .scroll-card {
-  border: 6px solid #2B2B2B;                     /* 边框主色：深灰粗框 */
-  background: #FFFDF5;                           /* 内侧米白块 */
+  border: 6px solid var(--wood-frame);             /* 外层粗像素边框：深棕 */
+  background: var(--card-bg);                      /* 内侧米卡其块 */
   box-shadow:
-    inset 0 0 0 3px #E6342C,                     /* 内描边：正红撞色 */
-    inset 0 -10px 0 #EFE4CC,                     /* 内底部深米立体 */
-    6px 6px 0 #2B2B2B;                           /* 外硬阴影 */
-  border-radius: 0;                              /* 直角矩形 */
-  padding: 24px;                                 /* 内边距：文字不会压到边框 */
+    inset 0 0 0 3px var(--wood-light),             /* 内层浅色描边：浅米 */
+    inset 0 -10px 0 var(--bg-deep),                /* 内底部卡其立体 */
+    6px 6px 0 var(--shadow);                       /* 外硬阴影 */
+  border-radius: var(--radius);
+  padding: 24px;                                   /* 内边距：文字不会压到边框 */
   margin-bottom: 16px;
 }
 
 /* ---- scroll-btn：小按钮卡片（快捷功能方格等，木框更细） ---- */
 .scroll-btn {
-  border: 4px solid #2B2B2B;                     /* 小按钮边框：深灰粗框 */
-  background: #FFFDF5;                           /* 内侧米白块 */
+  border: 4px solid var(--wood-frame);             /* 外层粗像素边框：深棕 */
+  background: var(--card-bg);                      /* 内侧米卡其块 */
   box-shadow:
-    inset 0 0 0 2px #E6342C,                     /* 内描边：正红 */
-    inset 0 -8px 0 #EFE4CC,                      /* 内底部深米立体 */
-    4px 4px 0 #2B2B2B;                           /* 外硬阴影 */
-  border-radius: 0;
+    inset 0 0 0 2px var(--wood-light),             /* 内层浅色描边 */
+    inset 0 -8px 0 var(--bg-deep),                 /* 内底部卡其立体 */
+    4px 4px 0 var(--shadow);                       /* 外硬阴影 */
+  border-radius: var(--radius);
   position: relative;
   display: flex; flex-direction: column; align-items: center; gap: 6px;
-  padding: 14px 10px;                            /* 内边距：文字不压框 */
+  padding: 14px 10px;                              /* 内边距：文字不压框 */
   color: var(--text);
   transition: transform 0.08s, box-shadow 0.08s, filter 0.08s;
 }
 .scroll-btn:active {
-  transform: translate(2px, 2px);                /* 点击下压反馈 */
+  transform: translate(2px, 2px);                  /* 点击下压反馈 */
   box-shadow:
-    inset 0 0 0 2px #E6342C,
-    inset 0 -8px 0 #EFE4CC,
-    2px 2px 0 #2B2B2B;                           /* 按压后阴影收缩 */
+    inset 0 0 0 2px var(--wood-light),
+    inset 0 -8px 0 var(--bg-deep),
+    2px 2px 0 var(--shadow);                       /* 按压后阴影收缩 */
 }
 
 /* ---- scroll-modal：全局弹窗，与 scroll-card 样式一致 ---- */
 .scroll-modal {
-  border: 6px solid #2B2B2B;                     /* 与 scroll-card 一致：深灰粗框 */
-  background: #FFFDF5;                           /* 内侧米白块 */
+  border: 6px solid var(--wood-frame);             /* 外层粗像素边框：深棕 */
+  background: var(--card-bg);                      /* 内侧米卡其块 */
   box-shadow:
-    inset 0 0 0 3px #E6342C,
-    inset 0 -10px 0 #EFE4CC,
-    6px 6px 0 #2B2B2B;
-  border-radius: 0;
-  padding: 28px 24px;                            /* 弹窗内边距更大 */
+    inset 0 0 0 3px var(--wood-light),
+    inset 0 -10px 0 var(--bg-deep),
+    6px 6px 0 var(--shadow);
+  border-radius: var(--radius);
+  padding: 28px 24px;                              /* 弹窗内边距更大 */
 }

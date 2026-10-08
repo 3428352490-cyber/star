@@ -310,7 +310,7 @@
 /* ---------- 个人主页（我的 / 他人共用） ---------- */
 .profile-banner {
   height: 120px; margin-bottom: -44px;
-  background: linear-gradient(160deg, #7a9a5a, #5a7a4a 55%, #3a5a3a);
+  background: #6a8a5a;                /* 纯色橄榄绿像素块（无平滑渐变，锐利像素感） */
   border: 3px solid #3a2a1a; box-shadow: 4px 4px 0 rgba(58, 42, 26, 0.3);
 }
 .profile-main {

@@ -70,13 +70,13 @@
 }
 .btn-back:active { transform: translateY(calc(-50% + 2px)); color: var(--accent); }
 
-/* ===== 底部固定导航：纯色简约栏——无外框、无圆角容器；选中图标永久放大 1.5 倍 ===== */
+/* ===== 底部固定导航：像素农场简约栏——卡其底 + 顶部深棕像素分隔线；图标保持不变 ===== */
 .stardew-nav,
 .bottom-nav {
   position: fixed; left: 0; right: 0; bottom: 0;   /* 固定视口底部：软键盘弹出不跟随上移 */
   display: flex;
-  background-color: #ffffff;                       /* 独立纯色背景（初始白色，改这一行即可换底色） */
-  border-top: none;                                /* 无外框 */
+  background-color: var(--nav-bg);                 /* 卡其底色（跟随主题） */
+  border-top: 3px solid var(--wood-frame);         /* 顶部深棕像素分隔线 */
   z-index: 50;
   padding-bottom: env(safe-area-inset-bottom);     /* 底部安全区 */
   image-rendering: pixelated;                      /* 保持星露谷像素硬边风格 */
@@ -99,10 +99,11 @@
 /* 点击按压反馈：按住时轻微放大 1.1 倍（优先于选中态生效前的一瞬反馈） */
 .nav-item:active { opacity: 0.7; }
 .nav-item:active .nav-icon { transform: scale(1.1); }
-/* 选中态：图标永久放大 1.5 倍标识当前页面（无变色、无方框、无高亮底板）；
+/* 选中态：图标永久放大 1.5 倍标识当前页面（无方框、无高亮底板）；文字同步加深暖棕突出；
    点击切换时 router 移除旧项 .active、添加新项 .active，旧图标经 0.15s 过渡
    恢复默认尺寸，新图标保持放大；未选中图标保持默认尺寸 */
 .nav-item.active .nav-icon { transform: scale(1.5); }
+.nav-item.active { color: var(--text); }
 @media (prefers-reduced-motion: reduce) {
   .nav-item .nav-icon { transition: none; }
 }

@@ -1,88 +1,89 @@
 @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
 /* ============================================================
-   复古 8-bit 红白机像素UI · 基础与深浅主题变量
-   高饱和撞色（正红/明亮蓝/暖黄/深灰/砖红）+ 米白底 + 直角粗像素边框
-   浅色（米白纸感） / 深色（暗灰机箱），通过 [data-theme] 切换
-   硬性要求：全局 image-rendering: pixelated / 关闭抗锯齿 / 无渐变 / 无毛玻璃
+   像素复古农场UI · 基础与深浅主题变量
+   暖调田园配色（米卡其/深棕/橄榄绿/暖黄/砖红）+ 双层像素边框
+   （外层粗深棕描边 + 内层浅色描边）+ 像素小圆角 + 硬像素阴影
+   浅色（米卡其纸感） / 深色（暖调暗夜），通过 [data-theme] 切换
+   硬性要求：全局 image-rendering: pixelated / 关闭抗锯齿 / 无平滑虚化
    ============================================================ */
 :root {
-  /* 红白机高饱和撞色 */
-  --nes-red: #E6342C;                /* 正红（马里奥红） */
-  --nes-blue: #2E6BD8;               /* 明亮蓝 */
-  --nes-yellow: #FFB800;             /* 暖黄 */
-  --nes-gray: #2B2B2B;               /* 深灰 */
-  --nes-brick: #B8452E;              /* 砖红 */
-  --nes-paper: #F8F2E4;              /* 米白底 */
+  /* 像素复古农场 · 暖调田园配色 */
+  --farm-green: #6A8A5A;             /* 橄榄绿（农田/关注） */
+  --farm-yellow: #E8C14A;            /* 暖黄（星露谷招牌黄） */
+  --farm-red: #E05A33;               /* 暖番茄红（主操作/点赞） */
+  --farm-brick: #C24E2C;             /* 砖红（暗部点缀） */
+  --farm-brown: #5B3A1E;             /* 深棕（外层粗描边） */
+  --farm-beige: #F0E3C2;             /* 米卡其（页面底色） */
 
-  --bg: #F8F2E4;                     /* 页面米白底色（8bit 纸感） */
-  --bg-deep: #EFE4CC;                /* 内嵌块底色（深一档米色） */
-  --card-bg: #FFFDF5;                /* 卡片纯色块底（亮米白） */
-  --card-border: rgba(43, 43, 43, 0.35);
-  --nav-bg: #FFFDF5;                 /* 底部导航块底 */
-  --text: #1F1B16;                   /* 近黑文字 */
-  --text-dim: rgba(31, 27, 22, 0.62);
-  --accent: #E6342C;                 /* 正红（主操作/强调） */
-  --accent-deep: #B3231C;
-  --accent-2: #FFB800;               /* 暖黄 */
-  --danger: #B8452E;                 /* 砖红 */
-  --shadow: #2B2B2B;                 /* 硬像素阴影（纯色深灰，无模糊） */
-  --tile-border: #2B2B2B;
-  --tile-light: #FFFFFF;
-  --tile-dark: #B8452E;
-  --radius: 0px;                     /* 直角矩形：8-bit 无圆角 */
+  --bg: #F0E3C2;                     /* 页面底色：米卡其 */
+  --bg-deep: #E5D2A6;                /* 内嵌块底：深一档卡其 */
+  --card-bg: #FAF0D6;                /* 卡片纯色块底：亮米卡其 */
+  --card-border: rgba(74, 47, 22, 0.35);
+  --nav-bg: #E9D7AE;                 /* 底部导航块底：卡其 */
+  --text: #3A2A1A;                   /* 深棕近黑文字 */
+  --text-dim: rgba(58, 42, 26, 0.62);
+  --accent: #E05A33;                 /* 暖番茄红（主操作/强调） */
+  --accent-deep: #B23E1F;
+  --accent-2: #E8C14A;               /* 暖黄 */
+  --danger: #C24E2C;                 /* 砖红 */
+  --shadow: #4A3018;                 /* 硬像素阴影（纯色深棕，无模糊） */
+  --tile-border: #5B3A1E;
+  --tile-light: #FFF8E6;
+  --tile-dark: #8A6A3A;
+  --radius: 2px;                     /* 像素小圆角：锐利像素感，非平滑大圆角 */
 
-  /* 像素纹理（兼容旧变量名，值为 8-bit 棋盘点阵） */
-  --wood-plank: #FFFDF5;
-  --wood-frame: #2B2B2B;             /* 粗像素描边：深灰 */
-  --wood-mid: #4A443C;
-  --wood-border: #2B2B2B;
-  --wood-light: #FFFFFF;             /* 内描边高光：白 */
-  --wood-dark: #B8452E;              /* 暗部：砖红 */
-  --wood-frame-edge: #E6342C;        /* 外缘撞色：正红 */
-  --wood-texture: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16'><rect width='16' height='16' fill='%23fffdf5'/><rect x='0' y='0' width='8' height='8' fill='%23f4ecd8'/><rect x='8' y='8' width='8' height='8' fill='%23f4ecd8'/></svg>");
+  /* 像素纹理（兼容旧变量名，值为 16px 米卡其双色点阵） */
+  --wood-plank: #FAF0D6;
+  --wood-frame: #5B3A1E;             /* 外层粗像素描边：深棕 */
+  --wood-mid: #7A5A32;
+  --wood-border: #5B3A1E;
+  --wood-light: #FFF4DC;             /* 内层浅色描边：浅米 */
+  --wood-dark: #8A6A3A;              /* 暗部：卡其棕 */
+  --wood-frame-edge: #E8C14A;        /* 外缘点缀：暖黄 */
+  --wood-texture: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16'><rect width='16' height='16' fill='%23faf0d6'/><rect x='0' y='0' width='8' height='8' fill='%23efdfb8'/><rect x='8' y='8' width='8' height='8' fill='%23efdfb8'/></svg>");
 
-  /* 红白机对话框（米白面板 + 粗黑框 + 撞色描边） */
-  --dialog-bg: #FFFDF5;
-  --dialog-border: #2B2B2B;
-  --dialog-light: #FFB800;           /* 内描边：暖黄 */
-  --dialog-dark: #B8452E;            /* 暗部：砖红 */
-  --dialog-text: #1F1B16;
-  --dialog-text-dim: rgba(31, 27, 22, 0.7);
+  /* 像素农场对话框（米卡其面板 + 双层棕框 + 浅米内描边） */
+  --dialog-bg: #FAF0D6;
+  --dialog-border: #5B3A1E;
+  --dialog-light: #FFF4DC;           /* 内描边：浅米 */
+  --dialog-dark: #8A6A3A;            /* 暗部：卡其棕 */
+  --dialog-text: #3A2A1A;
+  --dialog-text-dim: rgba(58, 42, 26, 0.7);
 }
 
 [data-theme="dark"] {
-  --bg: #1E1B17;                     /* 暗灰机箱底 */
-  --bg-deep: #2A2621;
-  --card-bg: #2F2A25;
+  --bg: #2A2218;                     /* 暖调暗夜底 */
+  --bg-deep: #362C1E;
+  --card-bg: #3A3020;
   --card-border: rgba(0, 0, 0, 0.5);
-  --nav-bg: #2F2A25;
-  --text: #F5EFE2;
-  --text-dim: rgba(245, 239, 226, 0.6);
-  --accent: #FF4B40;                 /* 更亮的正红 */
-  --accent-deep: #D92E26;
-  --accent-2: #FFC93E;
-  --danger: #E0634A;
-  --shadow: #000000;
-  --tile-border: #000000;
-  --tile-light: #555555;
-  --tile-dark: #14110E;
+  --nav-bg: #32291B;
+  --text: #F0E3C2;
+  --text-dim: rgba(240, 227, 194, 0.6);
+  --accent: #F0603A;                 /* 更亮的暖番茄红 */
+  --accent-deep: #C94320;
+  --accent-2: #E8C14A;
+  --danger: #D65A3A;
+  --shadow: #160F06;
+  --tile-border: #0F0A04;
+  --tile-light: #4A3E28;
+  --tile-dark: #201810;
 
-  --wood-plank: #2F2A25;
-  --wood-frame: #000000;
-  --wood-mid: #3A342E;
-  --wood-border: #000000;
-  --wood-light: #4A443C;
-  --wood-dark: #14110E;
-  --wood-frame-edge: #FFB800;
-  --wood-texture: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16'><rect width='16' height='16' fill='%232f2a25'/><rect x='0' y='0' width='8' height='8' fill='%2326221d'/><rect x='8' y='8' width='8' height='8' fill='%2326221d'/></svg>");
+  --wood-plank: #3A3020;
+  --wood-frame: #0F0A04;
+  --wood-mid: #4A3E28;
+  --wood-border: #0F0A04;
+  --wood-light: #4A3E28;
+  --wood-dark: #201810;
+  --wood-frame-edge: #E8C14A;
+  --wood-texture: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16'><rect width='16' height='16' fill='%233a3020'/><rect x='0' y='0' width='8' height='8' fill='%2330281a'/><rect x='8' y='8' width='8' height='8' fill='%2330281a'/></svg>");
 
-  --dialog-bg: #2F2A25;
-  --dialog-border: #000000;
-  --dialog-light: #FFB800;
-  --dialog-dark: #14110E;
-  --dialog-text: #F5EFE2;
-  --dialog-text-dim: rgba(245, 239, 226, 0.7);
+  --dialog-bg: #3A3020;
+  --dialog-border: #0F0A04;
+  --dialog-light: #4A3E28;
+  --dialog-dark: #201810;
+  --dialog-text: #F0E3C2;
+  --dialog-text-dim: rgba(240, 227, 194, 0.7);
 }
 
 /* ===== 重置与基础 ===== */
