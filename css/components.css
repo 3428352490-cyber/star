@@ -104,7 +104,7 @@
 .home-card h3 { font-size: 15px; margin-bottom: 4px; color: var(--accent); }
 .home-card p { font-size: 12px; color: var(--text-dim); }
 
-/* ---- 按钮（8bit 像素按钮：白块黑框；主操作正红块白字） ---- */
+/* ---- 按钮（像素农场按钮：米卡其块棕框双层边；主操作橄榄绿块白字，贴近参考图） ---- */
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
   padding: 8px 16px; font-size: 13px;
@@ -116,9 +116,10 @@
   transition: transform 0.08s, box-shadow 0.08s, filter 0.08s;
 }
 .btn:active { transform: translate(2px, 2px); box-shadow: inset 0 0 0 2px var(--wood-light), 1px 1px 0 var(--shadow); }
+/* 主操作按钮：橄榄绿底白字（星露谷商店按钮同款绿），深绿棕描边 + 浅色内描边双层 */
 .btn-primary {
-  background: var(--accent); border-color: var(--accent-deep); color: #fff;
-  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.35), 3px 3px 0 var(--shadow);
+  background: var(--farm-green); border-color: #3A5A2A; color: #fff;
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.3), 3px 3px 0 var(--shadow);
 }
 .btn-group { display: flex; gap: 10px; margin-top: 12px; }
 
@@ -142,14 +143,14 @@
 .switch input:checked + .slider { background: var(--farm-green); border-color: var(--wood-frame); }
 .switch input:checked + .slider::before { transform: translateX(18px); background: #fff; }
 
-/* ---- 主题切换 chip（像素农场双键：卡其块棕框，激活暖番茄白字） ---- */
+/* ---- 主题切换 chip（像素农场双键：卡其块棕框，激活橄榄绿白字，贴近参考图） ---- */
 .theme-switch-btns { display: flex; gap: 8px; }
 .chip {
   padding: 6px 14px; font-size: 13px;
   border: 2px solid var(--tile-border); border-radius: var(--radius);
   background: var(--bg-deep); color: var(--text);
 }
-.chip.active { background: var(--accent); border-color: var(--accent-deep); color: #fff; }
+.chip.active { background: var(--farm-green); border-color: #3A5A2A; color: #fff; }
 
 /* 像素手绘文字：标题硬边描影（不改变字号与排版） */
 .card-head h2, .page-header h1 { text-shadow: 2px 2px 0 var(--shadow); }
@@ -196,7 +197,7 @@
   border: 2px solid var(--tile-border); border-radius: var(--radius);
   background: var(--card-bg); position: relative;
 }
-.check-item.on .check-box { background: var(--accent); border-color: var(--accent-deep); }
+.check-item.on .check-box { background: var(--farm-green); border-color: #3A5A2A; }
 .check-item.on .check-box::after {
   content: "✓"; position: absolute; inset: 0;
   display: grid; place-items: center;
@@ -249,11 +250,11 @@
   border: 3px solid var(--tile-border); border-radius: var(--radius);
   outline: none;
 }
-.search-bar input:focus { border-color: var(--accent); }
-/* 搜索按钮：像素卡片风格，点击执行搜索（空输入时用当前轮播词） */
+.search-bar input:focus { border-color: var(--farm-green); }
+/* 搜索按钮：像素农场主操作（橄榄绿白字，参考图同款绿按钮），点击执行搜索 */
 .search-btn {
   flex: none; width: 56px; padding: 0;
-  background: var(--accent); color: #fff;
+  background: var(--farm-green); color: #fff;
   border: 3px solid var(--wood-frame); border-radius: var(--radius);
   font-size: 13px; cursor: pointer;
   transition: none;

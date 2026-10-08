@@ -233,4 +233,22 @@ body:not(.dev-mode) #dev-admin-panel { display: none !important; }
 body:not(.dev-mode) #dev-edit-toolbar { display: none !important; }
 body:not(.dev-mode) .btn-upload { display: none !important; }
 
-/* 星露谷像素卡片风格保持一致：直角 / 粗像素边框 / 高饱和撞色 */
+/* ============================================================
+ * 输入框统一双层像素边框（全站兜底规则，最后加载覆盖各页面表单：
+ * 搜索/登录/评论/回复/私聊/开发者 GitHub 表单等）
+ * 外层粗深棕描边 + 内层浅色描边 + 像素小圆角，米卡其底色
+ * ============================================================ */
+.search-bar input,
+.post-form input[type="text"], .post-form textarea,
+.login-form input,
+.msg-search-box input,
+.comment-input-row input,
+.chat-input-row input,
+.admin-github-form input,
+.dev-node-edit input[type="text"],
+input[type="text"], input[type="password"], input[type="search"],
+input[type="email"], input[type="number"], input[type="tel"], textarea {
+  border: 3px solid var(--wood-frame);             /* 外层粗深棕描边 */
+  border-radius: var(--radius);                    /* 像素小圆角 */
+  box-shadow: inset 0 0 0 2px var(--wood-light);   /* 内层浅色描边 */
+}
