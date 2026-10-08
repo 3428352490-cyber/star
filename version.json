@@ -1,5 +1,5 @@
 {
-  "latestVersion": "2.5.5",
-  "updateDesc": "修复：背景锁定上传后远程无该字段导致覆盖无效果——上传载荷始终显式包含backgroundLock字段",
+  "latestVersion": "2.5.6",
+  "updateDesc": "删除背景锁定板块与背景同步上传：背景回归纯自动轮换，一键上传仅保留页面内容JSON同步",
   "downloadUrl": "./index.html"
 }
