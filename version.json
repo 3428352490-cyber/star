@@ -1,5 +1,5 @@
 {
-  "latestVersion": "2.5.4",
-  "updateDesc": "修复：恢复自动切换后上传无法覆盖远程背景锁定——恢复自动与远程拉取统一保留locked:false覆盖标记",
+  "latestVersion": "2.5.5",
+  "updateDesc": "修复：背景锁定上传后远程无该字段导致覆盖无效果——上传载荷始终显式包含backgroundLock字段",
   "downloadUrl": "./index.html"
 }

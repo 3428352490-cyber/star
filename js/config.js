@@ -10,7 +10,7 @@
 const SDV_CONFIG = {
   app: {
     name: '星露谷攻略',
-    version: '2.5.4',
+    version: '2.5.5',
     /**
      * 云端版本清单地址（GitHub Pages 部署后替换为实际地址）：
      * 例如 'https://你的用户名.github.io/仓库名/version.json'
@@ -56,6 +56,15 @@ const SDV_CONFIG = {
 
   /** 软件公告（公告页渲染；新版本发布时向数组头部追加条目） */
   announcements: [
+    {
+      version: '2.5.5',
+      date: '2026-10-09',
+      title: '补丁更新',
+      notes: [
+        '修复：背景锁定上传后远程无该字段导致覆盖无效果——上传载荷始终显式包含backgroundLock字段',
+        '小改动与问题修复，优化使用体验',
+      ],
+    },
     {
       version: '2.5.4',
       date: '2026-10-09',
