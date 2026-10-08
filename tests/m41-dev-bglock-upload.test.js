@@ -44,6 +44,10 @@ test('M41-2 背景锁定内嵌载荷：本地锁定 → {locked,season,period}�
   resetLocal();
   const p3 = DevAdmin.buildPageContentPayload({ backgroundLock: { locked: true, season: 'autumn', period: 'dusk' } });
   assert.deepEqual(p3.backgroundLock, { locked: true, season: 'autumn', period: 'dusk' }, '无本地修改应保留远程原值');
+
+  resetLocal();
+  const p4 = DevAdmin.buildPageContentPayload({});
+  assert.equal(p4.backgroundLock, null, 'v2.5.5 本地与远程均无标记应显式写 null（字段不消失，防全文件替换抹掉）');
 });
 
 test('M41-3 一键上传仅提交页面内容 JSON（单文件，files 仅含 jsonPath）', () => {

@@ -1152,6 +1152,10 @@ const DevAdmin = (() => {
       payload.backgroundLock = { locked: false };
     } else if (base.backgroundLock !== undefined) {
       payload.backgroundLock = base.backgroundLock;
+    } else {
+      // v2.5.5 兜底：本地与远程均无标记时显式写 null（字段始终存在，
+      // 防止 PUT 全文件替换后 backgroundLock 字段消失导致远程无法被后续覆盖）
+      payload.backgroundLock = null;
     }
     return payload;
   }
