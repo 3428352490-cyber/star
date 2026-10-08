@@ -30,19 +30,23 @@ test('M43-2 leaf.css 层级与交互：覆盖板块内容、不拦截点击、�
   assert.ok(css.includes('pixelated'), '应为像素硬边渲染');
 });
 
-test('M43-3 leaf.js 星露谷同款双叶组合掩码（两套 32x20，左片月牙右片小叶）+ 叶脉双色 + 季节配色与冬季不加载', () => {
+test('M43-3 leaf.js 圆润像素叶（cos 曲线三套造型：单叶/双叶组合/长叶带柄）+ 三区明暗渐变 + 季节配色与冬季不加载', () => {
   const src = readAppFile('js/leaf.js');
-  assert.ok(src.includes('c.width = 32; c.height = 20;'), '双叶掩码应为 32x20 像素');
-  assert.ok(src.includes('MASKS = ['), '双叶掩码模板缺失');
-  assert.ok(src.includes('合叶：左片月牙'), '第一套双叶造型（合叶）缺失');
-  assert.ok(src.includes('双叶：左片月牙'), '第二套双叶造型（双叶）缺失');
-  assert.ok(src.includes("'2'=深色叶脉"), '深色叶脉双色渲染缺失');
-  assert.ok(src.includes('function darken'), '叶脉加深函数缺失');
+  assert.ok(src.includes('c.width = 32; c.height = 20;'), '树叶掩码应为 32x20 像素');
+  assert.ok(src.includes('MASKS = (function'), '树叶掩码模板缺失');
+  assert.ok(src.includes("'1'=亮面"), '亮面区缺失（明暗渐变）');
+  assert.ok(src.includes("'2'=暗面"), '暗面区缺失（明暗渐变）');
+  assert.ok(src.includes("'3'=深色叶脉"), '深色叶脉区缺失');
+  assert.ok(src.includes('function shade'), '明暗调节函数缺失');
+  assert.ok(src.includes('Math.cos'), 'cos 圆润曲线轮廓缺失（消除方块感）');
+  assert.ok(src.includes('单叶圆润'), '第一套造型（单叶圆润）缺失');
+  assert.ok(src.includes('双叶组合'), '第二套造型（双叶组合）缺失');
+  assert.ok(src.includes('长叶带柄'), '第三套造型（长叶带柄）缺失');
   assert.ok(src.includes("season === 'winter'"), '冬季应不加载树叶');
-  assert.ok(src.includes("COLORS = {"), '季节配色表缺失');
-  assert.ok(src.includes("spring: ['#8fd14f', '#b5e76e']"), '春季嫩绿配色缺失');
-  assert.ok(src.includes("summer: ['#3f8f46', '#5aa852']"), '夏季深绿配色缺失');
-  assert.ok(src.includes("autumn: ['#e8a33d', '#d06a2c']"), '秋季橙黄/橘红配色缺失');
+  assert.ok(src.includes('COLORS = {'), '季节配色表缺失');
+  assert.ok(src.includes("spring: ['#9edb5c'"), '春季嫩绿配色缺失');
+  assert.ok(src.includes("summer: ['#55a85c'"), '夏季深绿配色缺失');
+  assert.ok(src.includes("autumn: ['#f2b14a'"), '秋季橙黄/橘红配色缺失');
 });
 
 test('M43-4 中等密度 + 低性能降量（渲染数量限制）', () => {
