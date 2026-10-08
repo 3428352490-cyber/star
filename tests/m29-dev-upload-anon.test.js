@@ -14,7 +14,7 @@ test('M29-1 GET 读 sha 无认证优先：公开仓库绕过带认证拦截，�
   assert.ok(src.includes('无认证优先读取'), '缺少无认证优先读取说明');
   assert.ok(src.includes("const anonRes = await fetchTimeout("), '缺少无认证读取请求');
   assert.ok(src.includes("anonData.sha"), '缺少无认证读取 sha 提取');
-  assert.ok(src.includes("if (!sha) {"), '缺少无认证失败回退分支');
+  assert.ok(src.includes("if (anonData && anonData.sha) {"), '缺少无认证命中即返回 sha 分支');
   assert.ok(src.includes("'Accept': 'application/vnd.github+json' }, redirect: 'manual' },"), '无认证请求缺少 Accept 头');
 });
 

@@ -33,7 +33,7 @@ test('M27-3 HTML 错误携带诊断细节：统一 uploadErr 组装（状态码+
   const src = readAppFile('js/dev-admin.js');
   assert.ok(src.includes('status: res ? res.status : 0'), 'safeJsonWithCheck 缺少状态码附带');
   assert.ok(src.includes("diag: { kind: 'html', status: e.status || 0, snippet: e.snippet || '', tip: diagnoseHtml(e.snippet, e.status).tip }"), 'uploadErr 缺少诊断信息组装');
-  assert.ok(src.includes('return uploadErr(ge)'), 'GET 读 sha 分支未统一走 uploadErr');
+  assert.ok(src.includes('return uploadErr(e)'), '读取/提交异常分支未统一走 uploadErr');
   assert.ok(src.includes('return uploadErr(pe)'), 'PUT 提交分支未统一走 uploadErr');
 });
 

@@ -52,14 +52,14 @@ test('M31-3 远程基底为空（首次上传/读取失败）：仅本地缓存�
   assert.ok(payload.generatedAt, '缺少生成时间');
 });
 
-test('M31-4 上传流程：PUT 前合并远程基底（远程内容解析 + 载荷重建）', () => {
+test('M31-4 上传流程：PUT 前合并远程基底（远程内容解析 + 载荷重建，双文件）', () => {
   const src = readAppFile('js/dev-admin.js');
   assert.ok(src.includes('function parseRemoteContent'), '缺少远程内容解析函数');
   assert.ok(src.includes('atob(String(data.content).replace(/\\n/g, \'\'))'), '缺少 base64 解码');
-  assert.ok(src.includes('const payload = buildPageContentPayload(remoteBase)'), 'PUT 前缺少远程合并载荷构建');
-  assert.ok(src.includes('let remoteBase = null'), '缺少远程基底变量');
-  assert.ok(src.includes('if (parsed) remoteBase = parsed'), '无认证读取缺少远程基底解析');
+  assert.ok(src.includes('const pagePayload = buildPageContentPayload(remotePage.base)'), 'PUT 前缺少页面内容合并载荷构建');
   assert.ok(src.includes('base: parseRemoteContent(got)'), '带 Token 读取缺少远程基底解析');
+  assert.ok(src.includes('const bgPayload = buildBackgroundLockPayload(remoteBg.base)'), '缺少背景锁定独立载荷构建');
+  assert.ok(src.includes('bgLockPath') && src.includes('background-lock.json'), '缺少背景锁定独立 JSON 路径');
 });
 
 test('M31-5 原有逻辑不变：域名校验 + sha 提交 + 超时重试 + 失败保留数据', () => {

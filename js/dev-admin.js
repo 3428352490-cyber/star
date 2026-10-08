@@ -85,11 +85,12 @@ const DevAdmin = (() => {
       repo: 'stardew-guide',
       branch: 'main',
       jsonPath: 'data/page-content.json',
+      bgLockPath: 'data/background-lock.json',       // 背景锁定配置独立 JSON（v2.4.33）
     });
   }
   function setGitHubRepo(cfg) {
     write('github_repo', Object.assign(
-      { owner: '', repo: '', branch: 'main', jsonPath: 'data/page-content.json' },
+      { owner: '', repo: '', branch: 'main', jsonPath: 'data/page-content.json', bgLockPath: 'data/background-lock.json' },
       cfg || {}
     ));
   }
@@ -119,6 +120,8 @@ const DevAdmin = (() => {
     if (!token) return { ok: false, message: '请先填写 GitHub Token' };
 
     const repo = getGitHubRepo();
+    // 兼容旧仓库配置（未保存 bgLockPath 字段时使用项目默认路径）
+    const bgLockPath = repo.bgLockPath || 'data/background-lock.json';
     if (!repo.owner || !repo.repo || !repo.jsonPath) {
       return { ok: false, message: '请先配置 GitHub 仓库信息（owner / repo / jsonPath）' };
     }
@@ -137,113 +140,135 @@ const DevAdmin = (() => {
     };
 
     try {
-      // ① 读取当前文件内容（获取 sha 与远程基底；弱网/拦截自动重试，最多 3 次）
-      let sha = '';
-      let remoteBase = null; // 远程现有 page-content.json（供上传载荷增量合并，v2.4.18）
-      try {
-        // 0) 无认证优先读取（v2.4.16）：公开仓库无需 Token 即可读取 sha，
-        //    可绕过部分网络/代理对「带认证请求」的路径级拦截规则；
-        //    私有仓库或读取失败时自动回退到带 Token 流程。
-        const readUrl = base + '/repos/' + encodeURIComponent(repo.owner) + '/' +
-          encodeURIComponent(repo.repo) + '/contents/' +
-          encodeURIComponent(repo.jsonPath) +
-          '?ref=' + encodeURIComponent(repo.branch || 'main') + '&t=' + Date.now();
-        const anonRes = await fetchTimeout(
-          readUrl,
-          { headers: { 'Accept': 'application/vnd.github+json' }, redirect: 'manual' },
-          15000
-        );
-        if (anonRes.ok) {
-          try {
-            const anonData = await safeJsonWithCheck(anonRes);
-            if (anonData && anonData.sha) sha = anonData.sha;
-            const parsed = parseRemoteContent(anonData);
-            if (parsed) remoteBase = parsed;
-          } catch (anonErr) {
-            // 无认证读取异常（HTML 拦截 / JSON 异常）不阻塞，继续走带 Token 流程
-            if (anonErr.__class !== 'html' && anonErr.__class !== 'json') throw anonErr;
-          }
-        }
-        if (!sha) {
-          // 1) 带 Token 读取（私有仓库 / 文件不存在判断 / 无认证被拦）
-          const got = await withRetry(function () {
-            return fetchTimeout(
-              readUrl,
-              { headers: Object.assign({}, authHeaders, NO_CACHE_HEADERS), redirect: 'manual' },
-              15000
-            ).then(async function (fileRes) {
-              if (fileRes.type === 'opaqueredirect' || fileRes.status === 301 || fileRes.status === 302 || fileRes.status === 307 || fileRes.status === 308) {
-                throw apiErr('token', 'GitHub API 重定向（Token 失效或未授权）：请重新生成有 contents 权限的 Token 再试');
-              }
-              if (fileRes.status === 401 || fileRes.status === 403) {
-                throw apiErr('token', 'Token 权限不足：请检查 GitHub Personal Access Token 是否有效且具备 contents 写权限');
-              }
-              if (fileRes.status === 404) return { sha: '', base: null }; // 文件不存在则直接创建
-              if (fileRes.ok) {
-                const got = await safeJsonWithCheck(fileRes);
-                return { sha: (got && got.sha) || '', base: parseRemoteContent(got) };
-              }
-              throw apiErr('other', '获取文件失败（' + fileRes.status + '）：请检查 Token 权限与仓库配置');
-            });
-          }, 3);
-          sha = got.sha;
-          if (got.base) remoteBase = got.base;
-        }
-      } catch (ge) {
-        return uploadErr(ge);
-      }
+      // ① 读取两份远程文件（页面内容 json + 背景锁定 json）：各自获取 sha 与合并基底（弱网/拦截自动重试）
+      const remotePage = await readRemoteFile(repo.jsonPath, token, base, authHeaders);
+      const remoteBg = await readRemoteFile(bgLockPath, token, base, authHeaders);
 
-      // ② 提交 / 创建文件（弱网/拦截自动重试；PUT 幂等，同 sha 重试安全）
-      //    载荷 = 远程基底 + 本地缓存增量合并（无本地修改的字段保留远程原值，防止覆盖远程公告等数据）
-      const payload = buildPageContentPayload(remoteBase);
-      const body = {
-        message: note,
-        content: btoa(unescape(encodeURIComponent(JSON.stringify(payload, null, 2)))),
-        branch: repo.branch || 'main',
+      // ② 组装两份载荷（v2.4.33：背景锁定配置独立成 data/background-lock.json，不再并入页面内容 JSON）
+      const pagePayload = buildPageContentPayload(remotePage.base);
+      const bgPayload = buildBackgroundLockPayload(remoteBg.base);
+
+      // ③ 顺序提交两份文件（先页面内容，后背景锁定；PUT 幂等，同 sha 重试安全）
+      const putPage = await putFileToGitHub(repo.jsonPath, pagePayload, note, remotePage.sha, token, base, authHeaders);
+      if (!putPage.ok) return putPage;
+      const putBg = await putFileToGitHub(bgLockPath, bgPayload, note, remoteBg.sha, token, base, authHeaders);
+      if (!putBg.ok) return putBg;
+      return {
+        ok: true, message: '提交成功：' + note,
+        commitUrl: putPage.commitUrl,
+        files: [repo.jsonPath, bgLockPath],
       };
-      if (sha) body.sha = sha;
-      let putData = {};
-      try {
-        const pr = await withRetry(function () {
-          return fetchTimeout(
-            base + '/repos/' + encodeURIComponent(repo.owner) + '/' +
-            encodeURIComponent(repo.repo) + '/contents/' +
-            encodeURIComponent(repo.jsonPath),
-            { method: 'PUT', headers: Object.assign({}, authHeaders, { 'Content-Type': 'application/json' }), body: JSON.stringify(body), redirect: 'manual' },
-            15000
-          ).then(async function (putRes) {
-            if (putRes.type === 'opaqueredirect' || putRes.status === 301 || putRes.status === 302 || putRes.status === 307 || putRes.status === 308) {
-              throw apiErr('token', 'GitHub API 重定向（Token 失效或未授权）：请重新生成有 contents 权限的 Token 再试');
-            }
-            if (putRes.status === 401 || putRes.status === 403) {
-              throw apiErr('token', 'Token 权限不足：请检查 GitHub Personal Access Token 是否有效且具备 contents 写权限');
-            }
-            if (putRes.ok || putRes.status === 422 || putRes.status === 409) {
-              let pd = {};
-              try { pd = await safeJsonWithCheck(putRes); } catch (pe) { throw pe; }
-              return { res: putRes, data: pd };
-            }
-            return { res: putRes, data: {} };
-          });
-        }, 3);
-        putData = pr.data;
-        if (pr.res.ok) {
-          return { ok: true, message: '提交成功：' + note, commitUrl: putData.commit && putData.commit.url };
-        }
-        // ③ 区分错误类型（401/403 Token 权限不足已前置处理）
-        if (pr.res.status === 409) {
-          return { ok: false, message: '文件冲突：远程文件已被修改，请刷新后重试，不会损坏仓库原有文件', raw: JSON.stringify(putData) };
-        }
-        if (pr.res.status === 422) {
-          return { ok: false, message: '提交内容无效（' + (putData.message || '') + '）', raw: JSON.stringify(putData) };
-        }
-        return { ok: false, message: '提交失败（' + pr.res.status + '）：' + (putData.message || '未知错误'), raw: JSON.stringify(putData) };
-      } catch (pe) {
-        return uploadErr(pe);
-      }
     } catch (e) {
       // 兜底异常分类：网络拦截/域名错误(html)、Token权限不足(token)、本地JSON格式错误(json)、网络异常(net)
       return uploadErr(e);
+    }
+  }
+
+  /**
+   * 读取远程单文件（无认证优先 → 带 Token 回退；404 视为文件不存在直接创建）。
+   * @returns {Promise<{sha:string, base:object|null}>}
+   */
+  async function readRemoteFile(path, token, base, authHeaders) {
+    const repo = getGitHubRepo();
+    const readUrl = base + '/repos/' + encodeURIComponent(repo.owner) + '/' +
+      encodeURIComponent(repo.repo) + '/contents/' +
+      encodeURIComponent(path) +
+      '?ref=' + encodeURIComponent(repo.branch || 'main') + '&t=' + Date.now();
+    // 0) 无认证优先读取（v2.4.16）：公开仓库无需 Token 即可读取 sha，
+    //    可绕过部分网络/代理对「带认证请求」的路径级拦截规则；
+    //    私有仓库或读取失败时自动回退到带 Token 流程。
+    const anonRes = await fetchTimeout(
+      readUrl,
+      { headers: { 'Accept': 'application/vnd.github+json' }, redirect: 'manual' },
+      15000
+    );
+    if (anonRes.ok) {
+      try {
+        const anonData = await safeJsonWithCheck(anonRes);
+        if (anonData && anonData.sha) {
+          return { sha: anonData.sha, base: parseRemoteContent(anonData) };
+        }
+      } catch (anonErr) {
+        // 无认证读取异常（HTML 拦截 / JSON 异常）不阻塞，继续走带 Token 流程
+        if (anonErr.__class !== 'html' && anonErr.__class !== 'json') throw anonErr;
+      }
+    }
+    // 1) 带 Token 读取（私有仓库 / 文件不存在判断 / 无认证被拦）
+    const got = await withRetry(function () {
+      return fetchTimeout(
+        readUrl,
+        { headers: Object.assign({}, authHeaders, NO_CACHE_HEADERS), redirect: 'manual' },
+        15000
+      ).then(async function (fileRes) {
+        if (fileRes.type === 'opaqueredirect' || fileRes.status === 301 || fileRes.status === 302 || fileRes.status === 307 || fileRes.status === 308) {
+          throw apiErr('token', 'GitHub API 重定向（Token 失效或未授权）：请重新生成有 contents 权限的 Token 再试');
+        }
+        if (fileRes.status === 401 || fileRes.status === 403) {
+          throw apiErr('token', 'Token 权限不足：请检查 GitHub Personal Access Token 是否有效且具备 contents 写权限');
+        }
+        if (fileRes.status === 404) return { sha: '', base: null }; // 文件不存在则直接创建
+        if (fileRes.ok) {
+          const got = await safeJsonWithCheck(fileRes);
+          return { sha: (got && got.sha) || '', base: parseRemoteContent(got) };
+        }
+        throw apiErr('other', '获取文件失败（' + fileRes.status + '）：请检查 Token 权限与仓库配置');
+      });
+    }, 3);
+    return got;
+  }
+
+  /**
+   * 提交 / 创建单个远程文件（弱网/拦截自动重试；PUT 幂等，同 sha 重试安全）。
+   * @param {string} path 远程文件路径（如 data/page-content.json）
+   * @param {object} payload 载荷对象
+   * @param {string} note commit 描述
+   * @param {string} sha 远程文件现有 sha（新建文件传 ''）
+   * @returns {Promise<{ok:boolean, message:string, commitUrl?:string, status?:number, raw?:string}>}
+   */
+  async function putFileToGitHub(path, payload, note, sha, token, base, authHeaders) {
+    const repo = getGitHubRepo();
+    const body = {
+      message: note,
+      content: btoa(unescape(encodeURIComponent(JSON.stringify(payload, null, 2)))),
+      branch: repo.branch || 'main',
+    };
+    if (sha) body.sha = sha;
+    try {
+      const pr = await withRetry(function () {
+        return fetchTimeout(
+          base + '/repos/' + encodeURIComponent(repo.owner) + '/' +
+          encodeURIComponent(repo.repo) + '/contents/' +
+          encodeURIComponent(path),
+          { method: 'PUT', headers: Object.assign({}, authHeaders, { 'Content-Type': 'application/json' }), body: JSON.stringify(body), redirect: 'manual' },
+          15000
+        ).then(async function (putRes) {
+          if (putRes.type === 'opaqueredirect' || putRes.status === 301 || putRes.status === 302 || putRes.status === 307 || putRes.status === 308) {
+            throw apiErr('token', 'GitHub API 重定向（Token 失效或未授权）：请重新生成有 contents 权限的 Token 再试');
+          }
+          if (putRes.status === 401 || putRes.status === 403) {
+            throw apiErr('token', 'Token 权限不足：请检查 GitHub Personal Access Token 是否有效且具备 contents 写权限');
+          }
+          if (putRes.ok || putRes.status === 422 || putRes.status === 409) {
+            let pd = {};
+            try { pd = await safeJsonWithCheck(putRes); } catch (pe) { throw pe; }
+            return { res: putRes, data: pd };
+          }
+          return { res: putRes, data: {} };
+        });
+      }, 3);
+      if (pr.res.ok) {
+        return { ok: true, message: '提交成功：' + path, commitUrl: pr.data.commit && pr.data.commit.url };
+      }
+      // ③ 区分错误类型（401/403 Token 权限不足已前置处理）
+      if (pr.res.status === 409) {
+        return { ok: false, message: '文件冲突：远程文件已被修改（' + path + '），请刷新后重试，不会损坏仓库原有文件', raw: JSON.stringify(pr.data) };
+      }
+      if (pr.res.status === 422) {
+        return { ok: false, message: '提交内容无效（' + path + '）：' + ((pr.data && pr.data.message) || ''), raw: JSON.stringify(pr.data) };
+      }
+      return { ok: false, message: '提交失败（' + pr.res.status + '）：' + ((pr.data && pr.data.message) || '未知错误'), raw: JSON.stringify(pr.data) };
+    } catch (pe) {
+      return uploadErr(pe);
     }
   }
 
@@ -852,7 +877,8 @@ const DevAdmin = (() => {
       /* ---------- ① 一键上传GitHub：把所有本地已保存的页面修改内容一次性提交推送 ---------- */
       '<div class="admin-block" id="admin-block-github">' +
         '<h3>一键上传GitHub</h3>' +
-        '<p class="setting-desc">把本地已保存的全部页面修改内容（文本 / 字体 / 背景锁定 / 公告缓存）一次性提交推送到仓库 main 分支。' +
+        '<p class="setting-desc">把本地已保存的页面修改内容（文本 / 字体 / 公告缓存）与背景锁定配置，分别提交到仓库 main 分支的两份 JSON 文件：' +
+          '① 页面内容 JSON（' + esc(repo.jsonPath || 'data/page-content.json') + '） ② 背景锁定配置 JSON（' + esc(repo.bgLockPath || 'data/background-lock.json') + '）。' +
           '提交前会弹窗确认本次修改内容，防止误提交。</p>' +
 
         '<div class="admin-github-form">' +
@@ -876,7 +902,7 @@ const DevAdmin = (() => {
         '</div>' +
         '<p class="admin-github-status" id="gh-status">当前 Token：' +
           (hasToken ? '已保存' : '未配置') + '（本地存储，仅用于 GitHub API）</p>' +
-        '<p class="admin-github-hint">提示：仅支持文本类 JSON 数据提交；图片资源请前往 GitHub 网页端手动上传，不会通过此功能写入仓库。</p>' +
+        '<p class="admin-github-hint">提示：仅支持两份文本 JSON 数据提交（页面内容 page-content.json + 背景锁定配置 background-lock.json）；图片资源请前往 GitHub 网页端手动上传，不会通过此功能写入仓库。</p>' +
       '</div>' +
 
       /* ---------- ② 背景锁定板块设置（弹窗唤起，不再外露表格窗口） ---------- */
@@ -977,8 +1003,10 @@ const DevAdmin = (() => {
       if (typeof Toast !== 'undefined') Toast.show('请填写仓库 Owner 与名称');
       return;
     }
-    setGitHubRepo({ owner: owner, repo: repo, branch: branch, jsonPath: jsonPath });
-    if (typeof Toast !== 'undefined') Toast.show('仓库配置已保存');
+    // 背景锁定配置文件与页面内容 JSON 同目录，固定命名 background-lock.json（v2.4.33 同步兼容）
+    const bgLockPath = String(jsonPath).replace(/[^/]+$/, '') + 'background-lock.json';
+    setGitHubRepo({ owner: owner, repo: repo, branch: branch, jsonPath: jsonPath, bgLockPath: bgLockPath });
+    if (typeof Toast !== 'undefined') Toast.show('仓库配置已保存（含背景锁定配置路径）');
   }
 
   /**
@@ -989,17 +1017,23 @@ const DevAdmin = (() => {
     const noteEl = document.getElementById('gh-note');
     const prefNote = noteEl ? noteEl.value : '';
     if (typeof Modal === 'undefined') return;
+    const repo = getGitHubRepo() || {};
     const payload = buildPageContentPayload();
     const summary = describePageContent(payload);
+    const bgPayload = buildBackgroundLockPayload();
+    const bgSummary = describeBackgroundLock(bgPayload);
     Modal.show({
       title: '一键上传GitHub',
       body:
-        '<p class="setting-desc">将把本地已保存的全部页面修改内容提交到仓库 main 分支。</p>' +
+        '<p class="setting-desc">将把本地已保存的页面修改内容与背景锁定配置，分别提交到仓库 main 分支的两份 JSON 文件。</p>' +
         '<div class="dev-upload-summary">' +
+          '<p class="setting-desc"><b>本次提交文件（两份）</b></p>' +
+          '<p class="setting-desc">① 页面内容 JSON：' + esc(repo.jsonPath || 'data/page-content.json') + '</p>' +
+          '<p class="setting-desc">② 背景锁定配置 JSON：' + esc(repo.bgLockPath || 'data/background-lock.json') + '</p>' +
           '<p class="setting-desc"><b>本次修改内容</b></p>' +
-          '<pre class="dev-upload-pre">' + esc(summary) + '</pre>' +
-          '<p class="setting-desc"><b>仓库</b>：' + esc((getGitHubRepo() || {}).owner || '') + '/' + esc((getGitHubRepo() || {}).repo || '') +
-          ' · 分支 ' + esc(((getGitHubRepo() || {}).branch) || 'main') + ' · 文件 ' + esc(((getGitHubRepo() || {}).jsonPath) || '') + '</p>' +
+          '<pre class="dev-upload-pre">' + esc(summary) + '\n' + esc(bgSummary) + '</pre>' +
+          '<p class="setting-desc"><b>仓库</b>：' + esc(repo.owner || '') + '/' + esc(repo.repo || '') +
+          ' · 分支 ' + esc(repo.branch || 'main') + '</p>' +
           '<input id="gh-push-note" type="text" maxlength="120" value="' + esc(prefNote) + '" placeholder="提交备注（可选）">' +
         '</div>',
       actions: [
@@ -1083,6 +1117,7 @@ const DevAdmin = (() => {
    * 生成本次上传的 page-content.json 载荷（v2.4.18 增量合并版）：
    * 以远程现有内容为基底，仅用本地缓存覆盖「确有修改」的字段；
    * 无本地修改的字段保留远程原值——修复此前「本地缓存缺失字段 → PUT 全量覆盖 → 远程公告等数据被删」的问题。
+   * v2.4.33：背景锁定配置已拆分到独立 JSON（data/background-lock.json），本载荷不再包含 backgroundLock 字段。
    * @param {object|null} remote 远程现有 JSON（读取失败/首次上传时传 null 或 {}）
    */
   function buildPageContentPayload(remote) {
@@ -1090,7 +1125,6 @@ const DevAdmin = (() => {
     const payload = { generatedAt: new Date().toISOString() };
     const edit = read('page_edit', null);
     const font = read('font_cfg', null);
-    const bg = read('sdv_bg_lock', null);
     const notice = read('notice_edit', null);
     // 本地有缓存 → 覆盖（剥离未上传标记 _dirty，避免污染远程数据）；无缓存 → 保留远程原值（未修改字段不丢失）
     if (edit !== null) {
@@ -1101,10 +1135,38 @@ const DevAdmin = (() => {
     else if (base.pageEdit !== undefined) payload.pageEdit = base.pageEdit;
     if (font !== null) payload.fontConfig = font;
     else if (base.fontConfig !== undefined) payload.fontConfig = base.fontConfig;
-    if (bg !== null) payload.backgroundLock = bg;
-    else if (base.backgroundLock !== undefined) payload.backgroundLock = base.backgroundLock;
     if (notice !== null) payload.announcements = notice;
     else if (base.announcements !== undefined) payload.announcements = base.announcements;
+    return payload;
+  }
+
+  /**
+   * 生成本次上传的 background-lock.json 载荷（v2.4.33 独立文件）：
+   * 读取本地背景锁定缓存（sdv_bg_lock）写入独立 JSON；
+   * 本地无缓存 → 保留远程原值；远程也不存在 → 空对象（自动模式）。
+   * 与页面内容 JSON 区分开：背景锁定配置单独存入 data/background-lock.json。
+   * @param {object|null} remoteBg 远程现有背景锁定 JSON
+   */
+  function buildBackgroundLockPayload(remoteBg) {
+    const base = (remoteBg && typeof remoteBg === 'object') ? remoteBg : {};
+    // 背景锁定使用裸 key（sdv_bg_lock，与 background.js / applyBgLock 一致，非 NS 前缀）
+    let bg = null;
+    try {
+      const raw = localStorage.getItem('sdv_bg_lock');
+      if (raw) { try { bg = JSON.parse(raw); } catch (e) { bg = null; } }
+    } catch (e) { bg = null; }
+    const payload = {};
+    if (bg !== null && bg && bg.locked) {
+      payload.locked = true;
+      if (bg.season) payload.season = bg.season;
+      if (bg.period) payload.period = bg.period;
+    } else if (bg !== null && bg) {
+      // 本地为「恢复自动」标记（locked=false）：显式写 locked:false 覆盖远程锁定
+      payload.locked = false;
+    } else if (base && typeof base === 'object' && Object.keys(base).length) {
+      // 本地无修改：保留远程原值（未修改字段不丢失）
+      Object.assign(payload, base);
+    }
     return payload;
   }
 
@@ -1123,12 +1185,26 @@ const DevAdmin = (() => {
       });
       if (editKeys.length > 20) lines.push('  … 其余 ' + (editKeys.length - 20) + ' 处省略');
       lines.push('默认字体：' + ((payload.fontConfig || {}).template || '-') + ' / ' + ((payload.fontConfig || {}).fontSize || 14) + 'px');
-      lines.push('背景锁定：' + ((payload.backgroundLock && payload.backgroundLock.locked)
-        ? ((payload.backgroundLock.season || '') + '/' + (payload.backgroundLock.period || '')) : '自动'));
       lines.push('公告：' + ((payload.announcements || []).length) + ' 条');
       return lines.join('\n');
     } catch (e) {
       return JSON.stringify(payload, null, 2);
+    }
+  }
+
+  /** 生成「背景锁定配置」摘要（v2.4.33：独立文件 background-lock.json） */
+  function describeBackgroundLock(bgPayload) {
+    try {
+      const b = bgPayload || {};
+      if (b.locked) {
+        const seasonNames = { spring: '春', summer: '夏', autumn: '秋', winter: '冬' };
+        const periodNames = { morning: '清晨', day: '白天', dusk: '黄昏', night: '夜晚' };
+        return '背景锁定：锁定（' + (seasonNames[b.season] || b.season || '-') + ' · ' +
+          (periodNames[b.period] || b.period || '-') + '）';
+      }
+      return '背景锁定：自动模式';
+    } catch (e) {
+      return '背景锁定：—';
     }
   }
 
@@ -1273,6 +1349,11 @@ const DevAdmin = (() => {
         SDV_CONFIG.announcements = remote.announcements;
       }
       if (typeof applyPageEdits === 'function') applyPageEdits();
+      // ④ v2.4.33 背景锁定配置独立 JSON：提交成功后同步拉取 background-lock.json 并应用到本地
+      //   （背景锁定不再随 page-content.json 传输；拉取失败温和降级，不影响页面内容刷新结果）
+      try {
+        await refreshBackgroundLockFromRemote(repo, token);
+      } catch (bgErr) { /* 背景锁定同步失败不阻塞页面内容刷新 */ }
       if (typeof window !== 'undefined' && window.dispatchEvent) {
         window.dispatchEvent(new CustomEvent('sdv-page-edit-change', { detail: { applied: ['refresh-from-remote'] } }));
         // 通知公告/页面渲染层重新拉取数据源并刷新 UI
@@ -1289,6 +1370,98 @@ const DevAdmin = (() => {
       if (e && e.__class === 'json') return refreshFail('本地 JSON 格式错误：' + (e.message || '响应无法解析') + '。本地修改已保留');
       return refreshFail('网络异常（网络拦截/域名错误）：无法连接 GitHub API，请检查网络或确认请求域名为 api.github.com。本地修改已保留');
     }
+  }
+
+  /**
+   * v2.4.33 拉取远程 background-lock.json 并应用到本地背景锁定：
+   * 背景锁定配置独立存储（data/background-lock.json），与 page-content.json 区分开；
+   * 多通道拉取（raw → 同源 → api 无认证 → 带 Token），任一通道成功即应用：
+   *   远程 locked=true → 写入本地 sdv_bg_lock（锁定生效）；
+   *   远程未锁定/空 → 清除本地锁定（恢复自动切换）。
+   * 应用后派发 sdv-dev-state-change 通知 background.js 立即重判背景（其监听该事件触发 check()）。
+   * @param {object} repo 仓库配置 { owner, repo, branch, bgLockPath }
+   * @param {string} token GitHub Token（可为空）
+   * @returns {Promise<object|null>} 远程背景锁定配置；全部通道失败返回 null
+   */
+  async function refreshBackgroundLockFromRemote(repo, token) {
+    const bgPath = String(repo.bgLockPath || 'data/background-lock.json');
+    const branch = encodeURIComponent(repo.branch || 'main');
+    let remote = null;
+    // ① raw 通道（raw.githubusercontent.com 普通 HTTPS，绕过 api.github.com 路径级拦截）
+    try {
+      const rawUrl = 'https://raw.githubusercontent.com/' + encodeURIComponent(repo.owner) + '/' +
+        encodeURIComponent(repo.repo) + '/' + branch + '/' +
+        String(bgPath).split('/').map(encodeURIComponent).join('/') + '?t=' + Date.now();
+      const rawRes = await fetchTimeout(rawUrl, { redirect: 'follow' }, 10000);
+      if (rawRes && rawRes.ok) {
+        const text = await rawRes.text();
+        if (text && text.trim().charAt(0) === '{') {
+          try { remote = JSON.parse(text); } catch (e) { remote = null; }
+        }
+      }
+    } catch (e) { /* raw 失败继续走同源通道 */ }
+    // ② 同源相对路径（应用自身源站部署文件；应用能打开必能拉到同源数据）
+    if (!remote) {
+      try {
+        const sameRes = await fetchTimeout(bgPath + '?t=' + Date.now(), { cache: 'no-store' }, 10000);
+        if (sameRes && sameRes.ok) {
+          const text = await sameRes.text();
+          if (text && text.trim().charAt(0) === '{') {
+            try { remote = JSON.parse(text); } catch (e) { remote = null; }
+          }
+        }
+      } catch (e) { /* 同源失败继续走 api 通道 */ }
+    }
+    // ③ api 通道（无认证优先；带 Token 兜底私有仓库）
+    if (!remote) {
+      const apiUrl = 'https://api.github.com/repos/' + encodeURIComponent(repo.owner) + '/' +
+        encodeURIComponent(repo.repo) + '/contents/' +
+        String(bgPath).split('/').map(encodeURIComponent).join('/') +
+        '?ref=' + branch + '&t=' + Date.now();
+      try {
+        const anonRes = await fetchTimeout(
+          apiUrl,
+          { headers: { 'Accept': 'application/vnd.github+json' }, redirect: 'manual' },
+          10000
+        );
+        if (anonRes.ok) {
+          try {
+            const data = await safeJsonWithCheck(anonRes);
+            const parsed = parseRemoteContent(data);
+            if (parsed) remote = parsed;
+          } catch (e) { /* 忽略 */ }
+        }
+      } catch (e) { /* 忽略 */ }
+      if (!remote && token) {
+        try {
+          const authRes = await fetchTimeout(
+            apiUrl,
+            { headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/vnd.github+json' }, redirect: 'manual' },
+            10000
+          );
+          if (authRes.ok) {
+            try {
+              const data = await safeJsonWithCheck(authRes);
+              const parsed = parseRemoteContent(data);
+              if (parsed) remote = parsed;
+            } catch (e) { /* 忽略 */ }
+          }
+        } catch (e) { /* 忽略 */ }
+      }
+    }
+    // 应用：锁定 → 写入本地 sdv_bg_lock；未锁定/空 → 清除本地锁定（恢复自动）
+    try {
+      if (remote && remote.locked && remote.season && remote.period) {
+        localStorage.setItem('sdv_bg_lock', JSON.stringify({ locked: true, season: remote.season, period: remote.period }));
+      } else {
+        localStorage.removeItem('sdv_bg_lock');
+      }
+    } catch (e) { /* 忽略 */ }
+    // 通知 background.js 立即重判背景（其监听 sdv-dev-state-change 触发 check()）
+    if (typeof window !== 'undefined' && window.dispatchEvent) {
+      window.dispatchEvent(new CustomEvent('sdv-dev-state-change', { detail: { dev: isDev() } }));
+    }
+    return remote;
   }
 
   /**
@@ -1626,7 +1799,7 @@ const DevAdmin = (() => {
   return {
     login, logout, getDevLogin, isDev,
     getGitHubToken, setGitHubToken, getGitHubRepo, setGitHubRepo,
-    pushToGitHub, buildPageContentPayload, refreshPageContentFromRemote, syncRemoteContent, fetchRemoteContentMulti,
+    pushToGitHub, buildPageContentPayload, buildBackgroundLockPayload, refreshPageContentFromRemote, syncRemoteContent, fetchRemoteContentMulti,
     openLoginModal, openAdminPanel, openBgLockModal, doLogout,
     enterEditMode, exitEditMode, savePageEdits, resetPageEdits, applyPageEdits,
     getPageEdit, setPageEdit, getFontConfig, setFontConfig,
