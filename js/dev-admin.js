@@ -1228,7 +1228,8 @@ const DevAdmin = (() => {
 
   /**
    * v2.5.3 应用远程背景锁定配置（内嵌于 page-content.json 的 backgroundLock 字段，多设备同步）：
-   * 远程锁定 → 写入本地 sdv_bg_lock（锁定生效）；远程恢复自动/空 → 清除本地锁定；
+   * 远程锁定 → 写入本地 sdv_bg_lock（锁定生效）；远程恢复自动 → 写入 locked:false（保留覆盖标记，
+   * 避免下次上传时因本地无标记而保留远程旧锁定，导致恢复自动无法覆盖远程）；
    * 派发 sdv-dev-state-change 通知 background.js 立即重判背景。
    * @param {object} remote 远程页面内容 JSON
    */
@@ -1242,7 +1243,7 @@ const DevAdmin = (() => {
         if (b.period) lock.period = b.period;
         localStorage.setItem('sdv_bg_lock', JSON.stringify(lock));
       } else {
-        localStorage.removeItem('sdv_bg_lock');
+        localStorage.setItem('sdv_bg_lock', JSON.stringify({ locked: false }));
       }
     } catch (e) { /* 忽略 */ }
     if (typeof window !== 'undefined' && window.dispatchEvent) {
@@ -1648,6 +1649,7 @@ const DevAdmin = (() => {
   function applyBgLock(season, period, locked) {
     let val = null;
     if (locked) val = { locked: true, season: season, period: period };
+    else val = { locked: false }; // v2.5.6 恢复自动写入 locked:false（不删除 key），上传时可覆盖远程旧锁定
     try {
       if (val) localStorage.setItem('sdv_bg_lock', JSON.stringify(val));
       else localStorage.removeItem('sdv_bg_lock');

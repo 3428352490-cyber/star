@@ -60,7 +60,7 @@ test('M41-4 applyRemoteBackgroundLock：远程锁定写本地 + 恢复自动清�
   assert.deepEqual(JSON.parse(localStorage.getItem('sdv_bg_lock')), { locked: true, season: 'summer', period: 'day' }, '远程锁定未写入本地');
 
   DevAdmin.applyRemoteBackgroundLock({ backgroundLock: { locked: false } });
-  assert.equal(localStorage.getItem('sdv_bg_lock'), null, '远程恢复自动未清除本地锁定');
+  assert.deepEqual(JSON.parse(localStorage.getItem('sdv_bg_lock')), { locked: false }, '远程恢复自动应以 locked:false 保留覆盖标记（上传可覆盖远程旧锁定）');
 
   const src = readAppFile('js/dev-admin.js');
   assert.ok(src.includes('function applyRemoteBackgroundLock(remote)'), '缺少远程背景锁定应用函数');
