@@ -204,9 +204,9 @@ test('UI 复古 8-bit 红白机像素风格：高饱和撞色+直角纯色粗像
   // 8bit 点阵纹理（纯色块填充）
   assert.ok(base.includes('--wood-texture:') && base.includes('data:image/svg+xml'), '缺少 8bit 点阵纹理');
 
-  // 页面米白底色 + 高饱和撞色（正红）
-  assert.ok(base.includes('#F8F2E4'), '缺少页面米白底色 #F8F2E4');
-  assert.ok(base.includes('#E6342C'), '缺少正红撞色 #E6342C');
+  // 页面米卡其底色 + 暖调田园主色（暖番茄红）
+  assert.ok(base.includes('--bg: #F0E3C2'), '缺少页面米卡其底色 #F0E3C2');
+  assert.ok(base.includes('--accent: #E05A33'), '缺少暖番茄主色 #E05A33');
 
   // 大卡片：纯色块 + 粗像素边框 + 直角（无渐变/无毛玻璃）
   assert.ok(comp.includes('.stardew-card,') && comp.includes('.card {'), '卡片选择器结构被破坏');
@@ -238,9 +238,9 @@ test('UI 复古 8-bit 红白机像素风格：高饱和撞色+直角纯色粗像
   // 标题栏：顶部 8bit 像素牌匾
   assert.ok(layout.includes('.page-header') && layout.includes('var(--wood-frame)'), '标题栏缺少像素牌匾');
 
-  // 底部导航：独立纯色背景（初始白色）——无外框、无圆角容器
+  // 底部导航：像素农场卡其底色 + 顶部深棕像素分隔线（图标保持不变）
   assert.ok(layout.includes('.stardew-nav,') && layout.includes('.bottom-nav {'), '底部导航选择器结构被破坏');
-  assert.ok(layout.includes('background-color: #ffffff') && layout.includes('border-top: none'), '底部导航应有独立纯色背景（初始白色）且无上边框');
+  assert.ok(layout.includes('background-color: var(--nav-bg)') && layout.includes('border-top: 3px solid var(--wood-frame)'), '底部导航应有卡其底色与深棕像素分隔线');
   assert.ok(layout.includes('.nav-item {') && layout.includes('flex: 1'), '导航按钮非等宽');
 
   // 深浅主题：两套像素纹理与对话框变量

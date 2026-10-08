@@ -1,5 +1,5 @@
 {
-  "latestVersion": "2.4.31",
-  "updateDesc": "图鉴页面优化：删除物品分类标题板块、取消卡片按压特效；修复电脑端卡片过大（分组容器限宽760px居中）",
+  "latestVersion": "2.4.32",
+  "updateDesc": "全站UI重构：像素复古农场风格，双层像素边框暖调田园配色",
   "downloadUrl": "./index.html"
 }
