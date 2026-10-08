@@ -29,7 +29,6 @@ test('M25-1 默认访客态：DevAdmin.isDev() 为 false，mine 页不渲染开�
   assert.ok(html.includes('dev-open-admin'), '登录卡片触发 dev-open-admin');
   assert.ok(!html.includes('dev-admin-panel'), '访客态不渲染管理员面板');
   assert.ok(!html.includes('dev-badge'), '访客态无开发者标识');
-  assert.ok(!html.includes('背景锁定窗口'), '访客态不出现背景锁定窗口文案');
 });
 
 test('M25-2 登录校验：仅 StarBOSS/20261005 成功，其余恒失败', () => {
@@ -60,7 +59,7 @@ test('M25-3 登录成功后 mine 页展示开发者标识 + 管理入口（第�
   DevAdmin.logout();
 });
 
-test('M25-4 登出后 mine 页恢复访客态，背景锁定再次隐藏', () => {
+test('M25-4 登出后 mine 页恢复访客态，开发者入口全部隐藏', () => {
   DevAdmin.login('StarBOSS', '20261005');
   // 模拟登出
   DevAdmin.logout();
@@ -69,13 +68,14 @@ test('M25-4 登出后 mine 页恢复访客态，背景锁定再次隐藏', () =>
   assert.ok(!html.includes('dev-admin-panel'), '登出后无管理面板');
 });
 
-test('M25-5 background.js 访客态门控：readLock/writeLock 被 isDevAvailable 拦截', () => {
+test('M25-5 background.js 背景纯自动轮换（v2.5.6 背景锁定已移除，无锁定逻辑残留）', () => {
   const src = readAppFile('js/background.js');
-  assert.ok(src.includes('function isDevAvailable()'), '定义 isDevAvailable');
-  assert.ok(src.includes('if (!isDevAvailable()) return null;'), 'readLock 访客态拦截');
-  assert.ok(src.includes('if (!isDevAvailable()) return;'), 'writeLock 访客态拦截');
-  assert.ok(src.includes("sdv-dev-state-change"), '监听开发者状态变更');
-  assert.ok(src.includes("sdv-bg-lock-change"), '监听锁定变更');
+  assert.ok(!src.includes('isDevAvailable'), '访客态门控已随锁定逻辑移除');
+  assert.ok(!src.includes('readLock'), 'readLock 已移除');
+  assert.ok(!src.includes('writeLock'), 'writeLock 已移除');
+  assert.ok(!src.includes('sdv-bg-lock-change'), '锁定变更事件已移除');
+  assert.ok(src.includes('function check()'), '自动检测函数保留');
+  assert.ok(src.includes('seasonOf(d.getMonth() + 1)'), '自动季节判定保留');
 });
 
 test('M25-6 index.html 引入 dev-admin.js 与 dev-admin.css', () => {
@@ -109,25 +109,26 @@ test('M25-9 图片不可上传提示文案存在', () => {
   assert.ok(src.includes('不会损坏仓库原有文件'), '冲突不损坏提示');
 });
 
-test('M25-10 dev-admin.css 含开发者卡片 / 面板 / 徽章 / 背景锁定样式', () => {
+test('M25-10 dev-admin.css 含开发者卡片 / 面板 / 徽章 / chip 行样式', () => {
   const css = readAppFile('css/dev-admin.css');
   assert.ok(css.includes('.dev-mode-card'), '开发者模式卡片样式');
   assert.ok(css.includes('.dev-badge'), '开发者标识徽章样式');
   assert.ok(css.includes('.admin-panel'), '管理面板样式');
   assert.ok(css.includes('.admin-github-form'), 'GitHub 表单样式');
-  assert.ok(css.includes('.chip-row'), '背景锁定 chip 行样式');
+  assert.ok(css.includes('.chip-row'), 'chip 选择行样式（字体模板弹窗复用）');
   // v2.4.6 批次2：外显 #bg-debug-panel 浮动表格窗口已移除，改为管理面板入口弹窗
   // 访客态隐藏兜底改指向 #dev-admin-panel 与 .btn-upload
   assert.ok(css.includes('body:not(.dev-mode) #dev-admin-panel'), '访客态隐藏管理面板 CSS 兜底');
   assert.ok(css.includes('body:not(.dev-mode) .btn-upload'), '访客态隐藏一键上传按钮 CSS 兜底');
   assert.ok(!css.includes('#bg-debug-panel'), '外显浮动面板样式已移除');
+  assert.ok(!css.includes('.bg-lock-form'), '背景锁定弹窗样式已移除');
 });
 
-test('M25-11 v2.4.7 管理面板精简为两块（一键上传GitHub + 背景锁定）+ 全局编辑工具条', () => {
+test('M25-11 v2.4.7 管理面板为单板块（一键上传GitHub）+ 全局编辑工具条（v2.5.6 背景锁定板块已删）', () => {
   const src = readAppFile('js/dev-admin.js');
-  // 管理面板仅保留两大板块：一键上传GitHub + 背景锁定
+  // 管理面板仅保留一键上传GitHub 板块；背景锁定板块已移除
   assert.ok(src.includes('admin-block-github'), '一键上传GitHub 板块');
-  assert.ok(src.includes('admin-block-bglock'), '背景锁定 板块');
+  assert.ok(!src.includes('admin-block-bglock'), '背景锁定板块未移除');
   // 已移除：村民/图鉴批量导入导出、独立可视化编辑、独立字体面板
   assert.ok(!src.includes('admin-block-villagers'), '村民面板已移除');
   assert.ok(!src.includes('admin-block-codex'), '图鉴面板已移除');
@@ -164,11 +165,11 @@ test('M25-13 dev-admin.css 含全局编辑工具条 / 编辑模式 / 节点编�
   assert.ok(css.includes('body:not(.dev-mode) .btn-upload'), '访客态隐藏上传按钮 CSS 兜底');
 });
 
-test('M25-12 background.js 外显浮动调试面板已移除（改入口弹窗）', () => {
+test('M25-12 background.js 外显浮动调试面板已移除（改入口弹窗）；v2.5.6 登录态锁定联动一并移除', () => {
   const src = readAppFile('js/background.js');
   assert.ok(!src.includes('buildDebugPanel'), 'buildDebugPanel 函数已移除');
   assert.ok(!src.includes('bg-debug-panel'), '外显浮动面板 DOM 已移除');
   // 背景自动切换逻辑保留
   assert.ok(src.includes('check();'), '背景 check 自动切换保留');
-  assert.ok(src.includes('sdv-dev-state-change'), '登录态联动保留');
+  assert.ok(!src.includes('sdv-dev-state-change'), '登录态锁定联动已随背景锁定移除');
 });

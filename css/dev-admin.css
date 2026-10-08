@@ -214,8 +214,7 @@ body.dev-editing #page-container [data-dev-key]:focus {
 .dev-net-result.ok { color: #3a7a3a; }
 .dev-net-result.bad { color: #a44; }
 
-/* ---------- 背景锁定窗口弹窗（chip 选择行） ---------- */
-.bg-lock-form { display: flex; flex-direction: column; gap: 10px; }
+/* ---------- chip 选择行（字体模板弹窗复用） ---------- */
 .chip-row { display: flex; gap: 6px; flex-wrap: wrap; }
 .chip-row .chip {
   flex: none; padding: 6px 12px;

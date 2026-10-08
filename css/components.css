@@ -151,7 +151,7 @@
 .switch input:checked + .slider { background: var(--farm-green); border-color: var(--wood-frame); }
 .switch input:checked + .slider::before { transform: translateX(18px); background: #fff; }
 
-/* ---- chip 像素农场小键（卡其块棕框，激活橄榄绿白字；字体模板/背景锁定弹窗复用） ---- */
+/* ---- chip 像素农场小键（卡其块棕框，激活橄榄绿白字；字体模板弹窗复用） ---- */
 .chip {
   padding: 6px 14px; font-size: 13px;
   border: 2px solid var(--tile-border); border-radius: var(--radius);

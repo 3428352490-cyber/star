@@ -9,8 +9,6 @@
  * · 兜底：图片加载失败 → 背景层保持透明，沿用原本背景样式，页面不崩坏
  * · 过渡：双图层交叉淡入淡出 0.8s
  * · 刷新：打开立即检测一次；每 10 分钟检测一次；切回前台立即检测
- * · 手动调试开关：仅开发者登录后可见（本地 localhost 与线上 GitHub Pages 一致生效），
- *   锁定季节/时段覆盖自动判定；访客（未登录）只能使用自动模式
  * ============================================================
  */
 (function () {
@@ -19,7 +17,6 @@
   var BG = {
     checkIntervalMs: 10 * 60 * 1000, // 每 10 分钟检测一次
     fadeMs: 800,
-    lockKey: 'sdv_bg_lock',          // 手动锁定值（localStorage，仅本机调试生效）
     isLocal: typeof location !== 'undefined' &&
       (location.hostname === 'localhost' || location.hostname === '127.0.0.1'),
   };
@@ -42,36 +39,6 @@
 
   function buildUrl(season, period) {
     return 'assets/bg/' + season + '-' + period + '.png';
-  }
-
-  /**
-   * 开发者权限判定：DevAdmin.isDev() 为 true 时开发者模式生效。
-   * 未登录（访客态）下，即便 localStorage 中存在旧的锁定值，也一律视为自动模式，
-   * 避免访客态意外读取到残留锁定导致背景被异常锁死。
-   */
-  function isDevAvailable() {
-    return typeof DevAdmin !== 'undefined' && DevAdmin.isDev();
-  }
-
-  function readLock() {
-    if (!isDevAvailable()) return null; // 方案A：访客态忽略一切锁定（开发者登录后本地/线上均生效，v2.5.1）
-    try {
-      var raw = localStorage.getItem(BG.lockKey);
-      return raw ? JSON.parse(raw) : null;
-    } catch (e) {
-      return null;
-    }
-  }
-
-  function writeLock(lock) {
-    if (!isDevAvailable()) return; // 方案A：访客态禁止写入锁定
-    try {
-      localStorage.setItem(BG.lockKey, JSON.stringify(lock));
-      // 通知 DevAdmin 侧刷新面板状态（若存在）
-      if (typeof window !== 'undefined' && window.dispatchEvent) {
-        window.dispatchEvent(new CustomEvent('sdv-bg-lock-change', { detail: { locked: !!(lock && lock.locked) } }));
-      }
-    } catch (e) { /* 忽略 */ }
   }
 
   /* ---------------- 背景层 ---------------- */
@@ -155,37 +122,17 @@
   /* ---------------- 检测与切换 ---------------- */
 
   function check() {
-    var season, period;
-    var lock = readLock();
-    if (lock && lock.locked && lock.season && lock.period) {
-      season = lock.season; // 手动锁定（仅本机调试）
-      period = lock.period;
-    } else {
-      var d = new Date();
-      season = seasonOf(d.getMonth() + 1);
-      period = periodOf(d.getHours());
-    }
+    var d = new Date();
+    var season = seasonOf(d.getMonth() + 1);
+    var period = periodOf(d.getHours());
     applyBg(buildUrl(season, period));
   }
 
-  /* ---------------- 启动（外显浮动调试表格窗口已移除） ----------------
-   * 背景锁定功能保留：由 DevAdmin 管理面板「打开背景锁定窗口」入口弹窗（openBgLockModal）
-   * 唤起，写读锁定值逻辑 readLock/writeLock/check 完全不变；
-   * 此模块不再渲染任何页面上的直接外显锁定表格窗口。 */
+  /* ---------------- 启动 ---------------- */
 
   function start() {
     ensureLayer();
     check();                    // 页面打开立即执行一次背景判断
-    // 监听 DevAdmin 登录态变化：登出 → 清除残留锁定并恢复自动切换（外显面板已移除，仅做逻辑联动）
-    window.addEventListener('sdv-dev-state-change', function (e) {
-      var dev = e.detail && e.detail.dev;
-      if (!dev) {
-        try { localStorage.removeItem(BG.lockKey); } catch (err) {}
-        check();
-      } else {
-        check();
-      }
-    });
     setInterval(check, BG.checkIntervalMs); // 每 10 分钟自动检测
     document.addEventListener('visibilitychange', function () {
       if (!document.hidden) check(); // 切回前台立即刷新

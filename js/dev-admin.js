@@ -10,16 +10,14 @@
  *   · 编辑模式：文字板块可点击选中 → 改文本 / 切像素字体模板 / 调字号；
  *     右上角【编辑】替换为【保存】【重置】
  *   · 保存：本次修改写入本地存储并实时预览；重置：放弃改动恢复原始
- *   · 解锁「我的」页开发者管理面板（一键上传GitHub + 背景锁定（本地））
+ *   · 解锁「我的」页开发者管理面板（一键上传GitHub）
  *   · 抛出 sdv-dev-state-change 事件通知 background.js 联动
  * - 登出 → 清除登录态，隐藏全部开发者入口/编辑控件/上传按钮，恢复访客状态
  *
  * 管理面板「一键上传GitHub」：
  * - Token 存 localStorage；把本地已保存的页面修改内容一次性提交到 main 分支（仅 page-content.json）
  * - 提交前弹确认弹窗展示本次修改摘要，防止误提交；不损坏仓库原有文件
- * - v2.5.3：背景锁定配置内嵌 page-content.json 的 backgroundLock 字段随单文件上传同步
- *   （单文件单次提交，避免独立文件请求翻倍被网络拦截）；远程拉取时自动应用，多设备锁定同步；
- *   网络无法直连 api.github.com 时可「导出JSON下载」→ GitHub 网页端手动上传覆盖
+ * - 网络无法直连 api.github.com 时可「导出JSON下载」→ GitHub 网页端手动上传覆盖
  *
  * 跨端同步：本地修改存 localStorage（sdv-guide:devadmin:page_edit），
  * 同一浏览器多标签页 / 重进页面 / H5 与 WebView 共 profile 时同步读取，
@@ -27,7 +25,6 @@
  *
  * 事件约定：
  * - window 'sdv-dev-state-change'  { dev: boolean }   登录/登出后抛出
- * - window 'sdv-bg-lock-change'    { locked: boolean } background.js 写入锁定后抛出
  * - window 'sdv-page-edit-change'  { applied: boolean } 页面编辑保存/重置后抛出
  * ============================================================
  */
@@ -65,8 +62,7 @@ const DevAdmin = (() => {
 
   function logout() {
     remove('login');
-    // 退出开发者模式：清除残留背景锁定与编辑模式，恢复访客状态
-    try { localStorage.removeItem('sdv_bg_lock'); } catch (e) {}
+    // 退出开发者模式：恢复访客状态
     exitEditMode(true);
     dispatchDevChange(false);
   }
@@ -143,7 +139,7 @@ const DevAdmin = (() => {
       // ① 读取远程页面内容 JSON：获取 sha 与合并基底（弱网/拦截自动重试）
       const remotePage = await readRemoteFile(repo.jsonPath, token, base, authHeaders);
 
-      // ② 组装页面内容载荷（v2.5.2：背景锁定配置不再随页面上传，仅提交页面内容 JSON）
+      // ② 组装页面内容载荷（仅提交页面内容 JSON）
       const pagePayload = buildPageContentPayload(remotePage.base);
 
       // ③ 提交页面内容 JSON（PUT 幂等，同 sha 重试安全）
@@ -505,7 +501,7 @@ const DevAdmin = (() => {
   }
 
   /* ============================================================
-   * UI 层：登录弹窗 / 登出 / 开发者面板渲染 / 背景锁定权限联动
+   * UI 层：登录弹窗 / 登出 / 开发者面板渲染
    * ============================================================ */
 
   /** 弹窗：登录（星露谷像素卡片风格；文案不出现开发者字样） */
@@ -573,7 +569,7 @@ const DevAdmin = (() => {
     if (typeof Modal === 'undefined') return;
     Modal.show({
       title: '退出开发者模式',
-      body: '<p>确定退出？退出后管理面板、页面编辑入口与背景锁定将再次隐藏。</p>',
+      body: '<p>确定退出？退出后管理面板与页面编辑入口将再次隐藏。</p>',
       actions: [
         { label: '取消', cls: 'btn-text', onClick: function () {} },
         { label: '退出', cls: 'btn-danger', onClick: function () {
@@ -858,7 +854,7 @@ const DevAdmin = (() => {
   }
 
   /* ============================================================
-   * 开发者管理面板（仅保留两大板块：一键上传GitHub + 背景锁定）
+   * 开发者管理面板（仅保留一键上传GitHub板块）
    * ============================================================ */
   function renderAdminPanelHtml() {
     const repo = getGitHubRepo();
@@ -873,8 +869,8 @@ const DevAdmin = (() => {
       /* ---------- ① 一键上传GitHub：把所有本地已保存的页面修改内容一次性提交推送 ---------- */
       '<div class="admin-block" id="admin-block-github">' +
         '<h3>一键上传GitHub</h3>' +
-        '<p class="setting-desc">把本地已保存的页面修改内容（文本 / 字体 / 公告缓存）与背景锁定配置，一并提交到仓库 main 分支的页面内容 JSON（' + esc(repo.jsonPath || 'data/page-content.json') + '）。' +
-          '背景锁定以 backgroundLock 字段内嵌同步，单文件单次提交。提交前会弹窗确认本次修改内容，防止误提交。</p>' +
+        '<p class="setting-desc">把本地已保存的页面修改内容（文本 / 字体 / 公告缓存），一并提交到仓库 main 分支的页面内容 JSON（' + esc(repo.jsonPath || 'data/page-content.json') + '）。' +
+          '单文件单次提交。提交前会弹窗确认本次修改内容，防止误提交。</p>' +
 
         '<div class="admin-github-form">' +
           '<label class="form-label">仓库 Owner</label>' +
@@ -899,18 +895,9 @@ const DevAdmin = (() => {
         '<p class="admin-github-status" id="gh-status">当前 Token：' +
           (hasToken ? '已保存' : '未配置') + '（本地存储，仅用于 GitHub API）</p>' +
         '<p class="admin-github-hint">提示：仅支持页面内容 JSON（page-content.json）数据提交；图片资源请前往 GitHub 网页端手动上传，不会通过此功能写入仓库。</p>' +
-        '<p class="admin-github-hint">导出用法：网络无法直连 api.github.com（一键上传被拦截）时，点击「导出JSON下载」得到 JSON 文件（含背景锁定配置），' +
+        '<p class="admin-github-hint">导出用法：网络无法直连 api.github.com（一键上传被拦截）时，点击「导出JSON下载」得到 JSON 文件，' +
           '到 GitHub 网页 github.com/' + esc(repo.owner || '…') + '/' + esc(repo.repo || '…') + ' → data 目录 → 编辑/上传文件，覆盖 ' +
           esc(repo.jsonPath || 'data/page-content.json') + '，效果等同（文件以「网页提交」开头可被 Actions 过滤，不会乱升版本）。</p>' +
-      '</div>' +
-
-      /* ---------- ② 背景锁定板块设置（弹窗唤起，不再外露表格窗口） ---------- */
-      '<div class="admin-block" id="admin-block-bglock">' +
-        '<h3>背景锁定</h3>' +
-        '<p class="setting-desc">锁定当前季节/时段背景，覆盖自动切换逻辑；点击「打开背景锁定窗口」弹窗操作，仅开发者可用。</p>' +
-        '<div class="admin-row-actions">' +
-          '<button class="btn" data-action="dev-open-bglock">打开背景锁定窗口</button>' +
-        '</div>' +
       '</div>' +
     '</section>';
   }
@@ -923,9 +910,6 @@ const DevAdmin = (() => {
         break;
       case 'dev-logout':
         doLogout();
-        break;
-      case 'dev-open-bglock':
-        openBgLockModal();
         break;
       case 'dev-save-github-config':
         saveGitHubConfig();
@@ -1005,7 +989,6 @@ const DevAdmin = (() => {
       if (typeof Toast !== 'undefined') Toast.show('请填写仓库 Owner 与名称');
       return;
     }
-    // 背景锁定为本地功能，不再随页面上传（v2.5.2 删除背景锁定上传模块）
     setGitHubRepo({ owner: owner, repo: repo, branch: branch, jsonPath: jsonPath });
     if (typeof Toast !== 'undefined') Toast.show('仓库配置已保存');
   }
@@ -1090,7 +1073,7 @@ const DevAdmin = (() => {
   }
 
   /**
-   * 组装「本地已保存的页面修改内容」：页面文本/字体编辑 + 公告 + 背景锁定（提交到 jsonPath）。
+   * 组装「本地已保存的页面修改内容」：页面文本/字体编辑 + 公告（提交到 jsonPath）。
    * 网页端一键上传只提交业务 JSON 数据，不携带、不递增、不写入任何版本相关字段
    * （版本升级仅由电脑本地 Git 推送流程处理，网页上传完全跳过）。
    * v2.4.13：一键上传只读取「本地 storage 内缓存的待修改数据」——
@@ -1115,8 +1098,6 @@ const DevAdmin = (() => {
    * 生成本次上传的 page-content.json 载荷（v2.4.18 增量合并版）：
    * 以远程现有内容为基底，仅用本地缓存覆盖「确有修改」的字段；
    * 无本地修改的字段保留远程原值——修复此前「本地缓存缺失字段 → PUT 全量覆盖 → 远程公告等数据被删」的问题。
-   * v2.5.3：背景锁定配置内嵌为 backgroundLock 字段随本文件上传（单文件、单次提交，
-   * 避免独立文件导致的请求翻倍被网络拦截；远程拉取时同步应用，恢复多设备锁定同步）。
    * @param {object|null} remote 远程现有 JSON（读取失败/首次上传时传 null 或 {}）
    */
   function buildPageContentPayload(remote) {
@@ -1136,27 +1117,6 @@ const DevAdmin = (() => {
     else if (base.fontConfig !== undefined) payload.fontConfig = base.fontConfig;
     if (notice !== null) payload.announcements = notice;
     else if (base.announcements !== undefined) payload.announcements = base.announcements;
-    // 背景锁定（v2.5.3 内嵌合并）：本地有锁定/恢复自动标记 → 写入 backgroundLock；
-    // 本地无缓存 → 保留远程原值（未修改不丢失）
-    let bg = null;
-    try {
-      const raw = localStorage.getItem('sdv_bg_lock');
-      if (raw) { try { bg = JSON.parse(raw); } catch (e) { bg = null; } }
-    } catch (e) { bg = null; }
-    if (bg !== null && bg && bg.locked) {
-      payload.backgroundLock = { locked: true };
-      if (bg.season) payload.backgroundLock.season = bg.season;
-      if (bg.period) payload.backgroundLock.period = bg.period;
-    } else if (bg !== null && bg) {
-      // 本地为「恢复自动」标记（locked=false）：显式写 locked:false 覆盖远程锁定
-      payload.backgroundLock = { locked: false };
-    } else if (base.backgroundLock !== undefined) {
-      payload.backgroundLock = base.backgroundLock;
-    } else {
-      // v2.5.5 兜底：本地与远程均无标记时显式写 null（字段始终存在，
-      // 防止 PUT 全文件替换后 backgroundLock 字段消失导致远程无法被后续覆盖）
-      payload.backgroundLock = null;
-    }
     return payload;
   }
 
@@ -1176,18 +1136,6 @@ const DevAdmin = (() => {
       if (editKeys.length > 20) lines.push('  … 其余 ' + (editKeys.length - 20) + ' 处省略');
       lines.push('默认字体：' + ((payload.fontConfig || {}).template || '-') + ' / ' + ((payload.fontConfig || {}).fontSize || 14) + 'px');
       lines.push('公告：' + ((payload.announcements || []).length) + ' 条');
-      // v2.5.3 背景锁定内嵌字段摘要
-      const bg = payload.backgroundLock;
-      if (bg && bg.locked) {
-        const seasonNames = { spring: '春', summer: '夏', autumn: '秋', winter: '冬' };
-        const periodNames = { morning: '清晨', day: '白天', dusk: '黄昏', night: '夜晚' };
-        lines.push('背景锁定：锁定（' + (seasonNames[bg.season] || bg.season || '-') + ' · ' +
-          (periodNames[bg.period] || bg.period || '-') + '）');
-      } else if (bg) {
-        lines.push('背景锁定：自动模式');
-      } else {
-        lines.push('背景锁定：未修改');
-      }
       return lines.join('\n');
     } catch (e) {
       return JSON.stringify(payload, null, 2);
@@ -1198,7 +1146,7 @@ const DevAdmin = (() => {
    * 导出本地修改数据为 JSON（page-content.json）——v2.5.2 兜底通道：
    * 网络无法直连 api.github.com（一键上传被拦）时，下载到本地后前往 GitHub 网页端手动上传覆盖，
    * 走 github.com 域名（不受 api.github.com 拦截影响），效果与一键上传等同。
-   * 载荷构建逻辑与一键上传完全一致（buildPageContentPayload，含 backgroundLock 内嵌字段），
+   * 载荷构建逻辑与一键上传完全一致（buildPageContentPayload），
    * 不携带版本字段（网页端过滤规则：提交备注以「网页提交」开头不会被 Actions 升版）。
    * @returns {Array<{name:string, data:object}>} 待下载文件清单
    */
@@ -1231,31 +1179,6 @@ const DevAdmin = (() => {
   }
 
   /**
-   * v2.5.3 应用远程背景锁定配置（内嵌于 page-content.json 的 backgroundLock 字段，多设备同步）：
-   * 远程锁定 → 写入本地 sdv_bg_lock（锁定生效）；远程恢复自动 → 写入 locked:false（保留覆盖标记，
-   * 避免下次上传时因本地无标记而保留远程旧锁定，导致恢复自动无法覆盖远程）；
-   * 派发 sdv-dev-state-change 通知 background.js 立即重判背景。
-   * @param {object} remote 远程页面内容 JSON
-   */
-  function applyRemoteBackgroundLock(remote) {
-    const b = remote && remote.backgroundLock;
-    if (b === undefined || b === null) return; // 远程无该字段：保留本地现状
-    try {
-      if (b && b.locked) {
-        const lock = { locked: true };
-        if (b.season) lock.season = b.season;
-        if (b.period) lock.period = b.period;
-        localStorage.setItem('sdv_bg_lock', JSON.stringify(lock));
-      } else {
-        localStorage.setItem('sdv_bg_lock', JSON.stringify({ locked: false }));
-      }
-    } catch (e) { /* 忽略 */ }
-    if (typeof window !== 'undefined' && window.dispatchEvent) {
-      window.dispatchEvent(new CustomEvent('sdv-dev-state-change', { detail: { dev: isDev() } }));
-    }
-  }
-
-  /**
    * 提交成功后刷新业务数据源：清除本地业务缓存并重新 fetch 远程 jsonPath，
    * 让当前页面立刻加载远程最新业务内容（修复"仅本地内存保存、其他浏览器看不到"BUG）。
    * 只处理业务 JSON 文件，绝不触碰 version.json 或任何版本变量。
@@ -1275,7 +1198,7 @@ const DevAdmin = (() => {
     if (token) headers.Authorization = 'Bearer ' + token;
     // v2.4.19：拉取前先快照本地业务缓存——刷新失败时回滚快照，本地修改不丢失（此前先清缓存再拉取，
     // 拉取失败会把本地修改清空、页面恢复默认，且再次上传时 payload 读空缓存会误覆盖远程修改）
-    const _refreshKeys = [NS + 'page_edit', NS + 'font_cfg', 'sdv_bg_lock', NS + 'notice_edit'];
+    const _refreshKeys = [NS + 'page_edit', NS + 'font_cfg', NS + 'notice_edit'];
     const snapshot = {};
     try {
       _refreshKeys.forEach(function (k) { snapshot[k] = localStorage.getItem(k); });
@@ -1291,11 +1214,10 @@ const DevAdmin = (() => {
       return Object.assign({ ok: false, message: msg }, extra || {});
     }
     try {
-      // ① 清空当前页面该 json 的本地缓存（页面文本/字体编辑 + 字体配置 + 背景锁定 + 公告缓存）
+      // ① 清空当前页面该 json 的本地缓存（页面文本/字体编辑 + 字体配置 + 公告缓存）
       try {
         localStorage.removeItem(NS + 'page_edit');
         localStorage.removeItem(NS + 'font_cfg');
-        localStorage.removeItem('sdv_bg_lock');
         localStorage.removeItem(NS + 'notice_edit');
       } catch (e) { /* 忽略 */ }
 
@@ -1395,8 +1317,6 @@ const DevAdmin = (() => {
       // 远程文件残留旧版网页公告数据（如 v2.4.9），覆盖后刷新页面会从最新公告回退到旧公告；
       // 版本更新公告以 config.js（version-bump 自动维护）为唯一权威数据源。
       if (typeof applyPageEdits === 'function') applyPageEdits();
-      // ③b v2.5.3 应用远程背景锁定配置（内嵌 backgroundLock 字段，多设备同步）
-      applyRemoteBackgroundLock(remote);
       if (typeof window !== 'undefined' && window.dispatchEvent) {
         window.dispatchEvent(new CustomEvent('sdv-page-edit-change', { detail: { applied: ['refresh-from-remote'] } }));
         // 通知公告/页面渲染层重新拉取数据源并刷新 UI
@@ -1533,8 +1453,6 @@ const DevAdmin = (() => {
       // v2.5.4 修复：不再用远程 page-content.json 的 announcements 覆盖 config.js 内置版本公告
       // （远程残留旧公告会导致刷新后公告回退；版本公告以 config.js 为唯一权威）
       if (typeof applyPageEdits === 'function') applyPageEdits();
-      // v2.5.3 应用远程背景锁定配置（内嵌 backgroundLock 字段，多设备同步）
-      applyRemoteBackgroundLock(remote);
       if (window && window.dispatchEvent) window.dispatchEvent(new HashChangeEvent('hashchange'));
       if (manual && typeof Toast !== 'undefined') Toast.show('已同步远程内容并覆盖到页面');
       return { ok: true, message: '已同步远程内容并覆盖到页面' };
@@ -1558,114 +1476,7 @@ const DevAdmin = (() => {
   function setFontConfig(c) { write('font_cfg', c || {}); }
 
   /* ============================================================
-   * 背景锁定窗口（方案A：仅开发者登录后可见可用；弹窗唤起，不外露表格）
-   * ============================================================ */
-  function openBgLockModal() {
-    if (!isDev()) { openLoginModal(); return; }
-    if (typeof Modal === 'undefined') return;
-    const lock = readLockNow();
-    const seasons = [['spring', '春'], ['summer', '夏'], ['autumn', '秋'], ['winter', '冬']];
-    const periods = [['morning', '清晨'], ['day', '白天'], ['dusk', '黄昏'], ['night', '夜晚']];
-    const curSeason = (lock && lock.season) ? lock.season : currentAutoSeason();
-    const curPeriod = (lock && lock.period) ? lock.period : currentAutoPeriod();
-
-    Modal.show({
-      title: '背景锁定窗口',
-      body:
-        '<div class="bg-lock-form">' +
-          '<p class="setting-desc">' +
-            (lock ? '当前已锁定：' + seasonLabel(seasons, curSeason) + ' · ' + periodLabel(periods, curPeriod)
-                 : '当前为自动模式，按系统日期/时间自动切换背景') +
-          '</p>' +
-          '<label class="form-label">季节</label>' +
-          '<div class="chip-row">' + seasons.map(function (s) {
-            return '<button class="chip' + (curSeason === s[0] ? ' active' : '') + '" data-bglock-season="' + s[0] + '">' + s[1] + '</button>';
-          }).join('') + '</div>' +
-          '<label class="form-label">时段</label>' +
-          '<div class="chip-row">' + periods.map(function (p) {
-            return '<button class="chip' + (curPeriod === p[0] ? ' active' : '') + '" data-bglock-period="' + p[0] + '">' + p[1] + '</button>';
-          }).join('') + '</div>' +
-        '</div>',
-      actions: [
-        { label: '取消', cls: 'btn-text', onClick: function () {} },
-        { label: '锁定当前', cls: 'btn-primary', onClick: function () {} },
-        { label: '恢复自动', cls: 'btn-warn', onClick: function () { applyBgLock(null, null, false); Modal.close(); } },
-      ],
-    });
-
-    const modalBody = document.querySelector('.modal-body');
-    if (modalBody) {
-      let selSeason = curSeason, selPeriod = curPeriod;
-      modalBody.addEventListener('click', function (ev) {
-        const sBtn = ev.target.closest('[data-bglock-season]');
-        const pBtn = ev.target.closest('[data-bglock-period]');
-        if (sBtn) {
-          selSeason = sBtn.dataset.bglockSeason;
-          modalBody.querySelectorAll('[data-bglock-season]').forEach(function (b) { b.classList.remove('active'); });
-          sBtn.classList.add('active');
-        }
-        if (pBtn) {
-          selPeriod = pBtn.dataset.bglockPeriod;
-          modalBody.querySelectorAll('[data-bglock-period]').forEach(function (b) { b.classList.remove('active'); });
-          pBtn.classList.add('active');
-        }
-      });
-      const actionsEl = document.querySelector('.modal-actions');
-      if (actionsEl) {
-        const lockBtn = Array.from(actionsEl.children).find(function (b) {
-          return b.textContent.indexOf('锁定') >= 0;
-        });
-        if (lockBtn) {
-          lockBtn.onclick = function () {
-            applyBgLock(selSeason, selPeriod, true);
-            Modal.close();
-          };
-        }
-      }
-    }
-  }
-
-  function seasonLabel(arr, key) { const x = arr.find(function (i) { return i[0] === key; }); return x ? x[1] : key; }
-  function periodLabel(arr, key) { const x = arr.find(function (i) { return i[0] === key; }); return x ? x[1] : key; }
-
-  function readLockNow() {
-    try {
-      const raw = localStorage.getItem('sdv_bg_lock');
-      return raw ? JSON.parse(raw) : null;
-    } catch (e) { return null; }
-  }
-  function currentAutoSeason() {
-    const m = new Date().getMonth() + 1;
-    if (m >= 3 && m <= 5) return 'spring';
-    if (m >= 6 && m <= 8) return 'summer';
-    if (m >= 9 && m <= 11) return 'autumn';
-    return 'winter';
-  }
-  function currentAutoPeriod() {
-    const h = new Date().getHours();
-    if (h >= 5 && h < 8) return 'morning';
-    if (h >= 8 && h < 17) return 'day';
-    if (h >= 17 && h < 19) return 'dusk';
-    return 'night';
-  }
-
-  /** 应用背景锁定：写入 localStorage，并通知 background.js 模块刷新 */
-  function applyBgLock(season, period, locked) {
-    let val = null;
-    if (locked) val = { locked: true, season: season, period: period };
-    else val = { locked: false }; // v2.5.6 恢复自动写入 locked:false（不删除 key），上传时可覆盖远程旧锁定
-    try {
-      if (val) localStorage.setItem('sdv_bg_lock', JSON.stringify(val));
-      else localStorage.removeItem('sdv_bg_lock');
-    } catch (e) { /* 忽略 */ }
-    if (typeof window !== 'undefined' && window.dispatchEvent) {
-      window.dispatchEvent(new CustomEvent('sdv-bg-lock-change', { detail: { locked: !!locked } }));
-    }
-    if (typeof Toast !== 'undefined') Toast.show(locked ? '已锁定背景' : '已恢复自动切换');
-  }
-
-  /* ============================================================
-   * 权限联动：控制「编辑工具条」「管理员面板」「背景锁定」可见性
+   * 权限联动：控制「编辑工具条」「管理员面板」可见性
    * ============================================================ */
   function applyDevVisibility() {
     const dev = isDev();
@@ -1683,10 +1494,6 @@ const DevAdmin = (() => {
       closeAdminPanel();
     }
 
-    // ③ 背景锁定：外显表格窗口已移除，登出时清除残留锁定恢复自动切换
-    if (!dev) {
-      try { localStorage.removeItem('sdv_bg_lock'); } catch (e) {}
-    }
     // 标记 body，供 CSS 兜底隐藏所有开发者入口/编辑控件/上传按钮
     document.body.classList.toggle('dev-mode', dev);
   }
@@ -1727,7 +1534,7 @@ const DevAdmin = (() => {
       });
       // 跨标签页 / 多端同步：localStorage 变更即时重放页面修改
       window.addEventListener('storage', function (ev) {
-        if (ev.key === NS + 'page_edit' || ev.key === 'sdv_bg_lock') {
+        if (ev.key === NS + 'page_edit') {
           applyPageEdits();
         }
       });
@@ -1752,8 +1559,8 @@ const DevAdmin = (() => {
   return {
     login, logout, getDevLogin, isDev,
     getGitHubToken, setGitHubToken, getGitHubRepo, setGitHubRepo,
-    pushToGitHub, buildPageContentPayload, buildExportFiles, exportLocalData, applyRemoteBackgroundLock, refreshPageContentFromRemote, syncRemoteContent, fetchRemoteContentMulti,
-    openLoginModal, openAdminPanel, openBgLockModal, doLogout,
+    pushToGitHub, buildPageContentPayload, buildExportFiles, exportLocalData, refreshPageContentFromRemote, syncRemoteContent, fetchRemoteContentMulti,
+    openLoginModal, openAdminPanel, doLogout,
     enterEditMode, exitEditMode, savePageEdits, resetPageEdits, applyPageEdits,
     getPageEdit, setPageEdit, getFontConfig, setFontConfig,
     FONT_TEMPLATES,
