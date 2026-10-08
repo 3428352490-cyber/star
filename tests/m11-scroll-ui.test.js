@@ -40,11 +40,11 @@ test('M11 卷轴UI：边框宽度 card/modal 8px、btn 4px（厚深棕木框）'
   assert.ok(modal.includes('border: 8px solid var(--wood-frame)'), 'scroll-modal 边框非 8px（应与 card 一致）');
 });
 
-test('M11 卷轴UI：box-shadow 多层明暗模拟木纹立体质感（blur=0 硬边，木纹层+浅色内描边）', () => {
+test('M11 卷轴UI：box-shadow 多层明暗模拟木纹立体质感（blur=0 硬边，木纹层+浅色内描边，无外阴影）', () => {
   const s = scrollPart();
   assert.ok(s.includes('inset 0 0 0 4px var(--wood-mid)') || s.includes('inset 0 0 0 2px var(--wood-mid)'), '缺少木纹中棕层 var(--wood-mid)');
   assert.ok(s.includes('inset 0 -10px 0 var(--bg-deep)') || s.includes('inset 0 -8px 0 var(--bg-deep)'), '缺少内底部黄褐立体');
-  assert.ok(s.includes('6px 6px 0 var(--shadow)') || s.includes('4px 4px 0 var(--shadow)') || s.includes('2px 2px 0 var(--shadow)'), '缺少外硬阴影');
+  assert.ok(!/box-shadow:[^;]*\d+px \d+px 0 (var\(--shadow\)|rgba\([^)]*\))/.test(s), '板块仍残留外阴影（应全部删除）');
   assert.ok(!/\dpx\s+blur/.test(s) && !s.includes('rgba(0, 0, 0, 0.'), '出现柔和模糊阴影（应全部硬边）');
 });
 

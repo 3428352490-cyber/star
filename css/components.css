@@ -19,10 +19,8 @@
   border-radius: var(--radius);                   /* 像素小圆角 */
   padding: 20px;                                  /* 宽松内边距 */
   margin-bottom: 16px;
-  box-shadow:
-    inset 0 0 0 3px var(--wood-mid),              /* 木纹中棕层（参考图木框质感） */
-    inset 0 0 0 6px var(--wood-light),            /* 内层浅色描边 */
-    6px 6px 0 var(--shadow);                      /* 纯色硬阴影 */
+  box-shadow: inset 0 0 0 3px var(--wood-mid),              
+    inset 0 0 0 6px var(--wood-light);                      /* 纯色硬阴影 */
 }
 .card-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 14px; }
 .card-head h2 { font-size: 15px; color: var(--accent); }
@@ -42,14 +40,12 @@
   border: 3px solid var(--wood-frame);            /* 深棕木框 */
   border-radius: var(--radius);
   background: var(--card-bg);                     /* 暖浅黄褐块底 */
-  box-shadow:
-    inset 0 0 0 1px var(--wood-mid),              /* 木纹中棕层 */
-    inset 0 0 0 3px var(--wood-light),            /* 内层浅色描边 */
-    4px 4px 0 var(--shadow);                      /* 硬阴影 */
+  box-shadow: inset 0 0 0 1px var(--wood-mid),              
+    inset 0 0 0 3px var(--wood-light);                      /* 硬阴影 */
   color: var(--text);
   transition: transform 0.08s, box-shadow 0.08s, filter 0.08s;
 }
-.tile:active { transform: translate(2px, 2px); box-shadow: inset 0 0 0 1px var(--wood-mid), inset 0 0 0 3px var(--wood-light), 2px 2px 0 var(--shadow); }
+.tile:active { transform: translate(2px, 2px); box-shadow: inset 0 0 0 1px var(--wood-mid), inset 0 0 0 3px var(--wood-light); }
 .tile-icon {
   width: 42px; height: 42px;
   display: grid; place-items: center;
@@ -87,17 +83,15 @@
   background: var(--card-bg);                       /* 板块底：暖浅黄褐色 */
   border: 6px solid var(--wood-frame);              /* 厚木框：外层深棕木条 */
   border-radius: var(--radius);                     /* 像素小圆角 */
-  box-shadow:
-    inset 0 0 0 2px var(--wood-mid),                /* 木纹中棕层 */
-    inset 0 0 0 6px var(--wood-light),              /* 内层浅色描边 */
-    5px 5px 0 var(--shadow);                        /* 硬像素阴影 */
+  box-shadow: inset 0 0 0 2px var(--wood-mid),                
+    inset 0 0 0 6px var(--wood-light);                        /* 硬像素阴影 */
   padding: 12px 12px 16px;                          /* 板块内边距：标题与卡片不压框 */
 }
 .codex-group:last-child { margin-bottom: 0; }
 .codex-group-title { margin: 0 0 10px; padding-left: 2px; font-size: 13px; font-weight: 400; color: #7A5A32; }
 .tile-codex { aspect-ratio: 1 / 1; padding: 10px 4px; border-radius: 10px; }  /* 正方形圆角卡片，保留 .tile 像素边框/内描边/硬阴影 */
 /* 图鉴分类卡片：取消按压位移/亮度特效（点击直接跳转，无按压反馈） */
-.tile-codex:active { transform: none; box-shadow: inset 0 0 0 1px var(--wood-mid), inset 0 0 0 3px var(--wood-light), 5px 5px 0 var(--shadow); }
+.tile-codex:active { transform: none; box-shadow: inset 0 0 0 1px var(--wood-mid), inset 0 0 0 3px var(--wood-light); }
 
 /* ---- 首页四大卡片（四宫格 2×2：窄屏到宽屏均保持两列，卡片独立组件、间距均匀） ---- */
 .home-cards {
@@ -126,14 +120,14 @@
   background-image: var(--wood-texture);
   color: var(--text);
   border: 3px solid var(--wood-frame); border-radius: var(--radius);
-  box-shadow: inset 0 0 0 1px var(--wood-mid), inset 0 0 0 3px var(--wood-light), 3px 3px 0 var(--shadow);
+  box-shadow: inset 0 0 0 1px var(--wood-mid), inset 0 0 0 3px var(--wood-light);
   transition: transform 0.08s, box-shadow 0.08s, filter 0.08s;
 }
-.btn:active { transform: translate(2px, 2px); box-shadow: inset 0 0 0 1px var(--wood-mid), inset 0 0 0 3px var(--wood-light), 1px 1px 0 var(--shadow); }
+.btn:active { transform: translate(2px, 2px); box-shadow: inset 0 0 0 1px var(--wood-mid), inset 0 0 0 3px var(--wood-light); }
 /* 主操作按钮：橄榄绿底白字（星露谷商店按钮同款绿），深绿棕描边 + 浅色内描边双层 */
 .btn-primary {
   background: var(--farm-green); border-color: #3A5A2A; color: #fff;
-  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.3), 3px 3px 0 var(--shadow);
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.3);
 }
 .btn-group { display: flex; gap: 10px; margin-top: 12px; }
 
@@ -183,7 +177,7 @@
   border-radius: var(--radius);                  /* 直角：8-bit */
   border: 3px solid var(--tile-border);
   background: var(--bg-deep);
-  box-shadow: inset 0 0 0 2px var(--tile-light), 2px 2px 0 var(--shadow);
+  box-shadow: inset 0 0 0 2px var(--tile-light);
 }
 .account-text { font-size: 16px; font-weight: 700; color: var(--text); }
 .account-arrow { margin-left: auto; color: var(--text-dim); font-size: 20px; }
@@ -237,7 +231,7 @@
   border: 2px dashed var(--wood-border);
   border-radius: var(--radius);
   padding: 12px;
-  box-shadow: inset 0 0 0 1px var(--wood-mid), inset 0 0 0 3px var(--wood-light), 3px 3px 0 var(--shadow);
+  box-shadow: inset 0 0 0 1px var(--wood-mid), inset 0 0 0 3px var(--wood-light);
 }
 .notice-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
 .notice-head h3 { font-size: 14px; }
@@ -252,7 +246,7 @@
   color: var(--text);
   border: 2px solid var(--tile-border);
   border-radius: var(--radius);
-  box-shadow: 2px 2px 0 var(--shadow);
+  box-shadow: none;
   transition: transform 0.08s, box-shadow 0.08s, filter 0.08s;
 }
 .notice-more:active { transform: translate(2px, 2px); box-shadow: none; filter: brightness(0.9); }
@@ -336,7 +330,7 @@
 .search-block {
   background: var(--card-bg);
   border: 3px solid var(--wood-frame); border-radius: var(--radius);
-  box-shadow: inset 0 0 0 1px var(--wood-mid), inset 0 0 0 3px var(--wood-light), 3px 3px 0 var(--shadow);
+  box-shadow: inset 0 0 0 1px var(--wood-mid), inset 0 0 0 3px var(--wood-light);
   padding: 10px;
 }
 .search-block-head {
@@ -382,7 +376,7 @@
   padding: 8px 10px; text-align: left; font-size: 13px;
   background: var(--accent-2); color: #1F1B16;
   border: 2px solid var(--tile-border); border-radius: var(--radius);
-  box-shadow: 2px 2px 0 var(--shadow);
+  box-shadow: none;
 }
 .search-reco-item:active { transform: translate(2px, 2px); box-shadow: none; }
 .search-empty { font-size: 12px; color: var(--text-dim); padding: 6px 2px; }
@@ -424,11 +418,9 @@
   border-radius: var(--radius);
   padding: 18px;
   color: var(--dialog-text);
-  box-shadow:
-    inset 0 0 0 3px var(--dialog-dark),            /* 木纹中棕层 */
-    inset 0 0 0 6px var(--dialog-light),           /* 内层浅色描边 */
-    inset 0 -10px 0 var(--bg-deep),                /* 内底部卡其立体 */
-    8px 8px 0 var(--shadow);                       /* 纯色硬阴影 */
+  box-shadow: inset 0 0 0 3px var(--dialog-dark),            
+    inset 0 0 0 6px var(--dialog-light),           
+    inset 0 -10px 0 var(--bg-deep);                       /* 纯色硬阴影 */
 }
 .modal-title {
   font-size: 16px; margin-bottom: 10px;
@@ -497,10 +489,8 @@
   color: var(--dialog-text);
   padding: 9px 16px; border-radius: var(--radius);
   font-size: 13px; z-index: 120;
-  box-shadow:
-    inset 0 0 0 1px var(--dialog-dark),
-    inset 0 0 0 3px var(--dialog-light),
-    3px 3px 0 var(--shadow);
+  box-shadow: inset 0 0 0 1px var(--dialog-dark),
+    inset 0 0 0 3px var(--dialog-light);
   animation: toastIn 0.18s ease-out;
   white-space: nowrap;
 }
@@ -546,11 +536,9 @@
 .scroll-card {
   border: 8px solid var(--wood-frame);             /* 厚木框：深棕 */
   background: var(--card-bg);                      /* 暖浅黄褐块 */
-  box-shadow:
-    inset 0 0 0 4px var(--wood-mid),              /* 木纹中棕层 */
-    inset 0 0 0 8px var(--wood-light),            /* 内层浅色描边 */
-    inset 0 -10px 0 var(--bg-deep),               /* 内底部黄褐立体 */
-    6px 6px 0 var(--shadow);                      /* 外硬阴影 */
+  box-shadow: inset 0 0 0 4px var(--wood-mid),              
+    inset 0 0 0 8px var(--wood-light),            
+    inset 0 -10px 0 var(--bg-deep);                      /* 外硬阴影 */
   border-radius: var(--radius);
   padding: 24px;                                   /* 内边距：文字不会压到边框 */
   margin-bottom: 16px;
@@ -560,11 +548,9 @@
 .scroll-btn {
   border: 4px solid var(--wood-frame);             /* 深棕木框 */
   background: var(--card-bg);                      /* 暖浅黄褐块 */
-  box-shadow:
-    inset 0 0 0 2px var(--wood-mid),              /* 木纹中棕层 */
-    inset 0 0 0 4px var(--wood-light),            /* 内层浅色描边 */
-    inset 0 -8px 0 var(--bg-deep),                /* 内底部黄褐立体 */
-    4px 4px 0 var(--shadow);                      /* 外硬阴影 */
+  box-shadow: inset 0 0 0 2px var(--wood-mid),              
+    inset 0 0 0 4px var(--wood-light),            
+    inset 0 -8px 0 var(--bg-deep);                      /* 外硬阴影 */
   border-radius: var(--radius);
   position: relative;
   display: flex; flex-direction: column; align-items: center; gap: 6px;
@@ -574,22 +560,18 @@
 }
 .scroll-btn:active {
   transform: translate(2px, 2px);                  /* 点击下压反馈 */
-  box-shadow:
-    inset 0 0 0 2px var(--wood-mid),
+  box-shadow: inset 0 0 0 2px var(--wood-mid),
     inset 0 0 0 4px var(--wood-light),
-    inset 0 -8px 0 var(--bg-deep),
-    2px 2px 0 var(--shadow);                       /* 按压后阴影收缩 */
+    inset 0 -8px 0 var(--bg-deep);                       /* 按压后阴影收缩 */
 }
 
 /* ---- scroll-modal：全局弹窗，与 scroll-card 样式一致 ---- */
 .scroll-modal {
   border: 8px solid var(--wood-frame);             /* 厚木框：深棕 */
   background: var(--card-bg);                      /* 暖浅黄褐块 */
-  box-shadow:
-    inset 0 0 0 4px var(--wood-mid),
+  box-shadow: inset 0 0 0 4px var(--wood-mid),
     inset 0 0 0 8px var(--wood-light),
-    inset 0 -10px 0 var(--bg-deep),
-    6px 6px 0 var(--shadow);
+    inset 0 -10px 0 var(--bg-deep);
   border-radius: var(--radius);
   padding: 28px 24px;                              /* 弹窗内边距更大 */
 }

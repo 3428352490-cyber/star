@@ -12,11 +12,11 @@
   display: inline-flex; align-items: center; justify-content: center;
   min-width: 32px; height: 32px; padding: 0 8px;
   background: #e8c14a; color: #3a2a1a;
-  border: 3px solid #3a2a1a; box-shadow: inset 0 0 0 1px #8a6a3a, inset 0 0 0 3px #fdf6e3, 3px 3px 0 rgba(58, 42, 26, 0.35);
+  border: 3px solid #3a2a1a; box-shadow: inset 0 0 0 1px #8a6a3a, inset 0 0 0 3px #fdf6e3;
   image-rendering: pixelated;
   cursor: pointer; font-family: inherit;
 }
-.pixel-btn:active { transform: translate(2px, 2px); box-shadow: inset 0 0 0 1px #8a6a3a, inset 0 0 0 3px #fdf6e3, 1px 1px 0 rgba(58, 42, 26, 0.35); }
+.pixel-btn:active { transform: translate(2px, 2px); box-shadow: inset 0 0 0 1px #8a6a3a, inset 0 0 0 3px #fdf6e3; }
 .pixel-btn.danger { background: #d65a3a; }
 .refresh-btn { font-size: 18px; }
 
@@ -38,11 +38,11 @@
   display: flex; flex-direction: column;
   margin: 0 0 12px;
   background: #fdf6e3; color: #3a2a1a;
-  border: 3px solid #3a2a1a; box-shadow: 4px 4px 0 rgba(58, 42, 26, 0.3);
+  border: 3px solid #3a2a1a; box-shadow: none;
   cursor: pointer; text-align: left; font-family: inherit;
   overflow: hidden;
 }
-.masonry-card:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 rgba(58, 42, 26, 0.3); }
+.masonry-card:active { transform: translate(2px, 2px); box-shadow: none; }
 /* 封面：帖子图片预览（第一张图 / 无图占位），固定 16:9 */
 .masonry-cover .post-cover { width: 100%; aspect-ratio: 16 / 9; }
 .masonry-body { padding: 8px 10px 10px; }
@@ -212,7 +212,7 @@
   width: 34px; height: 34px;
   display: inline-flex; align-items: center; justify-content: center;
   background: #e8c14a; border: 3px solid #3a2a1a;
-  box-shadow: 3px 3px 0 rgba(58, 42, 26, 0.35);
+  box-shadow: none;
   cursor: pointer; font-size: 17px; image-rendering: pixelated;
 }
 .billboard-btn:active { transform: translate(2px, 2px); }
@@ -273,10 +273,10 @@
   display: flex; align-items: center; gap: 10px;
   padding: 12px 12px;
   background: #fdf6e3; color: #3a2a1a;
-  border: 3px solid #3a2a1a; box-shadow: 3px 3px 0 rgba(58, 42, 26, 0.3);
+  border: 3px solid #3a2a1a; box-shadow: none;
   cursor: pointer; font-family: inherit; font-size: 13px; text-align: left; width: 100%;
 }
-.notice-entry:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 rgba(58, 42, 26, 0.3); }
+.notice-entry:active { transform: translate(2px, 2px); box-shadow: none; }
 .notice-entry-icon { font-size: 18px; }
 .notice-entry-text { flex: 1; }
 
@@ -311,7 +311,7 @@
 .profile-banner {
   height: 120px; margin-bottom: -44px;
   background: #6a8a5a;                /* 纯色橄榄绿像素块（无平滑渐变，锐利像素感） */
-  border: 3px solid #3a2a1a; box-shadow: 4px 4px 0 rgba(58, 42, 26, 0.3);
+  border: 3px solid #3a2a1a; box-shadow: none;
 }
 .profile-main {
   position: relative; margin: 0 0 12px; padding-top: 8px;
@@ -361,7 +361,7 @@
 .tab-btn {
   flex: 1; padding: 8px 0; font-size: 13px;
   background: #fdf6e3; color: #3a2a1a;
-  border: 3px solid #3a2a1a; box-shadow: 2px 2px 0 rgba(58, 42, 26, 0.3);
+  border: 3px solid #3a2a1a; box-shadow: none;
   cursor: pointer; font-family: inherit;
 }
 .tab-btn:active { transform: translate(1px, 1px); }
@@ -389,10 +389,10 @@
   display: flex; align-items: center; gap: 10px;
   width: 100%; padding: 14px 14px; margin: 4px 0 8px;
   background: #fdf6e3; color: #3a2a1a; font-family: inherit; text-align: left;
-  border: 3px solid #3a2a1a; box-shadow: 3px 3px 0 rgba(58, 42, 26, 0.3);
+  border: 3px solid #3a2a1a; box-shadow: none;
   cursor: pointer;
 }
-.login-entry-card:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 rgba(58, 42, 26, 0.3); }
+.login-entry-card:active { transform: translate(2px, 2px); box-shadow: none; }
 .login-entry-card .px-avatar { border-radius: 50%; }
 .login-entry-text { flex: 1; font-size: 15px; font-weight: 700; }
 .login-entry-arrow { font-size: 20px; color: #8a7a5a; }
@@ -409,10 +409,10 @@
 /* 退出登录（红色像素按钮，置于我的页最底部） */
 .btn-danger {
   background: #b23a2a; border-color: #6a2018; color: #fff;
-  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.3), 3px 3px 0 rgba(58, 42, 26, 0.35);
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.3);
 }
 .btn-warn {
   background: #e8c14a; border-color: #b0902a; color: #3a2a1a;
-  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.35), 3px 3px 0 rgba(58, 42, 26, 0.35);
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.35);
 }
 .btn-logout { width: 100%; margin: 12px 0 4px; }
