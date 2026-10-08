@@ -1,5 +1,5 @@
 {
-  "latestVersion": "2.5.6",
-  "updateDesc": "删除背景锁定板块与背景同步上传：背景回归纯自动轮换，一键上传仅保留页面内容JSON同步",
+  "latestVersion": "2.6.0",
+  "updateDesc": "新增全局像素树叶飘落动画：季节配色飘落、低性能自动降量、开发者开关控制，背景之上UI之下不遮挡交互",
   "downloadUrl": "./index.html"
 }

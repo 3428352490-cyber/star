@@ -10,7 +10,7 @@
 const SDV_CONFIG = {
   app: {
     name: '星露谷攻略',
-    version: '2.5.6',
+    version: '2.6.0',
     /**
      * 云端版本清单地址（GitHub Pages 部署后替换为实际地址）：
      * 例如 'https://你的用户名.github.io/仓库名/version.json'
@@ -56,6 +56,15 @@ const SDV_CONFIG = {
 
   /** 软件公告（公告页渲染；新版本发布时向数组头部追加条目） */
   announcements: [
+    {
+      version: '2.6.0',
+      date: '2026-10-09',
+      title: '功能更新',
+      notes: [
+        '新增全局像素树叶飘落动画：季节配色飘落、低性能自动降量、开发者开关控制，背景之上UI之下不遮挡交互',
+        '新增页面 / 独立模块，功能与内容更新',
+      ],
+    },
     {
       version: '2.5.6',
       date: '2026-10-09',
