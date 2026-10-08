@@ -10,7 +10,8 @@
  *   季节色板每季 4 档明暗变体，飘落的叶子间明暗各异
  * · 颜色：跟随项目季节配置（月份判定，与 background.js 一致）——
  *   春 = 嫩绿、夏 = 深绿、秋 = 橙黄/橘红；冬 = 不加载（保留原有下雪等效果）
- * · 密度：中等密度（默认 22 片）；低性能设备自动减半（10 片）
+ * · 密度：中等密度（默认 26 片），首轮全屏均匀分布、重生自顶部进入 → 全程连续飘落；
+ *   低性能设备自动减半（12 片）
  *   低性能判定：CPU 核数 ≤ 4 / 移动端 UA / 系统减弱动效偏好
  * · 动画：自上而下缓慢飘落 + 左右正弦摇摆 + 缓慢旋转；叶超出屏幕底部自动销毁并重建
  * · 层级：z-index 40（背景 -1、内容 1、板块卡片 5-6 之上，可覆盖板块内容；
@@ -22,8 +23,8 @@
  */
 var LeafFX = (function () {
   var cv = null, ctx = null, leaves = [], rafId = 0, lastTs = 0, running = false;
-  var BASE_COUNT = 22;   // 中等密度
-  var LOW_COUNT = 10;    // 低性能设备减半
+  var BASE_COUNT = 26;   // 中等密度（持续飘落观感）
+  var LOW_COUNT = 12;    // 低性能设备减半
 
   /* ---------- 低性能设备判定 ---------- */
   var isLowPerf = (function () {
@@ -125,8 +126,12 @@ var LeafFX = (function () {
     return c;
   }
 
-  /** 生成一片树叶（随机造型 + 随机明暗色档 + 随机尺寸，含其预渲染图案缓存） */
-  function makeLeaf() {
+  /**
+   * 生成一片树叶（随机造型 + 随机明暗色档 + 随机尺寸，含其预渲染图案缓存）
+   * @param {boolean} first 首轮生成：y 全屏均匀分布（画面立即连续飘落，不堆在顶部）
+   *                  否则从顶部上方进入（重生路径）
+   */
+  function makeLeaf(first) {
     var mask = MASKS[(Math.random() * MASKS.length) | 0];
     var color = COLORS[season][(Math.random() * COLORS[season].length) | 0];
     var size = 26 + Math.random() * 18;              // 适中尺寸：26~44px
@@ -134,8 +139,10 @@ var LeafFX = (function () {
       mask: mask, color: color, sprite: null,        // sprite 惰性预渲染
       size: size,
       x: Math.random() * cv.width,
-      y: -(size + Math.random() * 60),               // 从顶部上方进入
-      vy: 24 + Math.random() * 40,                   // 缓慢下落：24~64 px/s
+      y: first
+        ? (Math.random() * (cv.height + size * 2) - size) // 首轮：全屏均匀（含少量顶部外）
+        : -(size + Math.random() * 60),              // 重生：从顶部上方进入
+      vy: 45 + Math.random() * 45,                   // 下落：45~90 px/s（连续飘落动感）
       swayT: Math.random() * Math.PI * 2,
       swayF: 0.6 + Math.random() * 0.8,              // 摇摆频率
       swayA: 10 + Math.random() * 14,                // 摇摆幅度
@@ -153,9 +160,9 @@ var LeafFX = (function () {
     ctx.restore();
   }
 
-  /** 超出底部 → 销毁并重建为一片新叶（顶部重新进入） */
+  /** 超出底部 → 销毁并重建为一片新叶（顶部重新进入，连续掉落） */
   function respawn(L) {
-    var fresh = makeLeaf();
+    var fresh = makeLeaf(false);
     for (var k in fresh) L[k] = fresh[k];
   }
 
@@ -199,7 +206,7 @@ var LeafFX = (function () {
     }
     leaves = [];
     var n = isLowPerf ? LOW_COUNT : BASE_COUNT;
-    for (var i = 0; i < n; i++) leaves.push(makeLeaf());
+    for (var i = 0; i < n; i++) leaves.push(makeLeaf(true)); // 首轮全屏均匀分布，立即形成连续飘落
     lastTs = 0;
     running = true;
     rafId = requestAnimationFrame(tick);

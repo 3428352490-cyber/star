@@ -49,12 +49,14 @@ test('M43-3 leaf.js 圆润像素叶（cos 曲线三套造型：单叶/双叶组�
   assert.ok(src.includes("autumn: ['#f2b14a'"), '秋季橙黄/橘红配色缺失');
 });
 
-test('M43-4 中等密度 + 低性能降量（渲染数量限制）', () => {
+test('M43-4 中等密度 + 低性能降量 + 连续飘落（首轮全屏分布/顶部重生）', () => {
   const src = readAppFile('js/leaf.js');
-  assert.ok(src.includes('BASE_COUNT = 22'), '中等密度基数缺失');
-  assert.ok(src.includes('LOW_COUNT = 10'), '低性能降量基数缺失');
+  assert.ok(src.includes('BASE_COUNT = 26'), '中等密度基数缺失');
+  assert.ok(src.includes('LOW_COUNT = 12'), '低性能降量基数缺失');
   assert.ok(src.includes('hardwareConcurrency'), 'CPU 核数判定缺失');
   assert.ok(src.includes('prefers-reduced-motion'), '减弱动效偏好判定缺失');
+  assert.ok(src.includes('makeLeaf(true)'), '首轮全屏均匀分布缺失');
+  assert.ok(src.includes('makeLeaf(false)'), '重生自顶部进入缺失');
 });
 
 test('M43-5 动画要素：缓慢下落 + 左右摇摆 + 旋转 + 超出底部销毁重建', () => {
