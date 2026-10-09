@@ -136,6 +136,17 @@
 .tile-codex .tile-img { width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; }
 .tile-codex .tile-label { font-size: 12px; line-height: 1.4; margin-top: 6px; } /* 文字移至相框外侧下方，图标文字相互独立 */
 .tile-codex:active { transform: none; box-shadow: none; }
+/* ---- 电脑大屏：缩小生产板块卡片尺寸（每行 4 张，图标固定 48×48，内边距同步缩小） ---- */
+@media (min-width: 768px) {
+  .tile-codex { width: 60px; justify-self: center; gap: 4px; } /* 整卡缩小：相框 56 + 标签间距 */
+  .tile-codex .tile-icon {
+    width: 56px;                       /* 相框总宽 56（4px 边框×2 + 内容区 48×48 图标） */
+    height: 56px;
+    aspect-ratio: auto;
+  }
+  .tile-codex .tile-label { font-size: 12px; margin-top: 4px; }
+}
+/* 移动端保持原有自适应网格逻辑不变（.tile-icon 宽 100% + 正方形自适应） */
 
 /* ---- 首页四大卡片（四宫格 2×2：窄屏到宽屏均保持两列，卡片独立组件、间距均匀） ---- */
 .home-cards {

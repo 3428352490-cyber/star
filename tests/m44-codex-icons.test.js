@@ -29,6 +29,17 @@ test('M44-1 图鉴页：相框内图标/框外文字结构（38 分类不变、�
   const afterFrame = html.slice(frameEnd, frameEnd + 400);
   assert.ok(afterFrame.includes('tile-label'), '文字应位于相框外侧下方（图标与文字相互独立）');
   assert.ok(html.includes('生产') && html.includes('工艺') && html.includes('收集'), '三大板块保留');
+  // 生产板块 8 分类相框内置固定路径图片（用户素材）+ 加载失败首字占位
+  const src = readAppFile('js/pages.js');
+  ['crops:assets/crop.png', 'seeds:assets/seed.png', 'artisan:assets/artisan.png',
+   'cooking:assets/food.png', 'animalProducts:assets/animal_product.png',
+   'animals:assets/animal.png', 'foraging:assets/specimens.png', 'trees:assets/tree.png'
+  ].forEach((pair) => {
+    const [k, p] = pair.split(':');
+    assert.ok(src.includes(k + ": '" + p + "'"), '生产板块 ' + k + ' 缺少固定图片路径 ' + p);
+  });
+  assert.ok(src.includes("querySelector('.tile-fallback');if(f)f.style.display='inline'"), '缺少图片加载失败占位逻辑');
+  assert.ok(html.includes('class="tile-img"'), '生产板块相框内应内置图片');
 });
 
 test('M44-2 其他 tile 调用方不受影响（tile() 原结构无相框）', () => {
@@ -61,13 +72,24 @@ test('M44-4 导入图标渲染通道保留：localStorage 导入图优先渲染�
   assert.ok(!src.includes('function pickIconFile'), '文件选择流程代码应已移除');
   assert.ok(!src.includes('function processIconImage'), '图片缩放流程代码应已移除');
   assert.ok(!src.includes("case 'codex-import-icon'"), '导入入口动作分发应已移除');
-  // 渲染优先：导入图 → assets 同名图 → 首字
+  // 渲染优先：导入图 → assets 同名图 → 首字；已含固定路径图片的相框（生产板块）跳过内置通道
   const mountFn = src.slice(src.indexOf('function mountIcons'));
-  assert.ok(mountFn.includes('imported[key]'), '渲染应优先使用导入图标');
+  assert.ok(mountFn.includes("if (box.querySelector('img')) return;"), '已内置图片的相框应跳过内置图标通道（避免覆盖用户素材路径）');
+  assert.ok(mountFn.includes('imported[key]'), '渲染应优先使用导入图标（无内置图分类保留）');
   assert.ok(mountFn.includes("'assets/icons/' + key + '.png'"), '内置图标通道保留');
 });
 
-test('M44-5 路由跳转保留：整卡（相框+文字）点击仍进入对应模块页', () => {
+test('M44-5 电脑端卡片尺寸缩小 CSS：图标 48×48 固定、卡片窄、移动端自适应不受影响', () => {
+  const comp = readAppFile('css/components.css');
+  assert.ok(comp.includes('@media (min-width: 768px)'), '缺少电脑端断点');
+  const desk = comp.slice(comp.indexOf('@media (min-width: 768px)'));
+  assert.ok(desk.includes('.tile-codex { width: 60px;') || desk.includes('.tile-codex { width: 60px'), '电脑端卡片应缩小为固定窄宽');
+  assert.ok(desk.includes('width: 56px') && desk.includes('height: 56px'), '电脑端相框应固定 56×56（内容区 48×48 图标 + 8px 边框）');
+  assert.ok(desk.includes('aspect-ratio: auto'), '电脑端相框高度应显式固定');
+  assert.ok(comp.includes('image-rendering: pixelated'), '应关闭抗锯齿、保证像素锐利');
+});
+
+test('M44-6 路由跳转保留：整卡（相框+文字）点击仍进入对应模块页', () => {
   const html = Pages.codex();
   assert.ok(html.includes('data-route="#/module/crops"'), '作物分类跳转路由缺失');
   assert.ok(html.includes('data-route="#/module/achievements"'), '成就分类跳转路由缺失');

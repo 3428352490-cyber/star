@@ -41,11 +41,34 @@ const Pages = (() => {
    * 图鉴分类瓦片（v2.7.0 像素木质相框版，仅用于图鉴首页分类，不影响其他 tile 调用方）：
    * 相框方框（.tile-frame）内只放图标，文字（.tile-label）位于相框外侧下方；
    * 整卡（相框+文字）为点击区域，跳转逻辑不变。
+   * 生产板块 8 个分类引用 assets/ 根目录用户素材（48×48 像素图标），
+   * 图片加载失败时显示首字占位；其余分类沿用内置图标通道（assets/icons/{key}.png / 首字）。
    */
+  // 生产板块分类 → 独立图片路径（素材已放置于项目 assets 目录）
+  const CODEX_ASSET_PATHS = {
+    crops: 'assets/crop.png',             // 农作物
+    seeds: 'assets/seed.png',             // 种子
+    artisan: 'assets/artisan.png',        // 工匠物品
+    cooking: 'assets/food.png',           // 料理
+    animalProducts: 'assets/animal_product.png', // 畜产品
+    animals: 'assets/animal.png',         // 动物
+    foraging: 'assets/specimens.png',     // 采集物
+    trees: 'assets/tree.png',             // 树
+  };
   function tileCodex(m) {
+    const p = CODEX_ASSET_PATHS[m.key];
+    let iconHtml;
+    if (p) {
+      // 相框内只放图片：加载失败自动隐藏并显示首字占位
+      iconHtml = '<img class="tile-img" src="' + p + '" alt="" loading="lazy" ' +
+        "onerror=\"this.style.display='none';var f=this.parentNode.querySelector('.tile-fallback');if(f)f.style.display='inline';\">" +
+        '<span class="tile-fallback" style="display:none">' + esc(m.label[0]) + '</span>';
+    } else {
+      iconHtml = '<span class="tile-fallback">' + esc(m.label[0]) + '</span>';
+    }
     return '<button class="tile tile-codex" data-route="#/module/' + m.key + '">' +
       '<span class="tile-frame">' +
-        '<span class="tile-icon" data-icon="' + m.key + '"><span class="tile-fallback">' + esc(m.label[0]) + '</span></span>' +
+        '<span class="tile-icon" data-icon="' + m.key + '">' + iconHtml + '</span>' +
       '</span>' +
       '<span class="tile-label">' + esc(m.label) + '</span></button>';
   }

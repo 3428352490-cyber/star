@@ -65,6 +65,8 @@ const App = (() => {
     try { imported = JSON.parse(localStorage.getItem('sdv-codex-icons') || '{}') || {}; } catch (e) { imported = {}; }
     $$('[data-icon]', scope).forEach((box) => {
       const key = box.dataset.icon;
+      // 生产板块相框已在 HTML 中内置固定路径图片（assets/crop.png 等），跳过内置图标通道避免覆盖
+      if (box.querySelector('img')) return;
       const img = new Image();
       img.className = 'tile-img';
       img.alt = '';
