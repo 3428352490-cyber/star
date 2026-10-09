@@ -1,5 +1,5 @@
 {
-  "latestVersion": "2.7.5",
-  "updateDesc": "修复图鉴页卡片大小不一：卡片显式占满网格列宽（消除 grid 收缩导致的宽度差异），所有分类卡片外框与图标完全一致",
+  "latestVersion": "2.7.6",
+  "updateDesc": "图鉴卡片统一为55×55相框（移动端限宽与电脑端同步，图标78%居中留白，全组一致）",
   "downloadUrl": "./index.html"
 }
