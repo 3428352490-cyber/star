@@ -37,6 +37,19 @@ const Pages = (() => {
       '<span class="tile-label">' + esc(m.label) + '</span></button>';
   }
 
+  /**
+   * 图鉴分类瓦片（v2.7.0 像素木质相框版，仅用于图鉴首页分类，不影响其他 tile 调用方）：
+   * 相框方框（.tile-frame）内只放图标，文字（.tile-label）位于相框外侧下方；
+   * 整卡（相框+文字）为点击区域，跳转逻辑不变。
+   */
+  function tileCodex(m) {
+    return '<button class="tile tile-codex" data-route="#/module/' + m.key + '">' +
+      '<span class="tile-frame">' +
+        '<span class="tile-icon" data-icon="' + m.key + '"><span class="tile-fallback">' + esc(m.label[0]) + '</span></span>' +
+      '</span>' +
+      '<span class="tile-label">' + esc(m.label) + '</span></button>';
+  }
+
   /** 首页：左上角公告入口 + 快捷导航 8 格 + 功能专区（缩小卡片）+ 老乡有话说社区板块 */
   function home() {
     const selected = Store.getSelectedNav();
@@ -70,7 +83,7 @@ const Pages = (() => {
       (typeof Community !== 'undefined' ? Community.renderHomeBlock() : '');
   }
 
-  /** 图鉴：物品分类分组排版（无顶部标题板块；分组标题 + 4 列正方形圆角卡片） */
+  /** 图鉴：物品分类分组排版（分组标题 + 4 列像素木质相框分类卡片；右上角图标导入入口） */
   function codex() {
     const codexGroups = [
       { name: '生产', keys: ['crops', 'seeds', 'artisan', 'cooking', 'animalProducts', 'animals', 'farm', 'trees'] },
@@ -79,13 +92,17 @@ const Pages = (() => {
       { name: '战斗', keys: ['equipment', 'monsters', 'accessories'] },
       { name: '其他', keys: ['villagers', 'calendar', 'filter', 'calculator', 'weather', 'special', 'quests', 'furniture', 'wallpaper', 'flooring', 'hats', 'shirts', 'pants', 'areas', 'wallet'] },
     ];
-    return codexGroups.map((g) =>
+    return '<div class="codex-toolbar">' +
+        '<span class="codex-toolbar-hint">点击分类进入详情</span>' +
+        '<button type="button" class="pixel-btn import-icon-btn" data-action="codex-import-icon" title="导入像素图标替换分类图标">导入图标</button>' +
+      '</div>' +
+      codexGroups.map((g) =>
       '<div class="codex-group">' +
         '<h3 class="codex-group-title">' + esc(g.name) + '</h3>' +
         '<div class="codex-grid">' +
           g.keys.map((k) => {
             const m = SDV_CONFIG.modules.find((x) => x.key === k);
-            return m ? tile(m, 'tile-codex') : '';
+            return m ? tileCodex(m) : '';
           }).join('') +
         '</div>' +
       '</div>'
