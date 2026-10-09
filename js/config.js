@@ -10,7 +10,7 @@
 const SDV_CONFIG = {
   app: {
     name: '星露谷攻略',
-    version: '2.7.4',
+    version: '2.7.5',
     /**
      * 云端版本清单地址（GitHub Pages 部署后替换为实际地址）：
      * 例如 'https://你的用户名.github.io/仓库名/version.json'
@@ -56,6 +56,15 @@ const SDV_CONFIG = {
 
   /** 软件公告（公告页渲染；新版本发布时向数组头部追加条目） */
   announcements: [
+    {
+      version: '2.7.5',
+      date: '2026-10-10',
+      title: '补丁更新',
+      notes: [
+        '修复图鉴页卡片大小不一：卡片显式占满网格列宽（消除 grid 收缩导致的宽度差异），所有分类卡片外框与图标完全一致',
+        '版本号自动递增：v2.7.4 → v2.7.5（补丁更新）',
+      ],
+    },
     {
       version: '2.7.4',
       date: '2026-10-10',
