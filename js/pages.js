@@ -108,12 +108,14 @@ const Pages = (() => {
 
   /** 图鉴：物品分类分组排版（分组标题 + 4 列像素木质相框分类卡片） */
   function codex() {
+    // 分组内分类顺序参考图鉴参考布局调整（农作物→工匠物品→料理→树→动物→种子→畜产品→农场 等），
+    // 仅调整组内排列顺序：不增删分类、不跨组移动、不改跳转路由
     const codexGroups = [
-      { name: '生产', keys: ['crops', 'seeds', 'artisan', 'cooking', 'animalProducts', 'animals', 'farm', 'trees'] },
-      { name: '工艺', keys: ['crafting', 'tools', 'materials', 'buildings'] },
-      { name: '收集', keys: ['fish', 'foraging', 'minerals', 'artifacts', 'bundles', 'secretNotes', 'walnuts', 'achievements'] },
+      { name: '生产', keys: ['crops', 'artisan', 'cooking', 'trees', 'animals', 'seeds', 'animalProducts', 'farm'] },
+      { name: '工艺', keys: ['materials', 'crafting', 'tools', 'buildings'] },
+      { name: '收集', keys: ['minerals', 'artifacts', 'bundles', 'secretNotes', 'walnuts', 'achievements', 'fish', 'foraging'] },
       { name: '战斗', keys: ['equipment', 'monsters', 'accessories'] },
-      { name: '其他', keys: ['villagers', 'calendar', 'filter', 'calculator', 'weather', 'special', 'quests', 'furniture', 'wallpaper', 'flooring', 'hats', 'shirts', 'pants', 'areas', 'wallet'] },
+      { name: '其他', keys: ['areas', 'special', 'wallet', 'weather', 'villagers', 'calendar', 'filter', 'calculator', 'quests', 'furniture', 'wallpaper', 'flooring', 'hats', 'shirts', 'pants'] },
     ];
     return codexGroups.map((g) =>
       '<div class="codex-group">' +

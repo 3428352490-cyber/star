@@ -40,6 +40,16 @@ test('M44-1 图鉴页：相框内图标/框外文字结构（38 分类不变、�
   });
   assert.ok(src.includes("querySelector('.tile-fallback');if(f)f.style.display='inline'"), '缺少图片加载失败占位逻辑');
   assert.ok(html.includes('class="tile-img"'), '生产板块相框内应内置图片');
+  // 分组内分类顺序按参考布局调整（仅组内重排、不增删不跨组）：生产组首序 crops→artisan→cooking→trees→animals→seeds→animalProducts→farm
+  const prodIdx = html.indexOf('<h3 class="codex-group-title">生产</h3>');
+  const prodSec = html.slice(prodIdx, html.indexOf('<h3 class="codex-group-title">工艺</h3>'));
+  let prev = -1;
+  ['crops', 'artisan', 'cooking', 'trees', 'animals', 'seeds', 'animalProducts', 'farm'].forEach((k, i) => {
+    const pos = prodSec.indexOf('data-route="#/module/' + k + '"');
+    assert.ok(pos > -1, '生产组应包含 ' + k);
+    if (i > 0) assert.ok(pos > prev, '生产组顺序错误：' + k + ' 应在上一项之后');
+    prev = pos;
+  });
 });
 
 test('M44-2 其他 tile 调用方不受影响（tile() 原结构无相框）', () => {
