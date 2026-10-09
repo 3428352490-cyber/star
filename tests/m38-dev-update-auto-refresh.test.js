@@ -25,13 +25,17 @@ test('M38-2 更新完成后自动刷新页面（避免反复手动刷新）', ()
   assert.ok(src.includes('页面即将自动刷新，加载最新内容…'), '缺少自动刷新提示文案');
 });
 
-test('M38-3 完成弹窗确认按钮触发刷新，自动刷新兜底防重复', () => {
+test('M38-3 完成弹窗确认按钮直接触发刷新，自动刷新兜底防重复', () => {
   const src = readAppFile('js/update.js');
   const seg = src.slice(src.indexOf('async function performUpdate'));
   assert.ok(seg.includes("label: '刷新页面'"), '完成弹窗缺少刷新按钮');
-  assert.ok(seg.includes('safePageReload()'), '确认按钮未触发刷新');
+  // v2.7.3 修复：确认按钮不查防重标志、直接 location.reload()（避免标志已置位导致按钮失效）
+  const btnSeg = seg.slice(seg.indexOf("label: '刷新页面'"));
+  assert.ok(btnSeg.includes('location.reload()'), '确认按钮应直接触发页面刷新');
   assert.ok(seg.includes('schedulePageReload()'), '缺少自动刷新兜底调用');
   assert.ok(seg.includes('共用防重标志'), '缺少防重说明');
+  assert.ok(seg.includes('fetchWithTimeout'), '缺少带超时的资源拉取（防单资源挂起卡死更新流程）');
+  assert.ok(seg.includes('Promise.allSettled'), '核心资源应并行预取（避免串行等待拖垮刷新链路）');
 });
 
 test('M38-4 原更新流程不变：进度条 / 预取 / 版本比对 / 暂不更新', () => {

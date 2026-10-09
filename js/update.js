@@ -405,6 +405,14 @@ const Updater = (() => {
     _updateRefreshScheduled = true;
     setTimeout(() => { try { location.reload(); } catch (e) { /* 忽略 */ } }, delay || 2500);
   }
+  /* 带超时的资源拉取：任一资源超过 timeout 即中断该次请求（算失败继续下一个），
+     避免单个资源挂起导致整条更新流程卡死、刷新页面功能失效 */
+  function fetchWithTimeout(url, timeout) {
+    const ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    const timer = setTimeout(() => { if (ctrl) ctrl.abort(); }, timeout);
+    return fetch(url, ctrl ? { cache: 'reload', signal: ctrl.signal } : { cache: 'reload' })
+      .finally(() => clearTimeout(timer));
+  }
   async function performUpdate(remote) {
     const total = CORE_ASSETS.length;
     let done = 0;
@@ -425,20 +433,22 @@ const Updater = (() => {
       if (bar) bar.style.width = Math.round((done / total) * 100) + '%';
       if (txt) txt.textContent = done + ' / ' + total;
     };
-    // 2) 逐个预取核心资源到新版缓存
+    // 2) 并行预取新版核心资源到新版缓存：单资源带 8s 超时、失败仅记录并继续，
+    //    保证任意网络状况下都能推进到完成弹窗（不再因单个资源挂起而卡死）
     try {
       if (typeof caches !== 'undefined' && caches.open) {
         const cache = await caches.open('sdv-guide-v' + remote.latestVersion);
-        for (const url of CORE_ASSETS) {
+        await Promise.allSettled(CORE_ASSETS.map(async (url) => {
           try {
-            const res = await fetch(url, { cache: 'reload' }); // 绕过 HTTP 缓存强拉最新
+            const res = await fetchWithTimeout(url, 8000); // 绕过 HTTP 缓存强拉最新
             if (res && res.ok) await cache.put(url, res.clone());
           } catch (err) {
             console.warn('[Updater] 预取失败（继续下一个）：' + url, err);
+          } finally {
+            done += 1;
+            paint();
           }
-          done += 1;
-          paint();
-        }
+        }));
       } else {
         // 无 Cache API 环境（如本地直开）：直接视为完成
         done = total;
@@ -450,7 +460,8 @@ const Updater = (() => {
     // 3) 写入已确认版本 → 完成弹窗 → 通知 SW 检查新版本
     setInstalledVersion(remote.latestVersion);
     log('update-done', 'success', '新版资源拉取完成', { remote: remote.latestVersion, total, done });
-    // v2.4.25 修复：更新完成后自动刷新页面，避免用户反复手动刷新
+    // v2.4.25 修复：更新完成后自动刷新页面，避免用户反复手动刷新；
+    // v2.7.3 修复：完成弹窗按钮直接触发刷新（不查防重标志，避免标志已置位导致按钮失效）
     Modal.show({
       title: '',
       body:
@@ -463,7 +474,7 @@ const Updater = (() => {
           cls: 'btn-primary',
           onClick: () => {
             log('update-done-close', 'success', '更新完成，确认刷新页面', { remote: remote.latestVersion });
-            safePageReload();
+            try { location.reload(); } catch (e) { /* 忽略 */ }
           },
         },
       ],
