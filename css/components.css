@@ -92,6 +92,8 @@
 /* ---- 图鉴分类卡片（v2.7.0 像素木质相框版）：相框方框 + 框外下方文字 ---- */
 .tile-codex {
   aspect-ratio: auto;                 /* 移除整体正方形约束（相框保持正方形、文字在框外下方） */
+  width: 100%;                        /* 显式占满网格列宽：所有卡片同宽（配合 max-width 限宽），
+                                         避免 grid 中按内容收缩（shrink-to-fit）导致卡片大小不一 */
   padding: 0;                         /* 相框内边距由图标容器独立控制 */
   border: none;                       /* 相框边框由图标容器绘制，外层无框 */
   background: transparent;

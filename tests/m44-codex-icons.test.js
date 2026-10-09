@@ -90,6 +90,8 @@ test('M44-3 相框 CSS：正方形多层像素边框 + 四角装饰 + 图标适�
   assert.ok(!comp.includes('[data-route*="animalProducts"] .tile-img'), '畜产品不应保留单独图标规则（已统一为全局标准）');
   assert.ok(!comp.includes('[data-route*="trees"] .tile-icon'), '树不应保留单独内边距规则（已统一为全局标准）');
   assert.ok(comp.includes('max-width: 72px'), '移动端卡片应限宽居中（大屏自动缩小、窄屏保持 4 列自适应）');
+  const cardBlk = comp.slice(comp.indexOf('.tile-codex {'), comp.indexOf('.tile-codex .tile-frame'));
+  assert.ok(cardBlk.includes('width: 100%'), '卡片应显式占满列宽（避免 grid shrink-to-fit 导致卡片大小不一）');
   assert.ok(comp.includes('.tile-codex .tile-label'), '框外文字样式缺失');
   assert.ok(!comp.includes('.codex-toolbar') && !comp.includes('.icon-target-select'), '导入入口样式应已移除');
 });
