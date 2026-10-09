@@ -89,7 +89,7 @@ test('M44-3 相框 CSS：正方形多层像素边框 + 四角装饰 + 图标适�
   assert.ok(comp.includes('.tile-codex .tile-img { width: 78%; height: 78%; object-fit: contain; image-rendering: pixelated; }'), '导入图标应统一按畜产品标准缩至 78% 居中（像素硬边、不贴边框）');
   assert.ok(!comp.includes('[data-route*="animalProducts"] .tile-img'), '畜产品不应保留单独图标规则（已统一为全局标准）');
   assert.ok(!comp.includes('[data-route*="trees"] .tile-icon'), '树不应保留单独内边距规则（已统一为全局标准）');
-  assert.ok(comp.includes('max-width: 72px'), '移动端卡片应限宽居中（大屏自动缩小、窄屏保持 4 列自适应）');
+  assert.ok(comp.includes('max-width: 55px'), '移动端卡片应统一 55px 限宽居中（窄屏保持 4 列自适应）');
   const cardBlk = comp.slice(comp.indexOf('.tile-codex {'), comp.indexOf('.tile-codex .tile-frame'));
   assert.ok(cardBlk.includes('width: 100%'), '卡片应显式占满列宽（避免 grid shrink-to-fit 导致卡片大小不一）');
   assert.ok(comp.includes('.tile-codex .tile-label'), '框外文字样式缺失');
@@ -109,13 +109,13 @@ test('M44-4 导入图标渲染通道保留：localStorage 导入图优先渲染�
   assert.ok(mountFn.includes("'assets/icons/' + key + '.png'"), '内置图标通道保留');
 });
 
-test('M44-5 电脑端卡片整体缩小 CSS：整卡 52px / 相框 48×48 / 内边距 6px，移动端自适应不受影响', () => {
+test('M44-5 电脑端卡片统一 55×55 相框 CSS：整卡 55px / 相框 55×55 / 内边距 6px，移动端自适应不受影响', () => {
   const comp = readAppFile('css/components.css');
   assert.ok(comp.includes('@media (min-width: 768px)'), '缺少电脑端断点');
   const desk = comp.slice(comp.indexOf('@media (min-width: 768px)'));
-  assert.ok(desk.includes('.tile-codex { width: 52px;'), '电脑端卡片应缩小为固定窄宽');
-  assert.ok(desk.includes('width: 48px') && desk.includes('height: 48px'), '电脑端相框应固定 48×48');
-  assert.ok(desk.includes('padding: 6px'), '电脑端图标内边距应同步收窄为 6px（相框缩小后留白均衡）');
+  assert.ok(desk.includes('.tile-codex { width: 55px;'), '电脑端卡片应为 55px 宽');
+  assert.ok(desk.includes('width: 55px') && desk.includes('height: 55px'), '电脑端相框应固定 55×55');
+  assert.ok(desk.includes('padding: 6px'), '电脑端图标内边距应为 6px');
   assert.ok(desk.includes('aspect-ratio: auto'), '电脑端相框高度应显式固定');
   assert.ok(comp.includes('image-rendering: pixelated'), '应关闭抗锯齿、保证像素锐利');
 });

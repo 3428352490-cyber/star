@@ -160,7 +160,13 @@ test('公告页改版：主页默认 3 条 + 「更多/收起」同页展开全�
   assert.ok(home.includes(latest.title), '主页未渲染最新公告标题');
   assert.ok(home.includes('data-action="news-toggle-more"'), '主页缺少「更多/收起」按钮动作');
   assert.ok(!home.includes('data-action="check-update"'), '主页不应有云端更新入口');
-  if (list.length > 3) assert.ok(!home.includes(list[3].version), '主页不应展示第 4 条起往期公告');
+  // 第 4 条起往期公告条目不应出现在主页（用版本徽标整串校验，避免与公告正文中的
+  // 「v旧版 → v新版」字样误命中——版本号子串可能出现在其他公告文字里）
+  if (list.length > 3) {
+    const fourthItem = 'v' + list[3].version;
+    assert.ok(home.split('notice-item').length - 1 === Math.min(3, list.length), '主页应只渲染最近 3 条公告条目');
+    assert.ok(!home.includes(fourthItem + '"') && !home.includes('>' + fourthItem + '<'), '主页不应展示第 4 条起往期公告版本徽标');
+  }
 
   // 点击「更多」→ 展开全部（同页渲染，无需跳转历史页）
   Pages.newsToggleMore();
