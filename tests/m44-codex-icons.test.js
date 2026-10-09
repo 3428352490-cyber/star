@@ -79,6 +79,7 @@ test('M44-3 相框 CSS：正方形多层像素边框 + 四角装饰 + 图标适�
   const comp = readAppFile('css/components.css');
   assert.ok(comp.includes('.tile-codex .tile-frame'), '缺少相框布局容器');
   assert.ok(comp.includes('.tile-codex .tile-icon') && comp.includes('aspect-ratio: 1 / 1'), '相框本体应为正方形');
+  assert.ok(comp.includes('padding: 8px'), '相框内容区应为图标预留 8px 内边距（居中不贴边框）');
   assert.ok(comp.includes('border: 4px solid #4A2F1D'), '缺少外粗深棕相框边');
   assert.ok(comp.includes('#8A5A33') && comp.includes('#D9A86C'), '缺少中橘棕/内浅橙木纹层');
   assert.ok(comp.includes('#F6EBCF'), '缺少浅米色内底');

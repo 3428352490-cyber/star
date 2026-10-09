@@ -112,6 +112,7 @@
   height: auto;                       /* 覆盖通用 .tile-icon 的固定高，由 aspect-ratio 推导正方形 */
   aspect-ratio: 1 / 1;                /* 正方形相框 */
   min-height: 0;
+  padding: 8px;                       /* 图标四周预留内边距：图标在双层相框内居中、不贴边框（外框尺寸不变） */
   background: #F6EBCF;                /* 相框内底：浅米色（图标区，边框固定独立、不被图片覆盖） */
   border: 4px solid #4A2F1D;          /* 相框外框：外粗深棕 */
   border-radius: 3px;
@@ -132,7 +133,7 @@
 .tile-codex .tile-icon::after {
   background-position: 100% 0, 0 100%;
 }
-/* 导入/内置图标自动居中、等比例缩放适配方框（不溢出、不遮挡相框外框）；像素硬边 */
+/* 导入/内置图标自动居中、等比例缩放适配方框内容区（padding 后不贴边框、不溢出相框）；像素硬边 */
 .tile-codex .tile-img { width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; }
 .tile-codex .tile-label { font-size: 12px; line-height: 1.4; margin-top: 6px; } /* 文字移至相框外侧下方，图标文字相互独立 */
 .tile-codex:active { transform: none; box-shadow: none; }
