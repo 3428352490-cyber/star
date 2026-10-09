@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-09T04:04:06.351Z",
+  "generatedAt": "2026-10-09T04:20:50.844Z",
   "pageEdit": {
     "/home::0": {
       "text": "老乡！欢迎来到星露谷！",
@@ -9,6 +9,12 @@
     },
     "/codex::7": {
       "text": "种子",
+      "fontFamily": "\"Press Start 2P\", monospace",
+      "fontSize": 14,
+      "weight": 400
+    },
+    "/codex::2": {
+      "text": "采集物",
       "fontFamily": "\"Press Start 2P\", monospace",
       "fontSize": 14,
       "weight": 400
