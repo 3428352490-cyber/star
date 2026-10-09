@@ -47,13 +47,14 @@ const Pages = (() => {
   // 生产板块分类 → 独立图片路径（素材已放置于项目 assets 目录）
   const CODEX_ASSET_PATHS = {
     crops: 'assets/crop.png',             // 农作物
-    seeds: 'assets/seed.png',             // 种子
+    foraging: 'assets/specimens.png',     // 采集
+    fish: 'assets/fish.png',              // 鱼类
     artisan: 'assets/artisan.png',        // 工匠物品
     cooking: 'assets/food.png',           // 料理
-    animalProducts: 'assets/animal_product.png', // 畜产品
-    animals: 'assets/animal.png',         // 动物
-    foraging: 'assets/specimens.png',     // 采集物
     trees: 'assets/tree.png',             // 树
+    animals: 'assets/animal.png',         // 动物
+    seeds: 'assets/seed.png',             // 种子
+    animalProducts: 'assets/animal_product.png', // 畜产品
   };
   function tileCodex(m) {
     const p = CODEX_ASSET_PATHS[m.key];
@@ -108,14 +109,17 @@ const Pages = (() => {
 
   /** 图鉴：物品分类分组排版（分组标题 + 4 列像素木质相框分类卡片） */
   function codex() {
-    // 分组内分类顺序参考图鉴参考布局调整（农作物→工匠物品→料理→树→动物→种子→畜产品→农场 等），
-    // 仅调整组内排列顺序：不增删分类、不跨组移动、不改跳转路由
+    // 分组归属与组内顺序完全按参考图鉴布局：
+    // 生产=农作物/采集/鱼类/工匠物品/料理/树/动物/种子/畜产品；工艺=材料/打造/工具；
+    // 收集=矿物/古物/收集包/秘密纸条/任务/核桃/家具/墙纸/地板/帽子/成就/上衣/下装；
+    // 战斗=装备/怪物/饰品；其他=区域/特殊/农场/建筑/钱包/天气；
+    // 村民/日历/筛选器/计算器为独立功能模块（含内容页，不属于图鉴分类清单），保留至「其他」组末尾，不删改
     const codexGroups = [
-      { name: '生产', keys: ['crops', 'artisan', 'cooking', 'trees', 'animals', 'seeds', 'animalProducts', 'farm'] },
-      { name: '工艺', keys: ['materials', 'crafting', 'tools', 'buildings'] },
-      { name: '收集', keys: ['minerals', 'artifacts', 'bundles', 'secretNotes', 'walnuts', 'achievements', 'fish', 'foraging'] },
+      { name: '生产', keys: ['crops', 'foraging', 'fish', 'artisan', 'cooking', 'trees', 'animals', 'seeds', 'animalProducts'] },
+      { name: '工艺', keys: ['materials', 'crafting', 'tools'] },
+      { name: '收集', keys: ['minerals', 'artifacts', 'bundles', 'secretNotes', 'quests', 'walnuts', 'furniture', 'wallpaper', 'flooring', 'hats', 'achievements', 'shirts', 'pants'] },
       { name: '战斗', keys: ['equipment', 'monsters', 'accessories'] },
-      { name: '其他', keys: ['areas', 'special', 'wallet', 'weather', 'villagers', 'calendar', 'filter', 'calculator', 'quests', 'furniture', 'wallpaper', 'flooring', 'hats', 'shirts', 'pants'] },
+      { name: '其他', keys: ['areas', 'special', 'farm', 'buildings', 'wallet', 'weather', 'villagers', 'calendar', 'filter', 'calculator'] },
     ];
     return codexGroups.map((g) =>
       '<div class="codex-group">' +

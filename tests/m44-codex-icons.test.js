@@ -33,23 +33,36 @@ test('M44-1 图鉴页：相框内图标/框外文字结构（38 分类不变、�
   const src = readAppFile('js/pages.js');
   ['crops:assets/crop.png', 'seeds:assets/seed.png', 'artisan:assets/artisan.png',
    'cooking:assets/food.png', 'animalProducts:assets/animal_product.png',
-   'animals:assets/animal.png', 'foraging:assets/specimens.png', 'trees:assets/tree.png'
+   'animals:assets/animal.png', 'foraging:assets/specimens.png', 'fish:assets/fish.png', 'trees:assets/tree.png'
   ].forEach((pair) => {
     const [k, p] = pair.split(':');
     assert.ok(src.includes(k + ": '" + p + "'"), '生产板块 ' + k + ' 缺少固定图片路径 ' + p);
   });
   assert.ok(src.includes("querySelector('.tile-fallback');if(f)f.style.display='inline'"), '缺少图片加载失败占位逻辑');
   assert.ok(html.includes('class="tile-img"'), '生产板块相框内应内置图片');
-  // 分组内分类顺序按参考布局调整（仅组内重排、不增删不跨组）：生产组首序 crops→artisan→cooking→trees→animals→seeds→animalProducts→farm
-  const prodIdx = html.indexOf('<h3 class="codex-group-title">生产</h3>');
-  const prodSec = html.slice(prodIdx, html.indexOf('<h3 class="codex-group-title">工艺</h3>'));
-  let prev = -1;
-  ['crops', 'artisan', 'cooking', 'trees', 'animals', 'seeds', 'animalProducts', 'farm'].forEach((k, i) => {
-    const pos = prodSec.indexOf('data-route="#/module/' + k + '"');
-    assert.ok(pos > -1, '生产组应包含 ' + k);
-    if (i > 0) assert.ok(pos > prev, '生产组顺序错误：' + k + ' 应在上一项之后');
-    prev = pos;
-  });
+  // 分组归属与顺序按参考布局（跨组移动）：生产=crops/foraging/fish/artisan/cooking/trees/animals/seeds/animalProducts；
+  // 工艺=materials/crafting/tools；收集=minerals/artifacts/bundles/secretNotes/quests/walnuts/furniture/wallpaper/flooring/hats/achievements/shirts/pants
+  const groupOf = (name) => {
+    const gi = html.indexOf('<h3 class="codex-group-title">' + name + '</h3>');
+    const gj = html.indexOf('<h3 class="codex-group-title">', gi + 1);
+    return html.slice(gi, gj > -1 ? gj : html.length);
+  };
+  const assertOrder = (sec, keys) => {
+    let prev = -1;
+    keys.forEach((k, i) => {
+      const pos = sec.indexOf('data-route="#/module/' + k + '"');
+      assert.ok(pos > -1, sec.slice(0, 8) + '组应包含 ' + k);
+      if (i > 0) assert.ok(pos > prev, sec.slice(0, 8) + '组顺序错误：' + k + ' 应在上一项之后');
+      prev = pos;
+    });
+  };
+  assertOrder(groupOf('生产'), ['crops', 'foraging', 'fish', 'artisan', 'cooking', 'trees', 'animals', 'seeds', 'animalProducts']);
+  assertOrder(groupOf('工艺'), ['materials', 'crafting', 'tools']);
+  assertOrder(groupOf('收集'), ['minerals', 'artifacts', 'bundles', 'secretNotes', 'quests', 'walnuts', 'furniture', 'wallpaper', 'flooring', 'hats', 'achievements', 'shirts', 'pants']);
+  assertOrder(groupOf('其他'), ['areas', 'special', 'farm', 'buildings', 'wallet', 'weather']);
+  // 功能模块（村民/日历/筛选器/计算器）保留在其他组末尾，不删改
+  assertOrder(groupOf('其他'), ['villagers', 'calendar', 'filter', 'calculator']);
+  assert.equal(count(html, 'class="tile tile-codex"'), 38, '分类瓦片仍应为 38');
 });
 
 test('M44-2 其他 tile 调用方不受影响（tile() 原结构无相框）', () => {
