@@ -219,92 +219,9 @@ const App = (() => {
     return el && typeof el.closest === 'function' ? el.closest(sel) : null;
   }
 
-  /* ---------- 图鉴分类图标导入（v2.7.0：选图 → 等比例缩放 → 选分类 → localStorage 存储 → 重渲染） ---------- */
-  /** 触发隐藏文件选择框（图片），选中后回调文件对象 */
-  function pickIconFile(cb) {
-    const inp = document.createElement('input');
-    inp.type = 'file';
-    inp.accept = 'image/*';
-    inp.style.display = 'none';
-    inp.onchange = () => {
-      const f = inp.files && inp.files[0];
-      if (f) cb(f);
-      if (inp.parentNode) inp.parentNode.removeChild(inp);
-    };
-    document.body.appendChild(inp);
-    inp.click();
-    setTimeout(() => { if (inp.parentNode) inp.parentNode.removeChild(inp); }, 60000);
-  }
-
-  /** 图片等比例缩放至最长边 ≤128px（像素图标、小体积存储），回调 PNG dataURL */
-  function processIconImage(file, cb) {
-    const fr = new FileReader();
-    fr.onload = () => {
-      const img = new Image();
-      img.onload = () => {
-        const max = 128;
-        const scale = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
-        const w = Math.max(1, Math.round(img.naturalWidth * scale));
-        const h = Math.max(1, Math.round(img.naturalHeight * scale));
-        const c = document.createElement('canvas');
-        c.width = w; c.height = h;
-        const g = c.getContext('2d');
-        g.imageSmoothingEnabled = false; // 像素硬边
-        g.drawImage(img, 0, 0, w, h);
-        cb(c.toDataURL('image/png'));
-      };
-      img.onerror = () => Toast.show('图片读取失败，请换一张试试');
-      img.src = fr.result;
-    };
-    fr.onerror = () => Toast.show('图片读取失败，请换一张试试');
-    fr.readAsDataURL(file);
-  }
-
-  /** 导入图标主流程：选图 → 缩放 → 弹窗选择目标分类 → 存本地 → 刷新页面 */
-  function importCodexIcon() {
-    pickIconFile((file) => {
-      processIconImage(file, (dataURL) => {
-        // 收集当前图鉴页分类（DOM 上的 .tile-codex，含 key 与中文名）
-        const opts = $$('.tile-codex').map((b) => {
-          const route = b.dataset.route || '';
-          const key = route.replace('#/module/', '');
-          const labelEl = b.querySelector('.tile-label');
-          return { key: key, label: labelEl ? labelEl.textContent : key };
-        }).filter((o) => o.key);
-        if (!opts.length) { Toast.show('请先打开图鉴页再导入'); return; }
-        Modal.show({
-          title: '导入像素图标',
-          body: '<p class="setting-desc">图标将自动居中、等比例缩放适配相框内区域。</p>' +
-            '<select id="codex-icon-target" class="icon-target-select">' +
-            opts.map((o) => '<option value="' + esc(o.key) + '">' + esc(o.label) + '</option>').join('') +
-            '</select>',
-          actions: [
-            { label: '取消', cls: 'btn-text', onClick: () => Modal.close() },
-            { label: '导入', cls: 'btn-primary', onClick: () => {
-              const sel = document.getElementById('codex-icon-target');
-              const key = sel ? sel.value : '';
-              if (!key) { Toast.show('请选择分类'); return; }
-              try {
-                const store = JSON.parse(localStorage.getItem('sdv-codex-icons') || '{}') || {};
-                store[key] = dataURL;
-                localStorage.setItem('sdv-codex-icons', JSON.stringify(store));
-              } catch (e) { Toast.show('本地存储失败，无法导入'); return; }
-              Toast.show('图标已导入');
-              Modal.close();
-              render();
-            } },
-          ],
-        });
-      });
-    });
-  }
-
   function handleAction(action, target) {
     const container = $('#page-container');
     switch (action) {
-      case 'codex-import-icon':
-        importCodexIcon();
-        break;
       case 'open-profile-modal':
         openProfileModal();
         break;

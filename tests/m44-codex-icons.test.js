@@ -1,11 +1,10 @@
 'use strict';
-/* M44 阶段测试：v2.7.0 图鉴首页分类卡片像素木质相框重构 + 图标导入能力
-   ① 图鉴页结构：顶部工具栏（导入图标入口）+ 每张分类卡片 = 相框方框（.tile-frame，框内仅图标）+ 框外下方文字（.tile-label）；
+/* M44 阶段测试：图鉴首页分类卡片像素木质相框重构 + 导入图标渲染通道
+   ① 图鉴页结构：每张分类卡片 = 相框方框（.tile-frame，框内仅图标）+ 框外下方文字（.tile-label）；
    ② 相框样式：正方形、外粗深棕/中橘棕/内浅橙多层像素边框、浅米色内底、四角浅灰像素块装饰；
    ③ 图标容器：占满相框内部、透明底，图标自动居中/等比例缩放适配（object-fit contain + pixelated 硬边），不溢出不遮挡相框外框；
-   ④ 图标导入：选图 → 等比例缩放（canvas ≤128px）→ Modal 选择目标分类 → localStorage 'sdv-codex-icons' 存储；
-   ⑤ 渲染优先：mountIcons 优先使用导入图标，其次 assets/icons/{key}.png，最后首字占位；
-   ⑥ 兼容：原 38 分类瓦片计数与分组结构不变，其他页面 tile() 不受影响。 */
+   ④ 渲染优先：mountIcons 优先使用本地导入图标（localStorage 'sdv-codex-icons'），其次 assets/icons/{key}.png，最后首字占位；
+   ⑤ 兼容：原 38 分类瓦片计数与分组结构不变，其他页面 tile() 不受影响，无导入入口按钮。 */
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { loadApp, ref, readAppFile } = require('./helpers/harness.js');
@@ -17,11 +16,11 @@ function count(str, sub) {
   return str.split(sub).length - 1;
 }
 
-test('M44-1 图鉴页：工具栏导入入口 + 相框内图标/框外文字结构（38 分类不变）', () => {
+test('M44-1 图鉴页：相框内图标/框外文字结构（38 分类不变、无导入入口）', () => {
   const html = Pages.codex();
   assert.equal(count(html, 'class="tile tile-codex"'), 38, '分类瓦片仍应为 38');
-  assert.ok(html.includes('data-action="codex-import-icon"'), '缺少「导入图标」入口按钮');
-  assert.ok(html.includes('class="codex-toolbar"'), '缺少图鉴顶部工具栏');
+  assert.ok(!html.includes('codex-import-icon'), '导入图标入口已移除');
+  assert.ok(!html.includes('codex-toolbar'), '导入工具栏已移除');
   assert.ok(html.includes('<span class="tile-frame">'), '分类卡片缺少像素相框容器');
   // 框内仅图标：tile-frame 内部直接是 tile-icon，文字标签在 frame 闭合之后
   const frameIdx = html.indexOf('<span class="tile-frame">');
@@ -42,7 +41,7 @@ test('M44-2 其他 tile 调用方不受影响（tile() 原结构无相框）', (
   assert.ok(tileCodexFn.includes('tile-frame'), 'tileCodex() 应包含相框结构');
 });
 
-test('M44-3 相框 CSS：正方形多层像素边框 + 四角装饰 + 图标适配不溢出', () => {
+test('M44-3 相框 CSS：正方形多层像素边框 + 四角装饰 + 图标适配不溢出（无导入入口样式残留）', () => {
   const comp = readAppFile('css/components.css');
   assert.ok(comp.includes('.tile-codex .tile-frame'), '缺少相框布局容器');
   assert.ok(comp.includes('.tile-codex .tile-icon') && comp.includes('aspect-ratio: 1 / 1'), '相框本体应为正方形');
@@ -53,20 +52,15 @@ test('M44-3 相框 CSS：正方形多层像素边框 + 四角装饰 + 图标适�
   assert.ok(comp.includes('object-fit: contain'), '图标应等比例缩放适配（不溢出）');
   assert.ok(comp.includes('.tile-codex .tile-img { width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; }'), '导入图标应像素硬边且适配相框');
   assert.ok(comp.includes('.tile-codex .tile-label'), '框外文字样式缺失');
-  assert.ok(comp.includes('.codex-toolbar') && comp.includes('.icon-target-select'), '工具栏/分类选择下拉样式缺失');
+  assert.ok(!comp.includes('.codex-toolbar') && !comp.includes('.icon-target-select'), '导入入口样式应已移除');
 });
 
-test('M44-4 图标导入逻辑：选图缩放 + 分类选择 + localStorage 存储 + 渲染优先', () => {
+test('M44-4 导入图标渲染通道保留：localStorage 导入图优先渲染（无导入流程代码）', () => {
   const src = readAppFile('js/app.js');
-  assert.ok(src.includes("localStorage.getItem('sdv-codex-icons')"), '导入图标存储键缺失');
-  assert.ok(src.includes('function pickIconFile'), '缺少文件选择函数');
-  assert.ok(src.includes("inp.accept = 'image/*'"), '应仅接受图片文件');
-  assert.ok(src.includes('function processIconImage'), '缺少图片缩放函数');
-  assert.ok(src.includes('imageSmoothingEnabled = false'), '缩放应保持像素硬边');
-  assert.ok(src.includes('Math.min(1, max /'), '应等比例缩放（最长边 ≤128px）');
-  assert.ok(src.includes('codex-icon-target'), '缺少目标分类选择控件');
-  assert.ok(src.includes("case 'codex-import-icon'"), '缺少导入入口动作分发');
-  assert.ok(src.includes('store[key] = dataURL'), '导入图标应写入本地存储');
+  assert.ok(src.includes("localStorage.getItem('sdv-codex-icons')"), '导入图标存储键读取缺失');
+  assert.ok(!src.includes('function pickIconFile'), '文件选择流程代码应已移除');
+  assert.ok(!src.includes('function processIconImage'), '图片缩放流程代码应已移除');
+  assert.ok(!src.includes("case 'codex-import-icon'"), '导入入口动作分发应已移除');
   // 渲染优先：导入图 → assets 同名图 → 首字
   const mountFn = src.slice(src.indexOf('function mountIcons'));
   assert.ok(mountFn.includes('imported[key]'), '渲染应优先使用导入图标');

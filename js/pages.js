@@ -83,7 +83,7 @@ const Pages = (() => {
       (typeof Community !== 'undefined' ? Community.renderHomeBlock() : '');
   }
 
-  /** 图鉴：物品分类分组排版（分组标题 + 4 列像素木质相框分类卡片；右上角图标导入入口） */
+  /** 图鉴：物品分类分组排版（分组标题 + 4 列像素木质相框分类卡片） */
   function codex() {
     const codexGroups = [
       { name: '生产', keys: ['crops', 'seeds', 'artisan', 'cooking', 'animalProducts', 'animals', 'farm', 'trees'] },
@@ -92,11 +92,7 @@ const Pages = (() => {
       { name: '战斗', keys: ['equipment', 'monsters', 'accessories'] },
       { name: '其他', keys: ['villagers', 'calendar', 'filter', 'calculator', 'weather', 'special', 'quests', 'furniture', 'wallpaper', 'flooring', 'hats', 'shirts', 'pants', 'areas', 'wallet'] },
     ];
-    return '<div class="codex-toolbar">' +
-        '<span class="codex-toolbar-hint">点击分类进入详情</span>' +
-        '<button type="button" class="pixel-btn import-icon-btn" data-action="codex-import-icon" title="导入像素图标替换分类图标">导入图标</button>' +
-      '</div>' +
-      codexGroups.map((g) =>
+    return codexGroups.map((g) =>
       '<div class="codex-group">' +
         '<h3 class="codex-group-title">' + esc(g.name) + '</h3>' +
         '<div class="codex-grid">' +
