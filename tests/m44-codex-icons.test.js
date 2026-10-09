@@ -86,9 +86,9 @@ test('M44-3 相框 CSS：正方形多层像素边框 + 四角装饰 + 图标适�
   assert.ok(comp.includes('#F6EBCF'), '缺少浅米色内底');
   assert.ok(comp.includes('.tile-codex .tile-icon::before') && comp.includes('.tile-codex .tile-icon::after'), '缺少四角像素块装饰');
   assert.ok(comp.includes('object-fit: contain'), '图标应等比例缩放适配（不溢出）');
-  assert.ok(comp.includes('.tile-codex .tile-img { width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; }'), '导入图标应像素硬边且适配相框');
-  assert.ok(comp.includes('[data-route*="animalProducts"] .tile-img') && comp.includes('width: 78%'), '畜产品（53×64 非正方）图标应在内容区内缩小居中');
-  assert.ok(comp.includes('[data-route*="trees"] .tile-icon') && comp.includes('padding: 2px'), '树图标应适度收窄内边距放大');
+  assert.ok(comp.includes('.tile-codex .tile-img { width: 78%; height: 78%; object-fit: contain; image-rendering: pixelated; }'), '导入图标应统一按畜产品标准缩至 78% 居中（像素硬边、不贴边框）');
+  assert.ok(!comp.includes('[data-route*="animalProducts"] .tile-img'), '畜产品不应保留单独图标规则（已统一为全局标准）');
+  assert.ok(!comp.includes('[data-route*="trees"] .tile-icon'), '树不应保留单独内边距规则（已统一为全局标准）');
   assert.ok(comp.includes('max-width: 72px'), '移动端卡片应限宽居中（大屏自动缩小、窄屏保持 4 列自适应）');
   assert.ok(comp.includes('.tile-codex .tile-label'), '框外文字样式缺失');
   assert.ok(!comp.includes('.codex-toolbar') && !comp.includes('.icon-target-select'), '导入入口样式应已移除');

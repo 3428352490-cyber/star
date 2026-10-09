@@ -137,12 +137,9 @@
 .tile-codex .tile-icon::after {
   background-position: 100% 0, 0 100%;
 }
-/* 导入/内置图标自动居中、等比例缩放适配方框内容区（padding 后不贴边框、不溢出相框）；像素硬边 */
-.tile-codex .tile-img { width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; }
-/* 畜产品（assets/animal_product.png 53×64 非正方形）：图标在内容区内再缩小 78% 并居中，避免高向贴边/溢出相框 */
-.tile-codex[data-route*="animalProducts"] .tile-img { width: 78%; height: 78%; }
-/* 树（assets/tree.png 3072×3072 大图）：适度收窄内边距，图标放大且不触碰边框 */
-.tile-codex[data-route*="trees"] .tile-icon { padding: 2px; }
+/* 导入/内置图标统一显示标准（以畜产品卡片为基准）：图标在相框内容区内缩至 78% 并居中，
+   四周均匀留白（不贴边框、不溢出相框）；像素硬边 */
+.tile-codex .tile-img { width: 78%; height: 78%; object-fit: contain; image-rendering: pixelated; }
 .tile-codex .tile-label { font-size: 12px; line-height: 1.4; margin-top: 6px; } /* 文字移至相框外侧下方，图标文字相互独立 */
 .tile-codex:active { transform: none; box-shadow: none; }
 /* ---- 电脑大屏：缩小图鉴卡片整体尺寸（整卡 52px / 相框 48×48，每行 4 张；内边距同步） ---- */
