@@ -98,6 +98,8 @@
   box-shadow: none;
   border-radius: 0;
   gap: 6px;                           /* 相框与下方文字的间距 */
+  max-width: 72px;                    /* 移动端卡片限宽：大屏自动缩小卡片，窄屏保持 4 列自适应不缩 */
+  justify-self: center;               /* 网格单元格内居中（列宽大于限宽时卡片居中） */
 }
 /* 相框布局容器：仅撑满卡片宽度并居中图标（边框/背景由 .tile-icon 相框本体承担） */
 .tile-codex .tile-frame {
@@ -108,6 +110,8 @@
 .tile-codex .tile-icon {
   box-sizing: border-box;
   position: relative;
+  display: grid;                      /* 图标容器居中网格：img/占位文字均居中于内容区 */
+  place-items: center;
   width: 100%;
   height: auto;                       /* 覆盖通用 .tile-icon 的固定高，由 aspect-ratio 推导正方形 */
   aspect-ratio: 1 / 1;                /* 正方形相框 */
@@ -135,17 +139,22 @@
 }
 /* 导入/内置图标自动居中、等比例缩放适配方框内容区（padding 后不贴边框、不溢出相框）；像素硬边 */
 .tile-codex .tile-img { width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; }
+/* 畜产品（assets/animal_product.png 53×64 非正方形）：图标在内容区内再缩小 78% 并居中，避免高向贴边/溢出相框 */
+.tile-codex[data-route*="animalProducts"] .tile-img { width: 78%; height: 78%; }
+/* 树（assets/tree.png 3072×3072 大图）：适度收窄内边距，图标放大且不触碰边框 */
+.tile-codex[data-route*="trees"] .tile-icon { padding: 2px; }
 .tile-codex .tile-label { font-size: 12px; line-height: 1.4; margin-top: 6px; } /* 文字移至相框外侧下方，图标文字相互独立 */
 .tile-codex:active { transform: none; box-shadow: none; }
-/* ---- 电脑大屏：缩小生产板块卡片尺寸（每行 4 张，图标固定 48×48，内边距同步缩小） ---- */
+/* ---- 电脑大屏：缩小图鉴卡片整体尺寸（整卡 52px / 相框 48×48，每行 4 张；内边距同步） ---- */
 @media (min-width: 768px) {
-  .tile-codex { width: 60px; justify-self: center; gap: 4px; } /* 整卡缩小：相框 56 + 标签间距 */
+  .tile-codex { width: 52px; justify-self: center; gap: 4px; } /* 整卡缩小：相框 48 + 标签间距 */
   .tile-codex .tile-icon {
-    width: 56px;                       /* 相框总宽 56（4px 边框×2 + 内容区 48×48 图标） */
-    height: 56px;
+    width: 48px;                       /* 相框总宽 48（4px 边框×2 + 内容区 40×40 图标） */
+    height: 48px;
     aspect-ratio: auto;
+    padding: 6px;                      /* 桌面端图标内边距同步收窄（相框缩小后保持图标比例与留白均衡） */
   }
-  .tile-codex .tile-label { font-size: 12px; margin-top: 4px; }
+  .tile-codex .tile-label { font-size: 11px; margin-top: 4px; }
 }
 /* 移动端保持原有自适应网格逻辑不变（.tile-icon 宽 100% + 正方形自适应） */
 

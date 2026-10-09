@@ -79,13 +79,17 @@ test('M44-3 相框 CSS：正方形多层像素边框 + 四角装饰 + 图标适�
   const comp = readAppFile('css/components.css');
   assert.ok(comp.includes('.tile-codex .tile-frame'), '缺少相框布局容器');
   assert.ok(comp.includes('.tile-codex .tile-icon') && comp.includes('aspect-ratio: 1 / 1'), '相框本体应为正方形');
-  assert.ok(comp.includes('padding: 8px'), '相框内容区应为图标预留 8px 内边距（居中不贴边框）');
+  assert.ok(comp.includes('padding: 8px'), '移动端相框内容区应为图标预留 8px 内边距（居中不贴边框）');
+  assert.ok(comp.includes('display: grid') && comp.includes('place-items: center'), '图标容器应为居中网格（img/占位文字均居中）');
   assert.ok(comp.includes('border: 4px solid #4A2F1D'), '缺少外粗深棕相框边');
   assert.ok(comp.includes('#8A5A33') && comp.includes('#D9A86C'), '缺少中橘棕/内浅橙木纹层');
   assert.ok(comp.includes('#F6EBCF'), '缺少浅米色内底');
   assert.ok(comp.includes('.tile-codex .tile-icon::before') && comp.includes('.tile-codex .tile-icon::after'), '缺少四角像素块装饰');
   assert.ok(comp.includes('object-fit: contain'), '图标应等比例缩放适配（不溢出）');
   assert.ok(comp.includes('.tile-codex .tile-img { width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; }'), '导入图标应像素硬边且适配相框');
+  assert.ok(comp.includes('[data-route*="animalProducts"] .tile-img') && comp.includes('width: 78%'), '畜产品（53×64 非正方）图标应在内容区内缩小居中');
+  assert.ok(comp.includes('[data-route*="trees"] .tile-icon') && comp.includes('padding: 2px'), '树图标应适度收窄内边距放大');
+  assert.ok(comp.includes('max-width: 72px'), '移动端卡片应限宽居中（大屏自动缩小、窄屏保持 4 列自适应）');
   assert.ok(comp.includes('.tile-codex .tile-label'), '框外文字样式缺失');
   assert.ok(!comp.includes('.codex-toolbar') && !comp.includes('.icon-target-select'), '导入入口样式应已移除');
 });
@@ -103,12 +107,13 @@ test('M44-4 导入图标渲染通道保留：localStorage 导入图优先渲染�
   assert.ok(mountFn.includes("'assets/icons/' + key + '.png'"), '内置图标通道保留');
 });
 
-test('M44-5 电脑端卡片尺寸缩小 CSS：图标 48×48 固定、卡片窄、移动端自适应不受影响', () => {
+test('M44-5 电脑端卡片整体缩小 CSS：整卡 52px / 相框 48×48 / 内边距 6px，移动端自适应不受影响', () => {
   const comp = readAppFile('css/components.css');
   assert.ok(comp.includes('@media (min-width: 768px)'), '缺少电脑端断点');
   const desk = comp.slice(comp.indexOf('@media (min-width: 768px)'));
-  assert.ok(desk.includes('.tile-codex { width: 60px;') || desk.includes('.tile-codex { width: 60px'), '电脑端卡片应缩小为固定窄宽');
-  assert.ok(desk.includes('width: 56px') && desk.includes('height: 56px'), '电脑端相框应固定 56×56（内容区 48×48 图标 + 8px 边框）');
+  assert.ok(desk.includes('.tile-codex { width: 52px;'), '电脑端卡片应缩小为固定窄宽');
+  assert.ok(desk.includes('width: 48px') && desk.includes('height: 48px'), '电脑端相框应固定 48×48');
+  assert.ok(desk.includes('padding: 6px'), '电脑端图标内边距应同步收窄为 6px（相框缩小后留白均衡）');
   assert.ok(desk.includes('aspect-ratio: auto'), '电脑端相框高度应显式固定');
   assert.ok(comp.includes('image-rendering: pixelated'), '应关闭抗锯齿、保证像素锐利');
 });
